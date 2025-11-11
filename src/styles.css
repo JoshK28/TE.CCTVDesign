@@ -1,0 +1,105 @@
+.nav-button {
+  margin-top: 25px;
+  padding: 14px 25px;
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+  background-color: #28a745; /* Green for "Go" */
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.nav-button:hover {
+  background-color: #218838;
+}
+
+/* ------------------
+   DesignPage.jsx Styles
+------------------ */
+
+/* This container creates the "new page" feel */
+.design-page-container {
+  /* Use fixed position to cover the whole screen */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #282c34; /* Dark background */
+  overflow: auto; /* Allow scrolling if image is huge */
+  z-index: 1000;
+}
+
+.back-button {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  padding: 10px 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  background-color: #007bff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  z-index: 1002;
+}
+
+.back-button:hover {
+  background-color: #0056b3;
+}
+
+/* This wrapper handles the full-screen image */
+.image-fullscreen-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  box-sizing: border-box; /* Include padding in width/height */
+}
+
+/* This is the full-screen image itself */
+.fullscreen-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* Scales image down to fit, maintaining aspect ratio */
+  border: 2px solid #555;
+  border-radius: 5px;
+}
+
+.image-fullscreen-wrapper {
+  /* ... (keep existing styles) ... */
+  position: relative; /* CRUCIAL: Makes it the positioning context */
+}
+
+/* Style for the actual camera icon */
+.camera-icon {
+  position: absolute; 
+  transform: translate(-50%, -50%); /* Centers the icon exactly on the click point */
+  font-size: 24px; 
+  cursor: pointer;
+  z-index: 1003; /* Ensures it sits above the image */
+  color: red; /* Make the icon stand out */
+  text-shadow: 0 0 5px black;
+}
+
+/* Ensure the image does not interfere with the absolute positioning */
+.fullscreen-image {
+  /* ... (keep existing styles) ... */
+  pointer-events: none; /* Allows clicks to pass through to the wrapper */
+}
+
+.camera-count {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    color: white;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 5px 10px;
+    border-radius: 5px;
+    z-index: 1004;
+}
