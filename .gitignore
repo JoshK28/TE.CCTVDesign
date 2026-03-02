@@ -7,10 +7,16 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+#Frontend
 node_modules
 dist
 dist-ssr
 *.local
+
+# Backend
+Backend/appsettings.json
+Backend/bin/
+Backend/obj/
 
 # Editor directories and files
 .vscode/*
@@ -22,3 +28,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
