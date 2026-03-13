@@ -31,27 +31,12 @@ function MainApp({ onLogout }) {
   return (
     <div className="App">
       {view === 'upload' && (
-        <div className="upload-view">
-          <header className="App-header">
-            <h1>CCTV Design Tool</h1>
-            <p>Step 1: Upload your site layout (.png)</p>
-            <button onClick={onLogout} className="logout-button">
-              Logout
-            </button>
-          </header>
-          <ImageUploader
-            onImageUpload={handleUploadSuccess}
-            currentImageSrc={imageSrc}
-          />
-          {imageSrc && (
-            <button
-              className="nav-button"
-              onClick={handleNavigateToDesign}
-            >
-              Go to Design Process
-            </button>
-          )}
-        </div>
+        <ImageUploader
+          onImageUpload={handleUploadSuccess}
+          currentImageSrc={imageSrc}
+          onLogout={onLogout}
+          onNavigateToDesign={handleNavigateToDesign}
+        />
       )}
 
       {view === 'design' && (
@@ -83,6 +68,9 @@ function App() {
           path="/app"
           element={isLoggedIn ? <MainApp onLogout={handleLogout} /> : <Navigate to="/login" replace />}
         />
+
+        {/*testing purposes only, to be removed in final version*/}
+        <Route path="/imageUploader" element={<ImageUploader onImageUpload={() => {}} />} />
       </Routes>
     </BrowserRouter>
   );

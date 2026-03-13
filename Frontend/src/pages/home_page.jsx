@@ -19,6 +19,12 @@ function Home() {
         <button onClick={() => navigate("/register")} style={{ padding: "10px 30px", fontSize: "16px" }}>
           Register
         </button>
+
+
+        {/*testing purposes only, to be removed in final version*/}
+        <button onClick={() => navigate("/imageUploader")} style={{ padding: "10px 30px", fontSize: "16px" }}>
+          Testing button to image Uploader
+        </button>
       </div>
     </div>
   );
