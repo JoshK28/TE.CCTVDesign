@@ -33,7 +33,6 @@ function MainApp({ onLogout }) {
       {view === 'upload' && (
         <ImageUploader
           onImageUpload={handleUploadSuccess}
-          currentImageSrc={imageSrc}
           onLogout={onLogout}
           onNavigateToDesign={handleNavigateToDesign}
         />

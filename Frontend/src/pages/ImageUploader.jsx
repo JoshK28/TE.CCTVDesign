@@ -5,7 +5,9 @@ import React, { useState, useEffect } from 'react';
 The ImageUploader component allows users to upload a floor plan image in .png or .jpg format, before it is then passed to the DesignPage component for further interaction.
 */
 
-function ImageUploader({ onImageUpload, currentImageSrc, onLogout, onNavigateToDesign }) {
+function ImageUploader({ onImageUpload, onLogout, onNavigateToDesign }) {
+
+  const [imageSrc, setImageSrc] = useState(null);
 
   const handleImageChange = (event) => {
     const file = event.target.files[0];
@@ -17,11 +19,13 @@ function ImageUploader({ onImageUpload, currentImageSrc, onLogout, onNavigateToD
     if (file.type !== 'image/png' && file.type !== 'image/jpeg') {
       alert('Please select a .png file or .jpg file only.');
 
+      setImageSrc(null);
       event.target.value = null; 
       return;
     }
 
     const newImageSrc = URL.createObjectURL(file);
+    setImageSrc(newImageSrc);
     onImageUpload(newImageSrc);
   };
 
@@ -48,14 +52,14 @@ function ImageUploader({ onImageUpload, currentImageSrc, onLogout, onNavigateToD
           Select .PNG or .JPG Image
         </label>
 
-        {currentImageSrc && (
+        {imageSrc && (
           <div className="image-preview-container">
             <p>Here is your uploaded image:</p>
-            <img src={currentImageSrc} alt="Uploaded preview" className="image-preview" />
+            <img src={imageSrc} alt="Uploaded preview" className="image-preview" />
           </div>
         )}
       </div>
-      {currentImageSrc && (
+      {imageSrc && (
         <button
           className="nav-button"
           onClick={onNavigateToDesign}
