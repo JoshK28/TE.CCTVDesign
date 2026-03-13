@@ -7,6 +7,11 @@ import Register from './pages/register';
 import Home from './pages/home_page';
 import './styles.css';
 
+
+
+/*The App component is the Main root component of the CCTV Design Tool frontend pages. It manages the state of the current user view to navigate between jsx pages.
+*/
+
 function MainApp({ onLogout }) {
   const [view, setView] = useState('upload');
   const [imageSrc, setImageSrc] = useState(null);

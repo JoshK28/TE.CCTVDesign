@@ -1,5 +1,10 @@
 import { useNavigate } from "react-router-dom";
 
+
+/*
+The Home component serves as the landing page for the CCTV Design Tool, providing users with options to navigate to the login or registration pages. 
+*/
+
 function Home() {
   const navigate = useNavigate();
 

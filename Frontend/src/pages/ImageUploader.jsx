@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 
 
+/*
+The ImageUploader component allows users to upload a floor plan image in .png or .jpg format, before it is then passed to the DesignPage component for further interaction.
+*/
+
 function ImageUploader({onImageUpload}) {
 
   const [imageSrc, setImageSrc] = useState(null);

@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 
+/*
+The DesignPage component is the main project page interface allowing users to place equipment such as cameras to uploaded floor plans.
+*/
 
 const CameraIcon = ({ x, y }) => (
   <div 

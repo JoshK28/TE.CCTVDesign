@@ -2,6 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
+
+/*
+The login component provides an interface for users to login and access the project program. It sends the login details to the backend through an API call.
+*/
+
 function Login() {
   const [formData, setFormData] = useState({
     email: "",
