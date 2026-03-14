@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
+import { useNavigate } from "react-router-dom";
 
 /*
 The ImageUploader component allows users to upload a floor plan image in .png or .jpg format, before it is then passed to the DesignPage component for further interaction.
@@ -29,16 +29,16 @@ function ImageUploader({ onImageUpload, onLogout, onNavigateToDesign }) {
     onImageUpload(newImageSrc);
   };
 
-
+  const navigate = useNavigate();
 
   return (
     <div className="upload-view">
       <header className="App-header">
         <h1>CCTV Design Tool</h1>
-        <p>Step 1: Upload your site layout (.png)</p>
         <button onClick={onLogout} className="logout-button">
           Logout
         </button>
+        <p>Step 1: Upload your site layout (.png)</p>
       </header>
       <div className="image-uploader">
         <input
@@ -60,10 +60,7 @@ function ImageUploader({ onImageUpload, onLogout, onNavigateToDesign }) {
         )}
       </div>
       {imageSrc && (
-        <button
-          className="nav-button"
-          onClick={onNavigateToDesign}
-        >
+        <button onClick={() => navigate("/DesignPage")} style={{ padding: "10px 30px", fontSize: "16px" }}>
           Go to Design Process
         </button>
       )}
