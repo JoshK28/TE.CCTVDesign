@@ -3,16 +3,29 @@ using Backend.Models;
 
 namespace Backend.Data
 {
+    // AppDbContext is the main class that connects the app to the database
+    // it acts as a middle man between the code and the database
     public class AppDbContext : DbContext
     {
+        // sets up the database connection using the settings from appsettings.json
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options) { }
 
+        // represents the Users table in the database
+        // allows the app to read and write user data
         public DbSet<User> Users => Set<User>();
+
+        // represents the Cameras table in the database
+        // allows the app to read and write camera data
         public DbSet<Camera> Cameras => Set<Camera>();
 
+        // this method runs when the database is first being set up
+        // it pre-fills the Cameras table with 21 HikVision cameras
+        // so the data is automatically available without manual entry
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // seed data - automatically adds these cameras to the database
+            // when dotnet ef database update is run
             modelBuilder.Entity<Camera>().HasData(
                 new Camera { Id = 1, ModelNumber = "DS-2CD2685G1-IZS", Description = "Camera Bullet 8MP V-Focus HikVision", Brand = "HikVision", Type = "Bullet", Resolution = "8MP", Range = "", LensSize = "Varifocal" },
                 new Camera { Id = 2, ModelNumber = "DS-2CD2046G2-I", Description = "Camera 4MP Mini Bullet 40m IR IP67 2.8mm HIKVision", Brand = "HikVision", Type = "Bullet", Resolution = "4MP", Range = "40m", LensSize = "2.8mm" },
