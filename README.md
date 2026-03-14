@@ -12,7 +12,7 @@ A CCTV Design Tool built with React (frontend) and C# ASP.NET Core (backend).
 
 ### Step 1: Start SQL Server Express
 
-Open SQL Serve - if that doesnt work check do this
+Open SQL Server - if that doesnt work check do this
 
 1. Press **Windows + R**
 2. Type `services.msc` and press Enter
@@ -26,6 +26,8 @@ Open SQL Serve - if that doesnt work check do this
    - Select your server which will be named `YOUR-PC\SQLEXPRESS`
 3. Under connection properties - then under encrypt - Check **Trust Server Certificate**
 4. Click **Connect**
+
+If you are unable to see the the SQL server in SQL server Mangemnet Studio you might have the wrong SQL server installed. Make sure its SQL Server Express
 
 ### Step 3: Set Up the Backend
 1. Open a terminal and navigate to the Backend folder:
@@ -59,12 +61,18 @@ cd Frontend
 2. Install dependencies:
 ```
 npm install
+
 ```
-3. Start the frontend:
+3. Install axios
+```
+npm install axios ( only need to do this once if you don't have it install alreayd)
+
+```
+4. Start the frontend:
 ```
 npm run dev
 ```
-4. Open `http://localhost:5173` in your browser
+5. Open `http://localhost:5173` in your browser
 
 ## Database
 - Running `dotnet ef database update` will automatically create the database and tables
