@@ -1,22 +1,3 @@
-# React + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-
-
-
 # TE.CCTVDesign
 
 A CCTV Design Tool built with React (frontend) and C# ASP.NET Core (backend).
@@ -24,10 +5,29 @@ A CCTV Design Tool built with React (frontend) and C# ASP.NET Core (backend).
 ## Requirements
 - [.NET 10](https://dotnet.microsoft.com/download)
 - [Node.js](https://nodejs.org/)
-- [SQL Server Express](https://www.microsoft.com/en-us/sql-server/sql-server-downloads)
-- [SQL Server Management Studio (SSMS)](https://learn.microsoft.com/en-us/sql/ssms/download-sql-server-management-studio-ssms)
+- [SQL Server Express](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) (Basic installation only)
+- [SQL Server Management Studio (SSMS)](https://learn.microsoft.com/en-us/sql/ssms/download-sql-server-management-studio-ssms) (Basic installation only)
 
 ## Backend Setup
+
+### Step 1: Start SQL Server Express
+
+Open SQL Serve - if that doesnt work check do this
+
+1. Press **Windows + R**
+2. Type `services.msc` and press Enter
+3. Find **SQL Server (SQLEXPRESS)** in the list
+4. Right click it and select **Start**
+
+### Step 2: Connect to SQL Server in SSMS
+1. Open **SQL Server Management Studio (SSMS)**
+2. When the Connect to Server window opens:
+   - Click **Browse Network** to find your server
+   - Select your server which will be named `YOUR-PC\SQLEXPRESS`
+3. Under connection properties - then under encrypt - Check **Trust Server Certificate**
+4. Click **Connect**
+
+### Step 3: Set Up the Backend
 1. Open a terminal and navigate to the Backend folder:
 ```
 cd Backend
@@ -37,19 +37,19 @@ cd Backend
 dotnet tool install --global dotnet-ef
 ```
 3. Copy `appsettings.example.json` and rename it to `appsettings.json`
-4. Find your SQL Server instance name by opening SSMS and checking the Server name field (e.g. `YOUR-PC\SQLEXPRESS`)
-5. Update the connection string in `appsettings.json` with your server name:
+4. Update the connection string in `appsettings.json` with your server name:
 ```
 "Default": "Server=YOUR-PC\\SQLEXPRESS;Database=cctvdesign;Trusted_Connection=True;TrustServerCertificate=True"
+Just need to change the "Server=YOUR-PC" Part 
 ```
-6. Run the following commands:
+5. Run the following commands:
 ```
 dotnet restore
 dotnet ef database update
 dotnet run
 ```
-7. Backend will run on `http://localhost:5113`
-8. Swagger available at `http://localhost:5113/swagger`
+6. Backend will run on `http://localhost:5113`
+7. Swagger available at `http://localhost:5113/swagger`
 
 ## Frontend Setup
 1. Open a new terminal and navigate to the Frontend folder:
