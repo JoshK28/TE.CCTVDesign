@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+
 
 /*
 The DesignPage component is the main project page interface allowing users to place equipment such as cameras to uploaded floor plans.
@@ -16,7 +18,20 @@ const CameraIcon = ({ x, y }) => (
 
 function DesignPage({ imageSrc, onBack }) {
 
-    const [cameras, setCameras] = useState([]);
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  const imageSrc = location.state?.imageSrc;
+
+  useEffect(() => {
+    if (!imageSrc) {
+      navigate('/app/upload');
+    }
+  }, [imageSrc, navigate]);
+
+  if (!imageSrc) return null;
+
+  const [cameras, setCameras] = useState([]);
 
   const handleImageClick = (event) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -32,18 +47,6 @@ function DesignPage({ imageSrc, onBack }) {
 
     setCameras(prevCameras => [...prevCameras, newCamera]);
   };
-
-
-  if (!imageSrc) {
-    return (
-      <div>
-        <p>No image found. Please go back and upload one.</p>
-        <button onClick={onBack} className="back-button">
-          Back
-        </button>
-      </div>
-    );
-  }
 
   return (
         <div className="design-page-container">
