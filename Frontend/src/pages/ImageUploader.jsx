@@ -5,20 +5,17 @@ import { useNavigate } from "react-router-dom";
 The ImageUploader component allows users to upload a floor plan image in .png or .jpg format, before it is then passed to the DesignPage component for further interaction.
 */
 
-function ImageUploader({ onImageUpload, onLogout, onNavigateToDesign }) {
+function ImageUploader({ onLogout }) {
 
   const [imageSrc, setImageSrc] = useState(null);
 
   const handleImageChange = (event) => {
     const file = event.target.files[0];
 
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
     if (file.type !== 'image/png' && file.type !== 'image/jpeg') {
       alert('Please select a .png file or .jpg file only.');
-
       setImageSrc(null);
       event.target.value = null; 
       return;
@@ -26,10 +23,12 @@ function ImageUploader({ onImageUpload, onLogout, onNavigateToDesign }) {
 
     const newImageSrc = URL.createObjectURL(file);
     setImageSrc(newImageSrc);
-    onImageUpload(newImageSrc);
   };
 
-  const navigate = useNavigate();
+  const handleProceedToDesign = () => {
+    // This routes the user AND secretly passes the imageSrc in memory
+    useNavigate("/app/design", { state: { imageSrc } });
+  };
 
   return (
     <div className="upload-view">
@@ -60,7 +59,7 @@ function ImageUploader({ onImageUpload, onLogout, onNavigateToDesign }) {
         )}
       </div>
       {imageSrc && (
-        <button onClick={() => navigate("/DesignPage")} style={{ padding: "10px 30px", fontSize: "16px" }}>
+        <button onClick={handleProceedToDesign} style={{ padding: "10px 30px", fontSize: "16px" }}>
           Go to Design Process
         </button>
       )}
