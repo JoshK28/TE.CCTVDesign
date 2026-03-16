@@ -11,43 +11,6 @@ import './styles.css';
 
 /*The App component is the Main root component of the CCTV Design Tool frontend pages. It manages the state of the current user view to navigate between jsx pages.
 */
-
-function MainApp({ onLogout }) {
-  const [view, setView] = useState('upload');
-  const [imageSrc, setImageSrc] = useState(null);
-
-  const handleUploadSuccess = (src) => {
-    setImageSrc(src);
-  };
-
-  const handleNavigateToDesign = () => {
-    setView('design');
-  };
-
-  const handleNavigateBack = () => {
-    setView('upload');
-  };
-
-  return (
-    <div className="App">
-      {view === 'upload' && (
-        <ImageUploader
-          onImageUpload={handleUploadSuccess}
-          onLogout={onLogout}
-          onNavigateToDesign={handleNavigateToDesign}
-        />
-      )}
-
-      {view === 'design' && (
-        <DesignPage
-          imageSrc={imageSrc}
-          onBack={handleNavigateBack}
-        />
-      )}
-    </div>
-  );
-}
-
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
 
@@ -63,13 +26,19 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route
-          path="/app"
-          element={isLoggedIn ? <MainApp onLogout={handleLogout} /> : <Navigate to="/login" replace />}
+        
+        <Route 
+          path="/app/upload" 
+          element={isLoggedIn ? <ImageUploader onLogout={handleLogout} /> : <Navigate to="/login" replace />} 
         />
-
-        {/*testing purposes only, to be removed in final version*/}
-        <Route path="/imageUploader" element={<ImageUploader onImageUpload={() => {}} />} />
+        
+        <Route 
+          path="/app/design" 
+          element={isLoggedIn ? <DesignPage onLogout={handleLogout} /> : <Navigate to="/login" replace />} 
+        />
+        
+        {/* Catch-all: Redirect a basic /app request to the upload screen */}
+        <Route path="/app" element={<Navigate to="/app/upload" replace />} />
       </Routes>
     </BrowserRouter>
   );

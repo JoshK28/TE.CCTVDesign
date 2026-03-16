@@ -28,7 +28,7 @@ function Login() {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("username", res.data.username);
 
-      navigate("/app");
+      navigate("/app/upload");
     } catch (err) {
       setError(err.response?.data || "Login failed");
     }
@@ -59,5 +59,3 @@ function Login() {
 }
 
 export default Login;
-
-'testing branch'
