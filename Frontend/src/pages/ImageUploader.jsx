@@ -31,6 +31,20 @@ function ImageUploader({ onLogout }) {
     navigate("/app/design", { state: { imageSrc } });
   };
 
+  const handleWheel = (event) => {
+    // Determine how fast it zooms per scroll tick
+    const zoomSpeed = 5; 
+
+    if (event.deltaY < 0) {
+      // Scrolling UP: Increase width, cap it at 300% maximum
+      setImageWidth((prevWidth) => Math.min(prevWidth + zoomSpeed, 300));
+    } else {
+      // Scrolling DOWN: Decrease width, bottom out at 10% minimum
+      setImageWidth((prevWidth) => Math.max(prevWidth - zoomSpeed, 10));
+    }
+  };
+
+
   return (
     <div className="upload-view">
       <header className="App-header">
@@ -58,6 +72,7 @@ function ImageUploader({ onLogout }) {
             <img src={imageSrc} 
             alt="Uploaded preview" 
             className="image-preview" 
+            onWheel={handleWheel}
             style={{ maxWidth: '800px', width: '150%', height: 'auto' }} />
           </div>
         )}
