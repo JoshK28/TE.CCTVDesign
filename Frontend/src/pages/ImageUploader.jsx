@@ -8,6 +8,7 @@ The ImageUploader component allows users to upload a floor plan image in .png or
 function ImageUploader({ onLogout }) {
 
   const [imageSrc, setImageSrc] = useState(null);
+  const navigate = useNavigate();
 
   const handleImageChange = (event) => {
     const file = event.target.files[0];
@@ -27,7 +28,7 @@ function ImageUploader({ onLogout }) {
 
   const handleProceedToDesign = () => {
     // This routes the user AND secretly passes the imageSrc in memory
-    useNavigate("/app/design", { state: { imageSrc } });
+    navigate("/app/design", { state: { imageSrc } });
   };
 
   return (
