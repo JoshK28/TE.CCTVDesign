@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 
@@ -16,7 +16,7 @@ const CameraIcon = ({ x, y }) => (
   </div>
 );
 
-function DesignPage({ onlogout }) {
+function DesignPage({ onLogout }) {
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -51,7 +51,7 @@ function DesignPage({ onlogout }) {
   return (
         <div className="design-page-container">
             <p>ddd</p>
-            <button onClick={onlogout} className="back-button">
+            <button onClick={onLogout} className="back-button">
                 &larr; Back to Upload
             </button>
             
