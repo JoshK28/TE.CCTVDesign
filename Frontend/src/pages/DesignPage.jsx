@@ -51,7 +51,7 @@ function DesignPage({ onLogout }) {
   return (
         <div className="design-page-container">
             <p>ddd</p>
-            <button onClick={onLogout} className="back-button">
+            <button onClick={() => navigate('/app/upload')} className="back-button">
                 &larr; Back to Upload
             </button>
             
