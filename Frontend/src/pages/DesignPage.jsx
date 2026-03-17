@@ -16,7 +16,7 @@ const CameraIcon = ({ x, y }) => (
   </div>
 );
 
-function DesignPage({ imageSrc, onBack }) {
+function DesignPage({ onlogout }) {
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -51,7 +51,7 @@ function DesignPage({ imageSrc, onBack }) {
   return (
         <div className="design-page-container">
             <p>ddd</p>
-            <button onClick={onBack} className="back-button">
+            <button onClick={onlogout} className="back-button">
                 &larr; Back to Upload
             </button>
             
