@@ -55,7 +55,10 @@ function ImageUploader({ onLogout }) {
         {imageSrc && (
           <div className="image-preview-container">
             <p>Here is your uploaded image:</p>
-            <img src={imageSrc} alt="Uploaded preview" className="image-preview" />
+            <img src={imageSrc} 
+            alt="Uploaded preview" 
+            className="image-preview" 
+            style={{ maxWidth: '800px', width: '150%', height: 'auto' }} />
           </div>
         )}
       </div>
