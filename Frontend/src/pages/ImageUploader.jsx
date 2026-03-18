@@ -31,6 +31,8 @@ function ImageUploader({ onLogout }) {
     navigate("/app/design", { state: { imageSrc } });
   };
 
+  const [imageWidth, setImageWidth] = useState(80);
+
   const handleWheel = (event) => {
     // Determine how fast it zooms per scroll tick
     const zoomSpeed = 5; 
@@ -47,7 +49,7 @@ function ImageUploader({ onLogout }) {
 
   return (
     <div className="upload-view">
-      <header className="App-header">
+      <header className="App-header"> 
         <h1>CCTV Design Tool</h1>
         <button onClick={onLogout} className="logout-button">
           Logout
@@ -73,7 +75,7 @@ function ImageUploader({ onLogout }) {
             alt="Uploaded preview" 
             className="image-preview" 
             onWheel={handleWheel}
-            style={{ maxWidth: '800px', width: '150%', height: 'auto' }} />
+            style={{ width: `${imageWidth}%`, maxWidth: '800px', height: 'auto' }} />
           </div>
         )}
       </div>
