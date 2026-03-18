@@ -13,7 +13,9 @@ function ImageUploader({ onLogout }) {
   const handleImageChange = (event) => {
     const file = event.target.files[0];
 
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     if (file.type !== 'image/png' && file.type !== 'image/jpeg') {
       alert('Please select a .png file or .jpg file only.');
@@ -45,6 +47,7 @@ function ImageUploader({ onLogout }) {
       setImageWidth((prevWidth) => Math.max(prevWidth - zoomSpeed, 10));
     }
   };
+
 
 
   return (
