@@ -29,7 +29,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 20px;
+  padding: 35px 20px;
   background-color: #f8f9fa;
   border-bottom: 1px solid #ddd;
 }
@@ -83,6 +83,7 @@
   object-fit: contain; /* Scales image down to fit, maintaining aspect ratio */
   border: 2px solid #555;
   border-radius: 5px;
+  pointer-events: none;
 }
 
 /* Style for the actual camera icon */
@@ -94,12 +95,6 @@
   z-index: 1003; /* Ensures it sits above the image */
   color: red; /* Make the icon stand out */
   text-shadow: 0 0 5px black;
-}
-
-/* Ensure the image does not interfere with the absolute positioning */
-.fullscreen-image {
-  /* ... (keep existing styles) ... */
-  pointer-events: none; /* Allows clicks to pass through to the wrapper */
 }
 
 .camera-count {
