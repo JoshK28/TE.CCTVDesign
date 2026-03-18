@@ -7,28 +7,25 @@ import CameraIcon from '../Components/cameraIcon.jsx';
 The DesignPage component is the main project page interface allowing users to place equipment such as cameras to uploaded floor plans.
 */
 
-
-
 function DesignPage({ onLogout }) {
 
   const location = useLocation();
   const navigate = useNavigate();
-  
   const imageSrc = location.state?.imageSrc;
 
   useEffect(() => {
-    if (!imageSrc) {
-      navigate('/app/upload');
-    }
+    if (!imageSrc) {navigate('/app/upload');}
   }, [imageSrc, navigate]);
 
   if (!imageSrc) return null;
 
+  const [activeTool, setActiveTool] = useState(null);
   const [cameras, setCameras] = useState([]);
 
   const handleImageClick = (event) => {
-    const rect = event.currentTarget.getBoundingClientRect();
+    if (activeTool !== 'camera') return;
 
+    const rect = event.currentTarget.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     
@@ -39,6 +36,7 @@ function DesignPage({ onLogout }) {
     };
 
     setCameras(prevCameras => [...prevCameras, newCamera]);
+    setActiveTool(null);
   };
 
   return (
@@ -55,7 +53,7 @@ function DesignPage({ onLogout }) {
         
         {/* Left Toolbar */}
         <div className="toolbar-sidebar">
-          <Toolbar />
+          <Toolbar onSelectTool={setActiveTool} />
         </div>
         
         {/* Image area */}

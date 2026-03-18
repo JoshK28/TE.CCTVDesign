@@ -3,13 +3,13 @@ import { Menu } from 'primereact/menu';
 import { MegaMenu } from 'primereact/megamenu';
 import 'primeicons/primeicons.css';
 
-export default function Toolbar() {
+export default function Toolbar(onSelectTool) {
     const items = [
         {
             label: 'New',
             icon: 'pi pi-plus',
             items: [[
-                {items: [{label: 'Camera'}, {label: 'Sensor'}, {label: 'Alarm'}]}
+                {items: [{label: 'Camera', command : () => onSelectTool('camera')}, {label: 'Sensor', command : () => onSelectTool('sensor')}, {label: 'Alarm', command : () => onSelectTool('alarm')   }]}
                 ]]
         },
         {
