@@ -53,27 +53,36 @@ function DesignPage({ onLogout }) {
   return (
     <div className="design-page-container">
 
-      <button onClick={() => navigate('/app/upload')} className="back-button">
-        &larr; Back to Upload
-      </button>
-      
-       <Toolbar />
-      
-      <div 
-        className="image-fullscreen-wrapper"
-        onClick={handleImageClick} 
-      >
-          <img 
-            src={imageSrc} 
-            alt="Full-screen design layout" 
-            className="fullscreen-image" 
-          />
-
-          {cameras.map(camera => (
-            <CameraIcon key={camera.id} x={camera.x} y={camera.y} />
-          ))}
+      <div className="design-topbar">
+        <button onClick={() => navigate('/app/upload')} className="back-button">
+          &larr; Back to Upload
+        </button>
+        <p className="camera-count">Cameras Placed: {cameras.length}</p>
       </div>
-      <p className="camera-count">Cameras Placed: {cameras.length}</p>
+
+      <div className="design-workspace">
+        
+        {/* Left Toolbar */}
+        <div className="toolbar-sidebar">
+          <Toolbar />
+        </div>
+        
+        {/* Image area */}
+        <div 
+          className="image-fullscreen-wrapper"
+          onClick={handleImageClick} 
+        >
+            <img 
+              src={imageSrc} 
+              alt="Full-screen design layout" 
+              className="fullscreen-image" 
+            />
+
+            {cameras.map(camera => (
+              <CameraIcon key={camera.id} x={camera.x} y={camera.y} />
+            ))}
+        </div>
+    </div>
     </div>
   );
 }

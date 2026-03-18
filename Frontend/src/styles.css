@@ -19,17 +19,33 @@
    DesignPage.jsx Styles
 ------------------ */
 
-/* This container creates the "new page" feel */
 .design-page-container {
-  /* Use fixed position to cover the whole screen */
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
+  display: flex;
+  flex-direction: column;
   height: 100vh;
-  background-color: #282c34; /* Dark background */
-  overflow: auto; /* Allow scrolling if image is huge */
-  z-index: 1000;
+}
+
+.design-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #ddd;
+}
+
+.design-workspace {
+  display: flex;
+  flex-direction: row;
+  flex: 1; 
+  overflow: hidden;
+}
+
+.toolbar-sidebar {
+  width: 250px;
+  background-color: #ffffff;
+  border-right: 1px solid #ddd;
+  padding: 15px;
 }
 
 .back-button {
@@ -53,13 +69,11 @@
 
 /* This wrapper handles the full-screen image */
 .image-fullscreen-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
+  flex: 1;
+  position: relative;
+  background-color: #e9ecef; 
+  overflow: auto;
   padding: 20px;
-  box-sizing: border-box; /* Include padding in width/height */
 }
 
 /* This is the full-screen image itself */
@@ -69,11 +83,6 @@
   object-fit: contain; /* Scales image down to fit, maintaining aspect ratio */
   border: 2px solid #555;
   border-radius: 5px;
-}
-
-.image-fullscreen-wrapper {
-  /* ... (keep existing styles) ... */
-  position: relative; /* CRUCIAL: Makes it the positioning context */
 }
 
 /* Style for the actual camera icon */
