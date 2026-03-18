@@ -8,7 +8,14 @@ export default function Toolbar() {
         {
             label: 'New',
             icon: 'pi pi-plus',
-            items: [{label: 'Camera'}, {label: 'Sensor'}, {label: 'Alarm'}]}
+            items: [[
+                {items: [{label: 'Camera'}, {label: 'Sensor'}, {label: 'Alarm'}]}
+                ]]
+        },
+        {
+            label: 'Draw',
+            icon: 'pi pi-pencil'
+        }
     ];
 
     return (
