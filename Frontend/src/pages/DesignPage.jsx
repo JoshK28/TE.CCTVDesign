@@ -17,8 +17,6 @@ function DesignPage({ onLogout }) {
     if (!imageSrc) {navigate('/app/upload');}
   }, [imageSrc, navigate]);
 
-  if (!imageSrc) return null;
-
   const [activeTool, setActiveTool] = useState(null);
   const [cameras, setCameras] = useState([]);
 
@@ -38,6 +36,12 @@ function DesignPage({ onLogout }) {
     setCameras(prevCameras => [...prevCameras, newCamera]);
     setActiveTool(null);
   };
+
+  if (!imageSrc) return null;
+
+  const cursorStyle = activeTool === 'camera' 
+    ? `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' style='font-size:24px'><text y='20'>📷</text></svg>") 12 12, crosshair`
+    : 'default';
 
   return (
     <div className="design-page-container">
@@ -60,6 +64,7 @@ function DesignPage({ onLogout }) {
         <div 
           className="image-fullscreen-wrapper"
           onClick={handleImageClick} 
+          style={{ cursor: cursorStyle }}
         >
             <img 
               src={imageSrc} 

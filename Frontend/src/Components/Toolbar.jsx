@@ -3,7 +3,7 @@ import { Menu } from 'primereact/menu';
 import { MegaMenu } from 'primereact/megamenu';
 import 'primeicons/primeicons.css';
 
-export default function Toolbar(onSelectTool) {
+export default function Toolbar({ onSelectTool }) {
     const items = [
         {
             label: 'New',
