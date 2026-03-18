@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-
+import Toolbar from '../Components/Toolbar.jsx';
 
 /*
 The DesignPage component is the main project page interface allowing users to place equipment such as cameras to uploaded floor plans.
 */
 
-const CameraIcon = ({ x, y }) => (
-  <div 
-    className="camera-icon" 
-    style={{ left: x, top: y }}
-    title={`Camera at (${Math.round(x)}, ${Math.round(y)})`}
-  >
-    📷
-  </div>
-);
+function CameraIcon({ x, y }) {
+  return (
+    <div
+      className="camera-icon"
+      style={{ left: x, top: y }}
+      title={`Camera at (${Math.round(x)}, ${Math.round(y)})`}
+    >
+      📷
+    </div>
+  );
+}
 
 function DesignPage({ onLogout }) {
 
@@ -49,29 +51,31 @@ function DesignPage({ onLogout }) {
   };
 
   return (
-        <div className="design-page-container">
-            <p>ddd</p>
-            <button onClick={() => navigate('/app/upload')} className="back-button">
-                &larr; Back to Upload
-            </button>
-            
-            <div 
-                className="image-fullscreen-wrapper"
-                onClick={handleImageClick} 
-            >
-                <img 
-                    src={imageSrc} 
-                    alt="Full-screen design layout" 
-                    className="fullscreen-image" 
-                />
+    <div className="design-page-container">
 
-                {cameras.map(camera => (
-                    <CameraIcon key={camera.id} x={camera.x} y={camera.y} />
-                ))}
-            </div>
-            <p className="camera-count">Cameras Placed: {cameras.length}</p>
-        </div>
-    );
+      <button onClick={() => navigate('/app/upload')} className="back-button">
+        &larr; Back to Upload
+      </button>
+      
+       <Toolbar />
+      
+      <div 
+        className="image-fullscreen-wrapper"
+        onClick={handleImageClick} 
+      >
+          <img 
+            src={imageSrc} 
+            alt="Full-screen design layout" 
+            className="fullscreen-image" 
+          />
+
+          {cameras.map(camera => (
+            <CameraIcon key={camera.id} x={camera.x} y={camera.y} />
+          ))}
+      </div>
+      <p className="camera-count">Cameras Placed: {cameras.length}</p>
+    </div>
+  );
 }
 
 export default DesignPage;
