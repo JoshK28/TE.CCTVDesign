@@ -68,6 +68,7 @@ npm install
 (Only when for first install)
 npm install axios 
 npm install primereact
+npm install primeicons
 
 ```
 4. Start the frontend:
