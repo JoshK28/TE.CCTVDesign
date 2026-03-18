@@ -4,12 +4,31 @@ import { MegaMenu } from 'primereact/megamenu';
 import 'primeicons/primeicons.css';
 
 export default function Toolbar({ onSelectTool }) {
+
+    const draggableItem = (item) => {
+        return (
+            <div 
+                draggable 
+                onDragStart={(e) => {
+                    e.dataTransfer.setData('tool', item.label);
+                }}
+                onClick={()=> onSelectTool(item.label)}
+                style={{ padding: '0.75rem 1.25rem', cursor: 'grab' }}
+            >
+                <span className="pi pi-camera" style={{ marginRight: '0.5rem' }}></span>
+                {item.label}
+            </div>
+        );
+    };
+
     const items = [
         {
             label: 'New',
             icon: 'pi pi-plus',
             items: [[
-                {items: [{label: 'Camera', command : () => onSelectTool('camera')}, {label: 'Sensor', command : () => onSelectTool('sensor')}, {label: 'Alarm', command : () => onSelectTool('alarm')   }]}
+                {items: [{label: 'camera', template: draggableItem},
+                     {label: 'sensor', template: draggableItem},
+                      {label: 'alarm', template: draggableItem}]}
                 ]]
         },
         {

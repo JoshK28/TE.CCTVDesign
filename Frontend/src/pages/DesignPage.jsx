@@ -12,30 +12,36 @@ function DesignPage({ onLogout }) {
   const location = useLocation();
   const navigate = useNavigate();
   const imageSrc = location.state?.imageSrc;
+  const [activeTool, setActiveTool] = useState(null);
+  const [cameras, setCameras] = useState([]);
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleNewItem = (event) => {
+    event.preventDefault();
+
+    const toolToPlace = event.dataTransfer 
+      ? event.dataTransfer.getData('tool') 
+      : activeTool;
+
+    if (!toolToPlace) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    if (toolToPlace === 'camera') {
+      setCameras(prev => [...prev, { id: Date.now(), x, y }]);
+    }
+    setActiveTool(null);
+  };
 
   useEffect(() => {
     if (!imageSrc) {navigate('/app/upload');}
   }, [imageSrc, navigate]);
 
-  const [activeTool, setActiveTool] = useState(null);
-  const [cameras, setCameras] = useState([]);
-
-  const handleImageClick = (event) => {
-    if (activeTool !== 'camera') return;
-
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    
-    const newCamera = {
-      id: Date.now(), 
-      x: x,
-      y: y,
-    };
-
-    setCameras(prevCameras => [...prevCameras, newCamera]);
-    setActiveTool(null);
-  };
 
   if (!imageSrc) return null;
 
@@ -63,7 +69,9 @@ function DesignPage({ onLogout }) {
         {/* Image area */}
         <div 
           className="image-fullscreen-wrapper"
-          onClick={handleImageClick} 
+          onClick={handleNewItem} 
+          onDragOver={handleDragOver}
+          onDrop={handleNewItem}
           style={{ cursor: cursorStyle }}
         >
             <img 
