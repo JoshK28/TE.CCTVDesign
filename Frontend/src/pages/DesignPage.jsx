@@ -1,22 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Toolbar from '../Components/Toolbar.jsx';
+import CameraIcon from '../Components/cameraIcon.jsx';
 
 /*
 The DesignPage component is the main project page interface allowing users to place equipment such as cameras to uploaded floor plans.
 */
 
-function CameraIcon({ x, y }) {
-  return (
-    <div
-      className="camera-icon"
-      style={{ left: x, top: y }}
-      title={`Camera at (${Math.round(x)}, ${Math.round(y)})`}
-    >
-      📷
-    </div>
-  );
-}
+
 
 function DesignPage({ onLogout }) {
 
@@ -80,6 +71,7 @@ function DesignPage({ onLogout }) {
 
             {cameras.map(camera => (
               <CameraIcon key={camera.id} x={camera.x} y={camera.y} />
+              
             ))}
         </div>
     </div>
