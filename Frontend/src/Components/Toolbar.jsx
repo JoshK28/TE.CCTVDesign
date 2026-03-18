@@ -13,7 +13,7 @@ export default function Toolbar() {
 
     return (
         <div className="card">
-            <MegaMenu model={items} breakpoint="960px" />
+            <MegaMenu model={items} orientation="vertical" breakpoint="960px" />
         </div>
     )
 }
