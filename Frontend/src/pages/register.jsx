@@ -2,6 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
+
+/*The Register component provides an interface for users to register and create an account for the CCTV Design Tool. It sends the registration details to the backend through an API call.
+*/
+
 function Register() {
   const [formData, setFormData] = useState({
     username: "",
