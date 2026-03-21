@@ -2,16 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Toolbar from '../Components/Toolbar.jsx';
 import CameraIcon from '../Components/cameraIcon.jsx';
-import { useMove } from 'primereact/hooks';
+import Equipment from '../Components/Equipment.jsx';
         
 function Workspace({ imageSrc}) {
 
-  const handleDragOver = (e) => {e.preventDefault();};
   const [activeTool, setActiveTool] = useState(null);
-  const [cameras, setCameras] = useState([]);
-  const cursorStyle = activeTool === 'camera' ? `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' style='font-size:24px'><text y='20'>📷</text></svg>") 12 12, crosshair`: 'default';
+  const [equipment, setEquipment] = useState([]);
+  
 
   const handleNewItem = (event) => {
+
     event.preventDefault();
 
     const toolToPlace = event.dataTransfer ? event.dataTransfer.getData('tool') : activeTool;
@@ -22,9 +22,8 @@ function Workspace({ imageSrc}) {
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
-    if (toolToPlace === 'camera') {
-      setCameras(prev => [...prev, { id: Date.now(), x, y }]);
-    }
+    setEquipment(prev => [...prev, { id: Date.now(), type: toolToPlace, x, y }]);
+
     setActiveTool(null);
   };
   
@@ -33,14 +32,13 @@ function Workspace({ imageSrc}) {
         
         {/* Left Toolbar */}
         <div className="toolbar-sidebar">
-          <Toolbar onSelectTool={setActiveTool} />
+          <Toolbar onSelectTool={setActiveTool} />  
         </div>
 
         <div className="image-fullscreen-wrapper"
           onClick={handleNewItem} 
-          onDragOver={handleDragOver}
           onDrop={handleNewItem}
-          style={{ cursor: cursorStyle, position: 'relative' }}
+          onDragOver={(e) => {e.preventDefault();}}
         >
           <img 
             src={imageSrc} 
@@ -48,11 +46,10 @@ function Workspace({ imageSrc}) {
             className="fullscreen-image" 
             draggable="false" 
           />
-
-          {cameras.map(camera => (
-            <CameraIcon key={camera.id} x={camera.x} y={camera.y} />
+          {equipment.map(equipment => (
+            <Equipment key={equipment.id} type={equipment.type} x={equipment.x} y={equipment.y} />
           ))}
-          <p className="camera-count">Cameras Placed: {cameras.length}</p>
+          <p className="camera-count">Cameras Placed: {equipment.length}</p>
       </div>
     </div>
   );
@@ -74,8 +71,6 @@ function DesignPage({ onLogout }) {
 
 
   if (!imageSrc) return null;
-
-
 
   return (
     <div className="design-page-container">
