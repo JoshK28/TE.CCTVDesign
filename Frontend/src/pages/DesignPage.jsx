@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Toolbar from '../Components/Toolbar.jsx';
-import CameraIcon from '../Components/cameraIcon.jsx';
 import Equipment from '../Components/Equipment.jsx';
         
 function Workspace({ imageSrc}) {
 
   const [activeTool, setActiveTool] = useState(null);
   const [equipment, setEquipment] = useState([]);
-  
+  const [selectedItemId, setSelectedItemId] = useState(null);
 
   const handleNewItem = (event) => {
 
@@ -25,6 +24,12 @@ function Workspace({ imageSrc}) {
     setEquipment(prev => [...prev, { id: Date.now(), type: toolToPlace, x, y }]);
 
     setActiveTool(null);
+  };
+
+  const handleUpdatePosition = (id, newX, newY) => {
+    setEquipment(prev => prev.map(item => 
+      item.id === id ? { ...item, x: newX, y: newY } : item
+    ));
   };
   
   return (
@@ -47,7 +52,13 @@ function Workspace({ imageSrc}) {
             draggable="false" 
           />
           {equipment.map(equipment => (
-            <Equipment key={equipment.id} type={equipment.type} x={equipment.x} y={equipment.y} />
+            <Equipment key={equipment.id} 
+            type={equipment.type} 
+            x={equipment.x} 
+            y={equipment.y} 
+            isSelected={selectedItemId === equipment.id}
+            onSelect={setSelectedItemId} 
+            onUpdatePosition={handleUpdatePosition} />
           ))}
           <p className="camera-count">Cameras Placed: {equipment.length}</p>
       </div>
