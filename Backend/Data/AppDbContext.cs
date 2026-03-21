@@ -15,6 +15,14 @@ namespace Backend.Data
         // allows the app to read and write user data
         public DbSet<User> Users => Set<User>();
 
+             // represents the Projects table in the database
+        // allows the app to read and write project data
+        public DbSet<Project> Projects => Set<Project>();
+
+        // represents the FloorLayouts table in the database
+        // allows the app to read and write floor layout images per project
+        public DbSet<FloorLayout> FloorLayouts => Set<FloorLayout>();
+
         // represents the Cameras table in the database
         // allows the app to read and write camera data
         public DbSet<Camera> Cameras => Set<Camera>();

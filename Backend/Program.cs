@@ -55,5 +55,8 @@ app.UseAuthorization();
 // maps all controller routes so the app knows which controller handles which request
 app.MapControllers();
 
+// add this - allows serving uploaded images
+app.UseStaticFiles(); 
+
 // start the app and keep it running
 app.Run();
