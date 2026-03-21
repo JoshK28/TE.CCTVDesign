@@ -1,5 +1,4 @@
-import React from 'react'; 
-import { Menu } from 'primereact/menu';
+
 import { MegaMenu } from 'primereact/megamenu';
 import 'primeicons/primeicons.css';
 
@@ -9,9 +8,7 @@ export default function Toolbar({ onSelectTool }) {
         return (
             <div 
                 draggable 
-                onDragStart={(e) => {
-                    e.dataTransfer.setData('tool', item.label);
-                }}
+                onDragStart={(e) => {e.dataTransfer.setData('tool', item.label);}}
                 onClick={()=> onSelectTool(item.label)}
                 style={{ padding: '0.75rem 1.25rem', cursor: 'grab' }}
             >
