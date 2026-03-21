@@ -2,22 +2,23 @@ import { useState } from 'react';
 
 const getIconAppearance = (type) => {
   switch (type) {
-    case 'camera': return { icon: '📷', color: '#007bff' };
-    case 'server': return { icon: '🖥️', color: '#28a745' };
-    case 'sensor': return { icon: '📡', color: '#dc3545' };
-    default:       return { icon: '❓', color: '#6c757d' };
+    case 'camera': return { icon: '📷' };
+    case 'server': return { icon: '🖥️' };
+    case 'alarm': return { icon: '📡' };
+    default:       return { icon: '❓' };
   }
 };
 
-function EquipmentIcon({ id, type, x, y, isSelected, onSelect, onUpdatePosition }) {
-  const { icon, color } = getIconAppearance(type);
+function Equipment({ id, type, x, y, isSelected, onSelect , onUpdatePosition }) {
+  const { icon } = getIconAppearance(type);
   
   const [livePos, setLivePos] = useState({ x, y });
   const [isDragging, setIsDragging] = useState(false);
 
+
   const handlePointerDown = (e) => {
     e.stopPropagation(); 
-    onSelect(id); 
+    onSelect(id);
     setIsDragging(true);
 
     const startX = e.clientX - livePos.x;
@@ -49,21 +50,18 @@ function EquipmentIcon({ id, type, x, y, isSelected, onSelect, onUpdatePosition 
 
   return (
     <div
-      className="equipment-icon"
+      className="equipment"
       onPointerDown={handlePointerDown}
+      onClick={(e) => e.stopPropagation()}
       style={{ 
         left: livePos.x, 
         top: livePos.y, 
         position: 'absolute', 
         transform: 'translate(-50%, -50%)',
         cursor: isDragging ? 'grabbing' : 'grab', 
+        userSelect: 'none',
         fontSize: '24px',
-        userSelect: 'none', 
-        border: isSelected ? `2px dashed ${color}` : '2px solid transparent',
-        borderRadius: '50%',
-        padding: '2px',
-        backgroundColor: isSelected ? `${color}22` : 'transparent',
-        zIndex: isSelected ? 10 : 1,
+        backgroundColor: isSelected ? 'rgb(0, 123, 255)' : 'transparent'
       }} 
     >
       {icon}
@@ -71,4 +69,4 @@ function EquipmentIcon({ id, type, x, y, isSelected, onSelect, onUpdatePosition 
   );
 }
 
-export default EquipmentIcon;
+export default Equipment;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Toolbar from '../Components/Toolbar.jsx';
 import Equipment from '../Components/Equipment.jsx';
@@ -7,7 +7,7 @@ function Workspace({ imageSrc}) {
 
   const [activeTool, setActiveTool] = useState(null);
   const [equipment, setEquipment] = useState([]);
-  const [selectedItemId, setSelectedItemId] = useState(null);
+  const [itemSelected, setSelectedItem] = useState(null);
 
   const handleNewItem = (event) => {
 
@@ -15,13 +15,17 @@ function Workspace({ imageSrc}) {
 
     const toolToPlace = event.dataTransfer ? event.dataTransfer.getData('tool') : activeTool;
 
-    if (!toolToPlace) return;
+    if (!toolToPlace) {
+      setSelectedItem(null); 
+      return;
+    }
 
     const rect = event.currentTarget.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
-    setEquipment(prev => [...prev, { id: Date.now(), type: toolToPlace, x, y }]);
+    const newId = Date.now();
+    setEquipment(prev => [...prev, { id: newId, type: toolToPlace, x, y }]);
 
     setActiveTool(null);
   };
@@ -53,14 +57,15 @@ function Workspace({ imageSrc}) {
           />
           {equipment.map(equipment => (
             <Equipment key={equipment.id} 
+            id = {equipment.id}
             type={equipment.type} 
             x={equipment.x} 
             y={equipment.y} 
-            isSelected={selectedItemId === equipment.id}
-            onSelect={setSelectedItemId} 
+            isSelected={itemSelected === equipment.id}
+            onSelect={setSelectedItem}
             onUpdatePosition={handleUpdatePosition} />
           ))}
-          <p className="camera-count">Cameras Placed: {equipment.length}</p>
+          <p className="item-count">Items Placed: {equipment.length} </p>
       </div>
     </div>
   );
