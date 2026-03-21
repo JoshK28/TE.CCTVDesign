@@ -9,7 +9,7 @@ export default function AttributesBar({ selectedItemId, equipment, onClose }) {
              <Sidebar 
                 visible={itemSelected !== null} 
                 position="right" 
-                onHide={() => setSelectedItem(null)}
+                onHide={onClose}
                 style={{ width: '300px' }}
             >
 

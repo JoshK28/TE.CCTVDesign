@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Toolbar from '../Components/Toolbar.jsx';
 import Equipment from '../Components/Equipment.jsx';
+import AttributesBar from '../Components/AttributesBar.jsx';
         
 function Workspace({ imageSrc}) {
 
@@ -67,6 +68,12 @@ function Workspace({ imageSrc}) {
           ))}
           <p className="item-count">Items Placed: {equipment.length} </p>
       </div>
+
+      <AttributesBar 
+        selectedItemId={itemSelected} 
+        equipment={equipment} 
+        onClose={() => setSelectedItem(null)} 
+      />
     </div>
   );
  }
