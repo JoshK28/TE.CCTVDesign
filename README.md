@@ -63,9 +63,12 @@ cd Frontend
 npm install
 
 ```
-3. Install axios
+3. Install Dependencies 
 ```
-npm install axios ( only need to do this once if you don't have it install alreayd)
+(Only when for first install)
+npm install axios 
+npm install primereact
+npm install primeicons
 
 ```
 4. Start the frontend:

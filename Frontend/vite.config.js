@@ -7,6 +7,9 @@ export default defineConfig({
     historyApiFallback: true,
     hmr: {
       overlay: false
+    },
+    fs: {
+      strict: false
     }
   }
 })

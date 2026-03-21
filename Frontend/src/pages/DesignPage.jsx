@@ -1,77 +1,112 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import Toolbar from '../Components/Toolbar.jsx';
+import Equipment from '../Components/Equipment.jsx';
+import AttributesBar from '../Components/AttributesBar.jsx';
+        
+function Workspace({ imageSrc}) {
 
+  const [activeTool, setActiveTool] = useState(null);
+  const [equipment, setEquipment] = useState([]);
+  const [itemSelected, setSelectedItem] = useState(null);
 
+  const handleNewItem = (event) => {
+
+    event.preventDefault();
+
+    const toolToPlace = event.dataTransfer ? event.dataTransfer.getData('tool') : activeTool;
+
+    if (!toolToPlace) {
+      setSelectedItem(null); 
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    const newId = Date.now();
+    setEquipment(prev => [...prev, { id: newId, type: toolToPlace, x, y }]);
+
+    setActiveTool(null);
+  };
+
+  const handleUpdatePosition = (id, newX, newY) => {
+    setEquipment(prev => prev.map(item => 
+      item.id === id ? { ...item, x: newX, y: newY } : item
+    ));
+  };
+  
+  return (
+      <div className="design-workspace">
+        
+        {/* Left Toolbar */}
+        <div className="toolbar-sidebar">
+          <Toolbar onSelectTool={setActiveTool} />  
+        </div>
+
+        <div className="image-fullscreen-wrapper"
+          onClick={handleNewItem} 
+          onDrop={handleNewItem}
+          onDragOver={(e) => {e.preventDefault();}}
+        >
+          <img 
+            src={imageSrc} 
+            alt="Full-screen design layout" 
+            className="fullscreen-image" 
+            draggable="false" 
+          />
+          {equipment.map(equipment => (
+            <Equipment key={equipment.id} 
+            id = {equipment.id}
+            type={equipment.type} 
+            x={equipment.x} 
+            y={equipment.y} 
+            isSelected={itemSelected === equipment.id}
+            onSelect={setSelectedItem}
+            onUpdatePosition={handleUpdatePosition} />
+          ))}
+          <p className="item-count">Items Placed: {equipment.length} </p>
+      </div>
+
+      <AttributesBar 
+        selectedItemId={itemSelected} 
+        equipment={equipment} 
+        onClose={() => setSelectedItem(null)} 
+      />
+    </div>
+  );
+ }
 /*
 The DesignPage component is the main project page interface allowing users to place equipment such as cameras to uploaded floor plans.
 */
-
-const CameraIcon = ({ x, y }) => (
-  <div 
-    className="camera-icon" 
-    style={{ left: x, top: y }}
-    title={`Camera at (${Math.round(x)}, ${Math.round(y)})`}
-  >
-    📷
-  </div>
-);
 
 function DesignPage({ onLogout }) {
 
   const location = useLocation();
   const navigate = useNavigate();
-  
   const imageSrc = location.state?.imageSrc;
 
+
   useEffect(() => {
-    if (!imageSrc) {
-      navigate('/app/upload');
-    }
+    if (!imageSrc) {navigate('/app/upload');}
   }, [imageSrc, navigate]);
+
 
   if (!imageSrc) return null;
 
-  const [cameras, setCameras] = useState([]);
-
-  const handleImageClick = (event) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    
-    const newCamera = {
-      id: Date.now(), 
-      x: x,
-      y: y,
-    };
-
-    setCameras(prevCameras => [...prevCameras, newCamera]);
-  };
-
   return (
-        <div className="design-page-container">
-            <p>ddd</p>
-            <button onClick={() => navigate('/app/upload')} className="back-button">
-                &larr; Back to Upload
-            </button>
-            
-            <div 
-                className="image-fullscreen-wrapper"
-                onClick={handleImageClick} 
-            >
-                <img 
-                    src={imageSrc} 
-                    alt="Full-screen design layout" 
-                    className="fullscreen-image" 
-                />
+    <div className="design-page-container">
 
-                {cameras.map(camera => (
-                    <CameraIcon key={camera.id} x={camera.x} y={camera.y} />
-                ))}
-            </div>
-            <p className="camera-count">Cameras Placed: {cameras.length}</p>
-        </div>
-    );
+      <div className="design-topbar">
+        <button onClick={() => navigate('/app/upload')} className="back-button">
+          &larr; Back to Upload
+        </button>
+      </div>
+
+      {/* Image area */}
+      <Workspace imageSrc={imageSrc}/>
+    </div>
+  );
 }
-
 export default DesignPage;
