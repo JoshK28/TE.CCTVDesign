@@ -4,6 +4,7 @@ import api from "../services/api";
 import './login.css';
 
 
+
 /*
 The login component provides an interface for users to login and access the project program. It sends the login details to the backend through an API call.
 */
@@ -55,6 +56,7 @@ function Login() {
           className="login-input"
         />
         <button type="submit" className="login-button">Login</button>
+        <a href="register">Forgot Password</a>
       </form>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
