@@ -28,7 +28,7 @@ function Login() {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("username", res.data.username);
 
-      navigate("/app/upload");
+      navigate("/app/dashboard");
     } catch (err) {
       setError(err.response?.data || "Login failed");
     }
