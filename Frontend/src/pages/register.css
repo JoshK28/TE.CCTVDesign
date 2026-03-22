@@ -8,8 +8,6 @@ h2 {
 
 .register-form {
   text-align: center;
-  flex-direction: column;
-  gap: 100px; 
 }
 
 .register-input {

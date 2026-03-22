@@ -36,9 +36,10 @@ function Login() {
   };
 
   return (
-    <div>
+    <div style={{ textAlign: "center", marginTop: "300px" }}>
+      <img src="tepng_logo.png" width="500" height="200"></img>
       <h2>Login</h2>
-      <form onSubmit={handleLogin} className="login-form">
+      <form style={{ display: "flex", gap: "20px", justifyContent: "center", marginTop: "30px" }} onSubmit={handleLogin} className="login-form">
         <input
           type="email"
           name="email"
