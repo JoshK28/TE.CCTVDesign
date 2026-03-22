@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import './login.css';
 
 
 /*
@@ -37,20 +38,22 @@ function Login() {
   return (
     <div>
       <h2>Login</h2>
-      <form onSubmit={handleLogin}>
+      <form onSubmit={handleLogin} className="login-form">
         <input
           type="email"
           name="email"
           placeholder="Email"
           onChange={handleChange}
+          className="login-input"
         />
         <input
           type="password"
           name="password"
           placeholder="Password"
           onChange={handleChange}
+          className="login-input"
         />
-        <button type="submit">Login</button>
+        <button type="submit" className="login-button">Login</button>
       </form>
 
       {error && <p style={{ color: "red" }}>{error}</p>}

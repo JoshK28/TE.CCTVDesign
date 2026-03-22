@@ -1,0 +1,27 @@
+body {
+  background-color: rgb(26, 111, 139);
+}
+
+h2 {
+  text-align: center;
+}
+
+.login-form {
+  text-align: center;
+}
+
+.login-input {
+  text-align: center;
+}
+
+.login-button {
+  text-align: center;
+  color:beige;
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}

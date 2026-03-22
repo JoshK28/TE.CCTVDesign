@@ -1,0 +1,24 @@
+body {
+  background-color: rgb(26, 111, 139);
+}
+
+h2 {
+  text-align: center;
+}
+
+.register-form {
+  text-align: center;
+  flex-direction: column;
+  gap: 100px; 
+}
+
+.register-input {
+  text-align: center;
+  display: block;   
+  margin-bottom: 10px;
+}
+
+.register-button {
+  text-align: center;
+  color:beige;
+}
