@@ -97,13 +97,26 @@ function ImageUploader({ onLogout }) {
 
       // navigate to wall identifier page with the project id
       setTimeout(() => {
-        navigate("/app/DesignPage", { state: { projectId: res.data.projectID } });
+        navigate("/app/design", { state: { projectId: res.data.projectID } });
       }, 1500);
 
     } catch (err) {
-      setError(err.response?.data || "Failed to create project");
-    } finally {
-      setLoading(false);
+      // handle different types of error responses
+      if (err.response?.data?.errors) {
+      // validation errors from the backend
+      const errors = Object.values(err.response.data.errors).flat();
+      setError(errors.join(", "));
+      } else if (err.response?.data?.title) {
+      // general error with title
+      setError(err.response.data.title);
+      } else if (typeof err.response?.data === 'string') {
+      // plain string error
+      setError(err.response.data);
+      } else {
+      setError("Failed to create project");
+      }
+      } finally {
+        setLoading(false);
     }
   };
 
