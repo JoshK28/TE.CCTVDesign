@@ -38,8 +38,8 @@ function Register() {
   };
 
   return (
-    <div style={{ textAlign: "center", marginTop: "300px" }}>
-      <img src="tepng_logo.png" width="500" height="200"></img>
+    <div style={{ textAlign: "center", marginTop: "250px" }}>
+      <img src="tepng_logo.jpg" width="500" height="200"></img>
       <h2>Register</h2>
       <form style={{ display: "flex", gap: "20px", justifyContent: "center", marginTop: "30px" }} onSubmit={handleRegister} className="register-form">
         <input
