@@ -15,26 +15,26 @@ export default function EquipmentSelector({ visible , onHide}) {
 
     const manufacturerOptions = [...new Set(cameras.map(c => c.brand))];
 
-    useEffect(() => {
-        const fetchCameras = async () => {
-            setLoading(true);
-            try {
-                const res = await api.get("/api/cameras", {
-                    params: { 
-                        search: filters.searchQuery,
-                        manufacturer: filters.manufacturer
-                    }
-                });
-                setCameras(res.data);
-            } catch (err) {
-                console.error("Fetch failed:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
+    const fetchCameras = async () => {
+        setLoading(true);
+        try {
+            const res = await api.get("/api/cameras", {
+                params: { 
+                    search: filters.searchQuery,
+                    manufacturer: filters.manufacturer
+                }
+            });
+            setCameras(res.data);
+        } catch (err) {
+            console.error("Fetch failed:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchCameras();
-    }, [filters]);
+    }, []);
 
     return (
         <Sidebar 
@@ -54,7 +54,8 @@ export default function EquipmentSelector({ visible , onHide}) {
                     placeholder="Search equipment..." 
                     className="w-full"
                 />
-                                <button className="p-button p-component p-button-outlined w-full mt-2" onClick={() => setFilters({ searchQuery: '', manufacturer: null })}>
+
+                <button className="p-button p-component p-button-outlined w-full mt-2" onClick={() => setFilters({ searchQuery: '', manufacturer: null })}>
                     Clear Filters
                 </button>
 
@@ -68,7 +69,10 @@ export default function EquipmentSelector({ visible , onHide}) {
                     showClear 
                     className="w-full"
                 />
-
+                <br />
+                <button className="p-button p-component w-full" onClick={fetchCameras}>
+                    Fetch Equipment
+                </button>
                 
 
                 
