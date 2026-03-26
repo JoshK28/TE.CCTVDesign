@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Sidebar } from 'primereact/sidebar';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
+import { Button } from 'primereact/button';
 import api from '../services/api';
 
 export default function EquipmentSelector({ visible , onHide}) {
@@ -47,6 +48,8 @@ export default function EquipmentSelector({ visible , onHide}) {
         await fetchCameras(emptyFilters); 
     };
 
+
+
     useEffect(() => {
     fetchCameras(); 
     }, []);
@@ -73,11 +76,13 @@ export default function EquipmentSelector({ visible , onHide}) {
                     className="w-full"
                 />
 
+                {/* Reset Button */}
                 <button className="p-button p-component p-button-outlined w-full mt-2" onClick={resetParams}>
                     Clear Filters
                 </button>
 
-                <br />
+                <br /><br />
+                
                 <label className="font-bold text-sm">Manufacturer : </label>
                 <Dropdown 
                     value={filters.manufacturer} 
@@ -87,8 +92,10 @@ export default function EquipmentSelector({ visible , onHide}) {
                     showClear 
                     className="w-full"
                 />
-                <br />
-                <button className="p-button p-component w-full" onClick={() => {fetchCameras(); setSearch(true)}}
+                <br /><br />
+
+                {/* Search Button */}
+                <button className="p-button p-component p-button-outlined w-full" onClick={() => {fetchCameras(); setSearch(true)}}
                 >
                     Fetch Equipment
                 </button>
@@ -111,8 +118,14 @@ export default function EquipmentSelector({ visible , onHide}) {
                         {cameras.slice(0, 5).map(camera => (
                             <div key={camera.id} style = {{ padding: '5px', borderBottom: '1px solid #ccc'}}>
                                 <p><strong>Camera Code:</strong> {camera.modelNumber}</p>
-                                <p >Brand: {camera.brand}</p>
+                                <p ><strong>Brand:</strong> {camera.brand}</p>
                                 <p><strong>Camera Type:</strong> {camera.type || 'N/A'}</p>
+
+                                {/* This button just for visual purpose currently */}
+                                <Button 
+                                className="p-button p-component p-button-outlined w-full mt-2"
+                                onClick={onHide} 
+                                label="Select" />
                             </div>
                         ))}
                     </div>
