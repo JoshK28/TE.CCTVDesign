@@ -6,17 +6,14 @@ import api from '../services/api';
 
 export default function EquipmentSelector({ visible , onHide}) {
 
-    const [testCameras, setCameras  ] = useState([]); // 2. State camera DB data
+    const [cameras, setCameras  ] = useState([]); // 2. State camera DB data
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
         searchQuery: '',
         manufacturer: null
     });
 
-    const manufacturerOptions = [...new Set(testCameras
-        .map(c => c.manufacturer))]
-        .filter(Boolean) // Remove null/undefined
-        .map(m => ({ label: m, value: m }));
+    const manufacturerOptions = [...new Set(cameras.map(c => c.brand))];
 
     useEffect(() => {
         const fetchCameras = async () => {
@@ -44,12 +41,21 @@ export default function EquipmentSelector({ visible , onHide}) {
             visible={visible} 
             position="center" 
             onHide={onHide}
-            style={{ width: '300px' }}
+            style={{ width: '500px' }}
         >
             <div className="test-section" style={{ marginTop: '20px', color: 'blue' }}>
                 <h3>Equipment Catalog</h3>
-
-                <label className="font-bold text-sm">Manufacturer</label>
+                
+                <br />
+                <label className="font-bold text-sm"> Search : </label>
+                <InputText 
+                    value={filters.searchQuery} 
+                    onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })} 
+                    placeholder="Search equipment..." 
+                    className="w-full"
+                />
+                <br />
+                <label className="font-bold text-sm">Manufacturer : </label>
                 <Dropdown 
                     value={filters.manufacturer} 
                     options={manufacturerOptions} 
@@ -58,13 +64,7 @@ export default function EquipmentSelector({ visible , onHide}) {
                     showClear 
                     className="w-full"
                 />
-                <label className="font-bold text-sm">Search</label>
-                <InputText 
-                    value={filters.searchQuery} 
-                    onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })} 
-                    placeholder="Search equipment..." 
-                    className="w-full"
-                />
+                
             </div>
                 {/*
                 {loading ? (
