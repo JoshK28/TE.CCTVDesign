@@ -1,56 +1,87 @@
-import { Sidebar } from 'primereact/sidebar';
 import { useState, useEffect } from 'react';
+import { Sidebar } from 'primereact/sidebar';
+import { Dropdown } from 'primereact/dropdown';
+import { InputText } from 'primereact/inputtext';
 import api from '../services/api';
 
 export default function EquipmentSelector({ visible , onHide}) {
 
-    const [testCamera, setTestCamera] = useState(null); // 2. State for your DB camera
+    const [testCameras, setCameras  ] = useState([]); // 2. State camera DB data
     const [loading, setLoading] = useState(true);
+    const [filters, setFilters] = useState({
+        searchQuery: '',
+        manufacturer: null
+    });
 
+    const manufacturerOptions = [...new Set(testCameras
+        .map(c => c.manufacturer))]
+        .filter(Boolean) // Remove null/undefined
+        .map(m => ({ label: m, value: m }));
 
     useEffect(() => {
-        const fetchFirstCamera = async () => {
+        const fetchCameras = async () => {
+            setLoading(true);
             try {
-                const res = await api.get("/api/cameras");
-                console.log("Full res.data payload:", res.data);
-                if (res.data && res.data.length > 0) {
-                    setTestCamera(res.data[0]); 
-                }
+                const res = await api.get("/api/cameras", {
+                    params: { 
+                        search: filters.searchQuery,
+                        manufacturer: filters.manufacturer
+                    }
+                });
+                setCameras(res.data);
             } catch (err) {
-                console.error("Error fetching cameras:", err);
+                console.error("Fetch failed:", err);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchFirstCamera();
-    }, []);
+        fetchCameras();
+    }, [filters]);
 
     return (
-        <div>
-            <Sidebar 
-                visible={visible} 
-                position="center" 
-                onHide={onHide}
-                style={{ width: '300px' }}
-            >
-                <div className="test-section" style={{ marginTop: '20px', color: 'blue' }}>
-                    <h3>DB Test (First Camera)</h3>
-                    {loading ? (
-                        <p>Loading DB data...</p>
-                    ) : testCamera ? (
-                        <div>
-                            <p><strong>DB ID:</strong> {testCamera.id}</p>
-                            <p><strong>DB Name:</strong> {testCamera.type || 'N/A'}</p>
+        <Sidebar 
+            visible={visible} 
+            position="center" 
+            onHide={onHide}
+            style={{ width: '300px' }}
+        >
+            <div className="test-section" style={{ marginTop: '20px', color: 'blue' }}>
+                <h3>Equipment Catalog</h3>
 
-                            
-                        </div>
-                    ) : (
-                        <p>No cameras found in DB.</p>
-                    )}
-                </div>
-            </Sidebar>
-            
-        </div>
+                <label className="font-bold text-sm">Manufacturer</label>
+                <Dropdown 
+                    value={filters.manufacturer} 
+                    options={manufacturerOptions} 
+                    onChange={(e) => setFilters({ ...filters, manufacturer: e.value })} 
+                    placeholder="Select Brand" 
+                    showClear 
+                    className="w-full"
+                />
+                <label className="font-bold text-sm">Search</label>
+                <InputText 
+                    value={filters.searchQuery} 
+                    onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })} 
+                    placeholder="Search equipment..." 
+                    className="w-full"
+                />
+            </div>
+                {/*
+                {loading ? (
+                    <p>Loading DB data...</p>
+                ) : testCameras.length > 0 ? (
+                    <div>
+                        {testCameras.map(camera => (
+                            <div key={camera.id}>
+                                <p><strong>DB ID:</strong> {camera.id}</p>
+                                <p><strong>DB Name:</strong> {camera.type || 'N/A'}</p>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p>No cameras found in DB.</p>
+                )}
+                */}
+        </Sidebar>
     )
 }
