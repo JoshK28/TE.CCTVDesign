@@ -5,9 +5,9 @@ import { InputText } from 'primereact/inputtext';
 import api from '../services/api';
 
 export default function EquipmentSelector({ visible , onHide}) {
-
     const [cameras, setCameras  ] = useState([]); // 2. State camera DB data
     const [loading, setLoading] = useState(true);
+    const [searching, setSearch] = useState(false);
     const [filters, setFilters] = useState({
         searchQuery: '',
         manufacturer: null
@@ -15,15 +15,19 @@ export default function EquipmentSelector({ visible , onHide}) {
 
     const manufacturerOptions = [...new Set(cameras.map(c => c.brand))];
 
-    const fetchCameras = async () => {
+
+    const fetchCameras = async (overrideFilters = null) => {
         setLoading(true);
+
+        const activeFilters = overrideFilters || filters;
         try {
             const res = await api.get("/api/cameras", {
                 params: { 
-                    search: filters.searchQuery,
-                    manufacturer: filters.manufacturer
+                    search: activeFilters.searchQuery,
+                    brand: activeFilters.manufacturer
                 }
             });
+            console.log("Fetched cameras:", res);
             setCameras(res.data);
         } catch (err) {
             console.error("Fetch failed:", err);
@@ -32,15 +36,29 @@ export default function EquipmentSelector({ visible , onHide}) {
         }
     };
 
+    const resetParams = async () => {
+
+        const emptyFilters = { searchQuery: '', manufacturer: null };
+
+        setFilters(emptyFilters);
+        setSearch(false);
+        setCameras([]);
+
+        await fetchCameras(emptyFilters); 
+    };
+
     useEffect(() => {
-        fetchCameras();
+    fetchCameras(); 
     }, []);
 
     return (
         <Sidebar 
             visible={visible} 
             position="center" 
-            onHide={onHide}
+            onHide={() => {
+                onHide(); 
+                resetParams();}
+            }
             style={{ width: '500px' }}
         >
             <div className="test-section" style={{ marginTop: '20px', color: 'blue' }}>
@@ -55,7 +73,7 @@ export default function EquipmentSelector({ visible , onHide}) {
                     className="w-full"
                 />
 
-                <button className="p-button p-component p-button-outlined w-full mt-2" onClick={() => setFilters({ searchQuery: '', manufacturer: null })}>
+                <button className="p-button p-component p-button-outlined w-full mt-2" onClick={resetParams}>
                     Clear Filters
                 </button>
 
@@ -70,7 +88,8 @@ export default function EquipmentSelector({ visible , onHide}) {
                     className="w-full"
                 />
                 <br />
-                <button className="p-button p-component w-full" onClick={fetchCameras}>
+                <button className="p-button p-component w-full" onClick={() => {fetchCameras(); setSearch(true)}}
+                >
                     Fetch Equipment
                 </button>
                 
@@ -79,7 +98,12 @@ export default function EquipmentSelector({ visible , onHide}) {
                 <hr style={{ margin: '20px 0' }} />
                  {/* Display camera data */}
             </div>
-                {loading ? (
+                {!searching ? (
+                    // 1. Initial State: User hasn't clicked search yet
+                    <p className="text-center text-500">
+                        Enter search terms above to browse the catalog.
+                    </p>
+                ) :loading ? (
                     <p>Loading DB data...</p>
                 ) : cameras.length > 0 ? (
                     <div>
