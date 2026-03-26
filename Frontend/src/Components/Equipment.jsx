@@ -3,7 +3,7 @@ import { useState } from 'react';
 const getIcon = (type) => {
   switch (type) {
     case 'camera': return { icon: '📷' };
-    case 'server': return { icon: '🖥️' };
+    case 'router': return { icon: '🖥️' };
     case 'alarm': return { icon: '📡' };
     default:       return { icon: '❓' };
   }

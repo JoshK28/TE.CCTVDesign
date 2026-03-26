@@ -24,6 +24,7 @@ export default function Toolbar({ onSelectTool }) {
             icon: 'pi pi-plus',
             items: [[
                 {items: [{label: 'camera', template: draggableItem},
+                    {label: 'router', template: draggableItem},
                      {label: 'sensor', template: draggableItem},
                       {label: 'alarm', template: draggableItem}]}
                 ]]
