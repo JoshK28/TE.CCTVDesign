@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const getIconAppearance = (type) => {
+const getIcon = (type) => {
   switch (type) {
     case 'camera': return { icon: '📷' };
     case 'server': return { icon: '🖥️' };
@@ -9,17 +9,14 @@ const getIconAppearance = (type) => {
   }
 };
 
-function Equipment({ id, type, x, y, isSelected, onSelect , onUpdatePosition }) {
-  const { icon } = getIconAppearance(type);
-  
+function Equipment({ id, type, x, y, onSelect , onUpdatePosition }) {
+
   const [livePos, setLivePos] = useState({ x, y });
-  const [isDragging, setIsDragging] = useState(false);
 
 
   const handlePointerDown = (e) => {
     e.stopPropagation(); 
     onSelect(id);
-    setIsDragging(true);
 
     const startX = e.clientX - livePos.x;
     const startY = e.clientY - livePos.y;
@@ -32,8 +29,7 @@ function Equipment({ id, type, x, y, isSelected, onSelect , onUpdatePosition }) 
     };
 
     const handlePointerUp = (upEvent) => {
-      setIsDragging(false);
-      
+
       const finalX = upEvent.clientX - startX;
       const finalY = upEvent.clientY - startY;
       
@@ -58,13 +54,11 @@ function Equipment({ id, type, x, y, isSelected, onSelect , onUpdatePosition }) 
         top: livePos.y, 
         position: 'absolute', 
         transform: 'translate(-50%, -50%)',
-        cursor: isDragging ? 'grabbing' : 'grab', 
         userSelect: 'none',
         fontSize: '24px',
-        backgroundColor: isSelected ? 'rgb(0, 123, 255)' : 'transparent'
       }} 
     >
-      {icon}
+      {getIcon(type).icon}
     </div>
   );
 }

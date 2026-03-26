@@ -56,12 +56,10 @@ function Workspace({ imageSrc }) {
         />
         {equipment.map(equipment => (
           <Equipment
-            key={equipment.id}
             id={equipment.id}
             type={equipment.type}
             x={equipment.x}
             y={equipment.y}
-            isSelected={itemSelected === equipment.id}
             onSelect={setSelectedItem}
             onUpdatePosition={handleUpdatePosition}
           />
@@ -72,7 +70,6 @@ function Workspace({ imageSrc }) {
       <AttributesBar
         selectedItemId={itemSelected}
         equipment={equipment}
-        onClose={() => setSelectedItem(null)}
       />
     </div>
   );
