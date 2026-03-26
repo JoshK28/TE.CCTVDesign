@@ -2,7 +2,7 @@ import { Sidebar } from 'primereact/sidebar';
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 
-export default function EquipmentSelector({ visible }) {
+export default function EquipmentSelector({ visible , onHide}) {
 
     const [testCamera, setTestCamera] = useState(null); // 2. State for your DB camera
     const [loading, setLoading] = useState(true);
@@ -31,7 +31,7 @@ export default function EquipmentSelector({ visible }) {
             <Sidebar 
                 visible={visible} 
                 position="center" 
-                onHide={() => {}}
+                onHide={onHide}
                 style={{ width: '300px' }}
             >
                 <div className="test-section" style={{ marginTop: '20px', color: 'blue' }}>

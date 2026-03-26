@@ -10,6 +10,7 @@ function Workspace({ imageSrc }) {
   const [activeTool, setActiveTool] = useState(null);
   const [equipment, setEquipment] = useState([]);
   const [itemSelected, setSelectedItem] = useState(null);
+  const [displaySelector, setDisplaySelector] = useState(false);
 
   const handleNewItem = (event) => {
     event.preventDefault();
@@ -28,6 +29,7 @@ function Workspace({ imageSrc }) {
     const newId = Date.now();
     setEquipment(prev => [...prev, { id: newId, type: toolToPlace, x, y }]);
     setActiveTool(null);
+    setDisplaySelector(true);
   };
 
   const handleUpdatePosition = (id, newX, newY) => {
@@ -68,7 +70,9 @@ function Workspace({ imageSrc }) {
         <p className="item-count">Items Placed: {equipment.length}</p>
       </div>
       {/* DB Equipment Selector - TEMPORARY TEST COMPONENT*/}
-      <EquipmentSelector visible={itemSelected !== null} />
+      <EquipmentSelector visible={displaySelector} onHide={() => {
+        setDisplaySelector(false);
+      }} />
       {/* Right Attributes Bar */}
       <AttributesBar
         selectedItemId={itemSelected}
