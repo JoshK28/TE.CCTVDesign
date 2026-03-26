@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Toolbar from '../Components/Toolbar.jsx';
 import Equipment from '../Components/Equipment.jsx';
 import AttributesBar from '../Components/AttributesBar.jsx';
+import EquipmentSelector from '../Components/EquipmentSelector.jsx';
 import api from '../services/api';
 
 function Workspace({ imageSrc }) {
@@ -41,7 +42,7 @@ function Workspace({ imageSrc }) {
       <div className="toolbar-sidebar">
         <Toolbar onSelectTool={setActiveTool} />
       </div>
-
+      {/* Main Image Area */}
       <div
         className="image-fullscreen-wrapper"
         onClick={handleNewItem}
@@ -66,7 +67,9 @@ function Workspace({ imageSrc }) {
         ))}
         <p className="item-count">Items Placed: {equipment.length}</p>
       </div>
-
+      {/* DB Equipment Selector - TEMPORARY TEST COMPONENT*/}
+      <EquipmentSelector visible={itemSelected !== null} />
+      {/* Right Attributes Bar */}
       <AttributesBar
         selectedItemId={itemSelected}
         equipment={equipment}
