@@ -16,15 +16,29 @@ namespace Backend.Controllers
             _context = context;
         }
 
-        // handles GET requests to /api/cameras
-        // returns a list of all cameras in the database
-        [HttpGet]
-        public async Task<IActionResult> GetCameras()
+    [HttpGet]
+    // 1. Add these parameters so C# knows to look for them in the URL
+    public async Task<IActionResult> GetCameras([FromQuery] string? search, [FromQuery] string? brand)
+    {
+        // 2. Instead of getting the list immediately, create a "Queryable"
+        var query = _context.Cameras.AsQueryable();
+
+        // 3. Only apply the filter if the user actually typed something
+        if (!string.IsNullOrEmpty(search))
         {
-            // get all cameras from the database and return them
-            var cameras = await _context.Cameras.ToListAsync();
-            return Ok(cameras);
+            query = query.Where(c => c.ModelNumber.Contains(search));
         }
+
+        if (!string.IsNullOrEmpty(brand))
+        {
+            query = query.Where(c => c.Brand == brand);
+        }
+
+        // 4. NOW it executes the filtered SQL command
+        var cameras = await query.ToListAsync(); 
+        
+        return Ok(cameras);
+    }
 
         // handles GET requests to /api/cameras/{id}
         // returns a single camera based on the id provided
