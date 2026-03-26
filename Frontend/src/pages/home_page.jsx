@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import './home_page.css';
-
+import tePNGLogo from '../assets/tepng_logo.jpg';
 
 /*
 The Home component serves as the landing page for the CCTV Design Tool, providing users with options to navigate to the login or registration pages. 
@@ -10,11 +10,11 @@ function Home() {
   const navigate = useNavigate();
 
   return (
-    <div style={{ textAlign: "center", marginTop: "100px" }}>
-      <img src="tepng_logo.png" width="800" height="400" ></img> 
+    <div style={{ textAlign: "center", marginTop: "200px" }}>
+      <img src={tePNGLogo} width="750" height="300" ></img> 
       <h1>CCTV Design Tool</h1>
       <p>Please login or register to continue</p>
-      <div style={{ display: "flex", gap: "20px", justifyContent: "center", marginTop: "30px" }}>
+      <div style={{ display: "flex", gap: "50px", justifyContent: "center", marginTop: "30px" }}>
         
         <button 
         onClick={() => navigate("/login")}  

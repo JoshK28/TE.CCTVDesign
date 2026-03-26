@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import './register.css';
-
+import tePNGLogo from '../assets/tepng_logo.jpg';
 
 /*The Register component provides an interface for users to register and create an account for the CCTV Design Tool. It sends the registration details to the backend through an API call.
 */
@@ -39,7 +39,7 @@ function Register() {
 
   return (
     <div style={{ textAlign: "center", marginTop: "250px" }}>
-      <img src="tepng_logo.jpg" width="500" height="200"></img>
+      <img src={tePNGLogo} width="750" height="300"></img>
       <h2>Register</h2>
       <form style={{ display: "flex", gap: "20px", justifyContent: "center", marginTop: "30px" }} onSubmit={handleRegister} className="register-form">
         <input

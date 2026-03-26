@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import './login.css';
-
+import tePNGLogo from '../assets/tepng_logo.jpg';
 
 
 /*
@@ -38,7 +38,7 @@ function Login() {
 
   return (
     <div style={{ textAlign: "center", marginTop: "250px" }}>
-      <img src="tepng_logo.png" width="500" height="200"></img>
+      <img src={tePNGLogo} width="750" height="300"></img>
       <h2>Login</h2>
       <form style={{ display: "flex", gap: "20px", justifyContent: "center", marginTop: "30px" }} onSubmit={handleLogin} className="login-form">
         <input
