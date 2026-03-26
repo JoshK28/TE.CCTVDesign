@@ -54,6 +54,10 @@ export default function EquipmentSelector({ visible , onHide}) {
                     placeholder="Search equipment..." 
                     className="w-full"
                 />
+                                <button className="p-button p-component p-button-outlined w-full mt-2" onClick={() => setFilters({ searchQuery: '', manufacturer: null })}>
+                    Clear Filters
+                </button>
+
                 <br />
                 <label className="font-bold text-sm">Manufacturer : </label>
                 <Dropdown 
@@ -64,24 +68,29 @@ export default function EquipmentSelector({ visible , onHide}) {
                     showClear 
                     className="w-full"
                 />
+
                 
+
+                
+                <hr style={{ margin: '20px 0' }} />
+                 {/* Display camera data */}
             </div>
-                {/*
                 {loading ? (
                     <p>Loading DB data...</p>
-                ) : testCameras.length > 0 ? (
+                ) : cameras.length > 0 ? (
                     <div>
-                        {testCameras.map(camera => (
-                            <div key={camera.id}>
-                                <p><strong>DB ID:</strong> {camera.id}</p>
-                                <p><strong>DB Name:</strong> {camera.type || 'N/A'}</p>
+                        {/* We take only top 5 results */}
+                        {cameras.slice(0, 5).map(camera => (
+                            <div key={camera.id} style = {{ padding: '5px', borderBottom: '1px solid #ccc'}}>
+                                <p><strong>Camera Code:</strong> {camera.modelNumber}</p>
+                                <p >Brand: {camera.brand}</p>
+                                <p><strong>Camera Type:</strong> {camera.type || 'N/A'}</p>
                             </div>
                         ))}
                     </div>
                 ) : (
                     <p>No cameras found in DB.</p>
                 )}
-                */}
         </Sidebar>
     )
 }
