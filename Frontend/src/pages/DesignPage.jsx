@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import Toolbar from '../Components/Toolbar.jsx';
-import Equipment from '../Components/Equipment.jsx';
-import AttributesBar from '../Components/AttributesBar.jsx';
-import EquipmentSelector from '../Components/EquipmentSelector.jsx';
+import { Toolbar, Equipment, EquipmentSelector, AttributesBar } from '../Components/index';
 import api from '../services/api';
 
 function Workspace({ imageSrc }) {
