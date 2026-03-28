@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import './Dashboard.css';
 
 function Dashboard({ onLogout }) {
   const navigate = useNavigate();
