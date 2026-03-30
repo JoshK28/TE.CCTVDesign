@@ -9,11 +9,37 @@ function Workspace({ imageSrc }) {
   const [itemSelected, setSelectedItem] = useState(null);
   const [displaySelector, setDisplaySelector] = useState(false);
 
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [selectedCamera, setSelectedCamera] = useState(null);
+
+  const mockCameraSpecs = {
+    camera: {
+      model: "Generic Camera",
+      resolution: "2688 × 1520",
+      fov: { h: [103, 55], v: [83, 45], d: [120, 53] },
+      focalLength: "2.8mm"
+    }
+  };
+
+  const handleCameraDoubleClick = (id) => {
+    const item = equipment.find(e => e.id === id);
+    if (!item) return;
+
+    const camData = mockCameraSpecs[item.type] || mockCameraSpecs.camera;
+
+    setSelectedCamera({
+      ...camData,
+      x: item.x,
+      y: item.y
+    });
+
+    setShowCameraModal(true);
+  };
+
   const handleNewItem = (event) => {
     event.preventDefault();
 
     const toolToPlace = event.dataTransfer ? event.dataTransfer.getData('tool') : activeTool;
-
     if (!toolToPlace) {
       setSelectedItem(null);
       return;
@@ -30,23 +56,24 @@ function Workspace({ imageSrc }) {
   };
 
   const handleUpdatePosition = (id, newX, newY) => {
-    setEquipment(prev => prev.map(item =>
-      item.id === id ? { ...item, x: newX, y: newY } : item
-    ));
+    setEquipment(prev =>
+      prev.map(item =>
+        item.id === id ? { ...item, x: newX, y: newY } : item
+      )
+    );
   };
 
   return (
     <div className="design-workspace">
-      {/* Left Toolbar */}
       <div className="toolbar-sidebar">
         <Toolbar onSelectTool={setActiveTool} />
       </div>
-      {/* Main Image Area */}
+
       <div
         className="image-fullscreen-wrapper"
         onClick={handleNewItem}
         onDrop={handleNewItem}
-        onDragOver={(e) => { e.preventDefault(); }}
+        onDragOver={(e) => e.preventDefault()}
       >
         <img
           src={imageSrc}
@@ -54,34 +81,84 @@ function Workspace({ imageSrc }) {
           className="fullscreen-image"
           draggable="false"
         />
-        {equipment.map(equipment => (
+
+        {equipment.map(item => (
           <Equipment
-            id={equipment.id}
-            type={equipment.type}
-            x={equipment.x}
-            y={equipment.y}
+            key={item.id}
+            id={item.id}
+            type={item.type}
+            x={item.x}
+            y={item.y}
             onSelect={setSelectedItem}
             onUpdatePosition={handleUpdatePosition}
+            onDoubleClick={handleCameraDoubleClick}
           />
         ))}
+
         <p className="item-count">Items Placed: {equipment.length}</p>
       </div>
-      {/* DB Equipment Selector - TEMPORARY TEST COMPONENT*/}
-      <EquipmentSelector visible={displaySelector} onHide={() => {
-        setDisplaySelector(false);
-      }} />
-      {/* Right Attributes Bar */}
+
+      <EquipmentSelector
+        visible={displaySelector}
+        onHide={() => setDisplaySelector(false)}
+      />
+
       <AttributesBar
         selectedItemId={itemSelected}
         equipment={equipment}
       />
+
+      {showCameraModal && selectedCamera && (
+        <div
+          style={{
+            position: "absolute",
+            left: selectedCamera.x + 40,
+            top: selectedCamera.y - 20,
+            width: "260px",
+            height: "160px",
+            background: "white",
+            border: "1px solid #ccc",
+            borderRadius: "6px",
+            padding: "10px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            zIndex: 999
+          }}
+        >
+          <h4 style={{ margin: "0 0 8px 0" }}>Camera View</h4>
+
+          <div
+            style={{
+              width: "100%",
+              height: "90px",
+              background: "#000",
+              borderRadius: "4px",
+              marginBottom: "8px"
+            }}
+          />
+
+          <div style={{ fontSize: "12px", color: "#444" }}>
+            <div><strong>Model:</strong> {selectedCamera.model}</div>
+            <div><strong>FOV:</strong> {selectedCamera.fov.h[0]}°</div>
+          </div>
+
+          <button
+            onClick={() => setShowCameraModal(false)}
+            style={{
+              marginTop: "8px",
+              width: "100%",
+              padding: "4px",
+              fontSize: "12px",
+              cursor: "pointer"
+            }}
+          >
+            Close
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
-/*
-The DesignPage component is the main project page interface allowing users to place equipment such as cameras to uploaded floor plans.
-*/
 function DesignPage({ onLogout }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -110,7 +187,6 @@ function DesignPage({ onLogout }) {
         setFloorLayouts(res.data);
         setLoading(false);
       } catch (err) {
-        console.error("Failed to fetch floor layouts", err);
         setLoading(false);
       }
     };
@@ -130,18 +206,14 @@ function DesignPage({ onLogout }) {
 
   return (
     <div className="design-page-container">
-
-      {/* top bar with back button */}
       <div className="design-topbar">
         <button onClick={() => navigate('/app/projects')} className="back-button">
           &larr; Back to Project List
         </button>
       </div>
 
-      {/* image workspace area */}
       <Workspace imageSrc={currentImageSrc} />
 
-      {/* layer selector at bottom center - only shows if multiple layers NEEDS TO BE PUT INTO A CSS FILE I'VE ONLY INLINE CODE FOR NOW TO SEE AND TEST*/} 
       {floorLayouts.length > 1 && (
         <div style={{
           position: "fixed",

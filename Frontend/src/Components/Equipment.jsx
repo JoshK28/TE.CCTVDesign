@@ -9,13 +9,12 @@ const getIcon = (type) => {
   }
 };
 
-function Equipment({ id, type, x, y, onSelect , onUpdatePosition }) {
+function Equipment({ id, type, x, y, onSelect, onUpdatePosition, onDoubleClick }) {
 
   const [livePos, setLivePos] = useState({ x, y });
 
-
   const handlePointerDown = (e) => {
-    e.stopPropagation(); 
+    e.stopPropagation();
     onSelect(id);
 
     const startX = e.clientX - livePos.x;
@@ -29,11 +28,9 @@ function Equipment({ id, type, x, y, onSelect , onUpdatePosition }) {
     };
 
     const handlePointerUp = (upEvent) => {
-
       const finalX = upEvent.clientX - startX;
       const finalY = upEvent.clientY - startY;
-      
-      // Tell the parent database to permanently save these new coordinates
+
       onUpdatePosition(id, finalX, finalY);
 
       window.removeEventListener('pointermove', handlePointerMove);
@@ -49,14 +46,18 @@ function Equipment({ id, type, x, y, onSelect , onUpdatePosition }) {
       className="equipment"
       onPointerDown={handlePointerDown}
       onClick={(e) => e.stopPropagation()}
-      style={{ 
-        left: livePos.x, 
-        top: livePos.y, 
-        position: 'absolute', 
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        if (onDoubleClick) onDoubleClick(id);
+      }}
+      style={{
+        left: livePos.x,
+        top: livePos.y,
+        position: 'absolute',
         transform: 'translate(-50%, -50%)',
         userSelect: 'none',
         fontSize: '24px',
-      }} 
+      }}
     >
       {getIcon(type).icon}
     </div>
