@@ -9,13 +9,12 @@ const getIcon = (type) => {
   }
 };
 
-function Equipment({ id, type, x, y, onSelect, onUpdatePosition, onDoubleClick }) {
+function Equipment({ id, type, x, y, onSelect, onUpdatePosition, onSingleClick, onDoubleClick }) {
 
   const [livePos, setLivePos] = useState({ x, y });
 
   const handlePointerDown = (e) => {
     e.stopPropagation();
-    onSelect(id);
 
     const startX = e.clientX - livePos.x;
     const startY = e.clientY - livePos.y;
@@ -45,7 +44,12 @@ function Equipment({ id, type, x, y, onSelect, onUpdatePosition, onDoubleClick }
     <div
       className="equipment"
       onPointerDown={handlePointerDown}
-      onClick={(e) => e.stopPropagation()}
+      onMouseEnter={() => onSelect(id)}
+      onMouseLeave={() => onSelect(null)}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (onSingleClick) onSingleClick(id);
+      }}
       onDoubleClick={(e) => {
         e.stopPropagation();
         if (onDoubleClick) onDoubleClick(id);

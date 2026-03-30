@@ -21,7 +21,7 @@ function Workspace({ imageSrc }) {
     }
   };
 
-  const handleCameraDoubleClick = (id) => {
+  const openCameraPreview = (id) => {
     const item = equipment.find(e => e.id === id);
     if (!item) return;
 
@@ -89,9 +89,10 @@ function Workspace({ imageSrc }) {
             type={item.type}
             x={item.x}
             y={item.y}
-            onSelect={setSelectedItem}
+            onSelect={setSelectedItem}          // hover selects
             onUpdatePosition={handleUpdatePosition}
-            onDoubleClick={handleCameraDoubleClick}
+            onSingleClick={openCameraPreview}   // single-click opens preview
+            onDoubleClick={openCameraPreview}   // optional double-click
           />
         ))}
 
@@ -159,7 +160,7 @@ function Workspace({ imageSrc }) {
   );
 }
 
-function DesignPage({ onLogout }) {
+function DesignPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -187,6 +188,7 @@ function DesignPage({ onLogout }) {
         setFloorLayouts(res.data);
         setLoading(false);
       } catch (err) {
+        console.error("Failed to fetch floor layouts", err);
         setLoading(false);
       }
     };
