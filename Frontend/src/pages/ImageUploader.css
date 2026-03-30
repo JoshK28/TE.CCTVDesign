@@ -1,0 +1,28 @@
+.logout-button {
+ color:beige;
+}
+
+.remove-button {
+ color:beige;
+}
+
+.add-layer-button {
+ color:beige;
+}
+
+.cancel-button {
+ color:beige;
+}
+
+.cancel-button {
+ color:beige;
+}
+
+.upload-button {
+ color:beige;
+}
+
+.create-project-form {
+ display: "flex";
+  gap: "50px";
+}

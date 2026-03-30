@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import './ImageUploader.css';
 
 function ImageUploader({ onLogout }) {
   const navigate = useNavigate();
@@ -126,26 +127,26 @@ function ImageUploader({ onLogout }) {
   };
 
   return (
-    <div className="upload-view">
+    <div className="upload-view" style={{ textAlign: "center", marginTop: "100px" }}>
       <header className="App-header">
-        <h1>CCTV Design Tool</h1>
-        <button onClick={onLogout} className="logout-button">
+        <button onClick={onLogout} className="logout-button" style={{ display: "flex", gap: "10px", justifyContent: "center", marginleft: "30px" }}>
           Logout
         </button>
+        <h1>CCTV Design Tool</h1> 
       </header>
 
-      <div className="create-project-form">
+      <div className="create-project-form" style={{ display: "grid", gap: "10px", justifyContent: "center", marginleft: "70px" }}>
         <h2>Create Project</h2>
 
         {/* project details */}
-        <input
+        <input 
           type="text"
           placeholder="Project Name"
           value={projectName}
           onChange={(e) => setProjectName(e.target.value)}
           className="form-input"
         />
-        <input
+        <input 
           type="text"
           placeholder="Client Name"
           value={clientName}
@@ -173,15 +174,15 @@ function ImageUploader({ onLogout }) {
           onChange={(e) => setScale(e.target.value)}
           className="form-input"
         />
-
+      </div>
         {/* floor image layers */}
         {floorImages.map((layer, index) => (
-          <div key={index} className="layer-container">
+          <div key={index} className="layer-container" >
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <p>Layer {index + 1}</p>
 
               {/* file upload button */}
-              <input
+              <input 
                 type="file"
                 id={`floorImage-${index}`}
                 accept="image/png, image/jpeg"
@@ -217,7 +218,7 @@ function ImageUploader({ onLogout }) {
         ))}
 
         {/* add new layer button */}
-        <button onClick={handleAddLayer} className="add-layer-button">
+        <button onClick={handleAddLayer} className="add-layer-button" style={{gap: "10px", marginTop: "60px", justifyContent: "center" }}>
           Add New Layer
         </button>
 
@@ -226,16 +227,16 @@ function ImageUploader({ onLogout }) {
         {success && <p style={{ color: "green" }}>{success}</p>}
 
         {/* cancel and submit buttons */}
-        <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
+        <div style={{ display: "flex", gap: "10px", marginTop: "60px", justifyContent: "center" }}>
           <button onClick={handleCancel} className="cancel-button">
             Cancel
           </button>
-          <button onClick={handleSubmit} className="upload-button" disabled={loading}>
+          <button onClick={handleSubmit} className="upload-button" disabled={loading} style={{ display: "flex", gap: "10px", justifyContent: "center", marginleft: "30px" }}>
             {loading ? "Creating..." : "Create Project"}
           </button>
         </div>
       </div>
-    </div>
+  
   );
 }
 
