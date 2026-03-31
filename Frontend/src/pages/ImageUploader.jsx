@@ -134,11 +134,18 @@ function ImageUploader({ onLogout }) {
         </button>
       </header>
 
-      <div className="create-project-form">
+      <div className="create-project-form" style={{ 
+  display: "flex", 
+  flexDirection: "column", 
+  alignItems: "center", 
+  textAlign: "center",
+  marginTop: "20px" // Optional: gives it some breathing room from the header
+}}>
         <h2>Create Project</h2>
 
         {/* project details */}
-        <input
+        <div className="form-row" style={{padding: "15px"}}>
+        <input style={{marginRight: "15px"}}
           type="text"
           placeholder="Project Name"
           value={projectName}
@@ -152,14 +159,18 @@ function ImageUploader({ onLogout }) {
           onChange={(e) => setClientName(e.target.value)}
           className="form-input"
         />
-        <input
-          type="text"
+        </div>
+        <br/>
+        <textarea
           placeholder="Address"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           className="form-input"
+          style={{padding: "5px", width:"330px"}}
         />
-        <input
+        <br/>
+        <div className="form-row" style={{padding: "15px"}}>
+        <input style={{marginRight: "15px"}}
           type="text"
           placeholder="Description (optional)"
           value={description}
@@ -173,6 +184,7 @@ function ImageUploader({ onLogout }) {
           onChange={(e) => setScale(e.target.value)}
           className="form-input"
         />
+        </div>
 
         {/* floor image layers */}
         {floorImages.map((layer, index) => (

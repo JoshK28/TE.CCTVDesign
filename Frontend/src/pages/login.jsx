@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
-import './login.css';
+import './page_styling/login.css';
 import tePNGLogo from '../assets/tepng_logo.jpg';
 
 

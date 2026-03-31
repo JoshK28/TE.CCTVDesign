@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
-import './register.css';
+import './page_styling/register.css';
 import tePNGLogo from '../assets/tepng_logo.jpg';
 
 /*The Register component provides an interface for users to register and create an account for the CCTV Design Tool. It sends the registration details to the backend through an API call.
