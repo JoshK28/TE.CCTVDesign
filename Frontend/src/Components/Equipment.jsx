@@ -9,7 +9,7 @@ const getIcon = (type) => {
   }
 };
 
-function Equipment({ id, type, x, y, onSelect, onUpdatePosition, onSingleClick, onDoubleClick }) {
+function Equipment({ id, type, x, y, onSelect, onUpdatePosition, onDoubleClick }) {
 
   const [livePos, setLivePos] = useState({ x, y });
 
@@ -20,18 +20,20 @@ function Equipment({ id, type, x, y, onSelect, onUpdatePosition, onSingleClick, 
     const startY = e.clientY - livePos.y;
 
     const handlePointerMove = (moveEvent) => {
-      setLivePos({
-        x: moveEvent.clientX - startX,
-        y: moveEvent.clientY - startY
-      });
+      const newX = moveEvent.clientX - startX;
+      const newY = moveEvent.clientY - startY;
+
+      // Smooth visual movement
+      setLivePos({ x: newX, y: newY });
+
+      // NEW: live update to parent state
+      onUpdatePosition(id, newX, newY);
+
+      // Keep selected so AttributesBar updates live
+      onSelect(id);
     };
 
-    const handlePointerUp = (upEvent) => {
-      const finalX = upEvent.clientX - startX;
-      const finalY = upEvent.clientY - startY;
-
-      onUpdatePosition(id, finalX, finalY);
-
+    const handlePointerUp = () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
@@ -46,10 +48,6 @@ function Equipment({ id, type, x, y, onSelect, onUpdatePosition, onSingleClick, 
       onPointerDown={handlePointerDown}
       onMouseEnter={() => onSelect(id)}
       onMouseLeave={() => onSelect(null)}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (onSingleClick) onSingleClick(id);
-      }}
       onDoubleClick={(e) => {
         e.stopPropagation();
         if (onDoubleClick) onDoubleClick(id);
@@ -61,6 +59,7 @@ function Equipment({ id, type, x, y, onSelect, onUpdatePosition, onSingleClick, 
         transform: 'translate(-50%, -50%)',
         userSelect: 'none',
         fontSize: '24px',
+        cursor: 'grab'
       }}
     >
       {getIcon(type).icon}

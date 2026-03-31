@@ -89,10 +89,9 @@ function Workspace({ imageSrc }) {
             type={item.type}
             x={item.x}
             y={item.y}
-            onSelect={setSelectedItem}          // hover selects
+            onSelect={setSelectedItem}
             onUpdatePosition={handleUpdatePosition}
-            onSingleClick={openCameraPreview}   // single-click opens preview
-            onDoubleClick={openCameraPreview}   // optional double-click
+            onDoubleClick={openCameraPreview}
           />
         ))}
 
