@@ -56,7 +56,8 @@ function Login() {
           className="login-input"
         />
         <button type="submit" className="login-button">Login</button>
-        <a href="register">Forgot Password</a>
+        <br/>
+        <a href="register" style={{ color: "white" }}> Forgot Password?</a>
       </form>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
