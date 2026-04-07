@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import './login.css';
+import tePNGLogo from '../assets/tepng_logo.jpg';
 
 
 /*
@@ -35,22 +37,26 @@ function Login() {
   };
 
   return (
-    <div>
+    <div style={{ textAlign: "center", marginTop: "250px" }}>
+      <img src={tePNGLogo} width="750" height="300"></img>
       <h2>Login</h2>
-      <form onSubmit={handleLogin}>
+      <form style={{ display: "flex", gap: "20px", justifyContent: "center", marginTop: "30px" }} onSubmit={handleLogin} className="login-form">
         <input
           type="email"
           name="email"
           placeholder="Email"
           onChange={handleChange}
+          className="login-input"
         />
         <input
           type="password"
           name="password"
           placeholder="Password"
           onChange={handleChange}
+          className="login-input"
         />
-        <button type="submit">Login</button>
+        <button type="submit" className="login-button">Login</button>
+        <a href="register">Forgot Password</a>
       </form>
 
       {error && <p style={{ color: "red" }}>{error}</p>}

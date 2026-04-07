@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import Toolbar from '../Components/Toolbar.jsx';
-import Equipment from '../Components/Equipment.jsx';
-import AttributesBar from '../Components/AttributesBar.jsx';
+import { Toolbar, Equipment, EquipmentSelector, AttributesBar } from '../Components/index';
 import api from '../services/api';
 
 function Workspace({ imageSrc }) {
   const [activeTool, setActiveTool] = useState(null);
   const [equipment, setEquipment] = useState([]);
   const [itemSelected, setSelectedItem] = useState(null);
+  const [displaySelector, setDisplaySelector] = useState(false);
 
   const handleNewItem = (event) => {
     event.preventDefault();
@@ -27,6 +26,7 @@ function Workspace({ imageSrc }) {
     const newId = Date.now();
     setEquipment(prev => [...prev, { id: newId, type: toolToPlace, x, y }]);
     setActiveTool(null);
+    setDisplaySelector(true);
   };
 
   const handleUpdatePosition = (id, newX, newY) => {
@@ -41,7 +41,7 @@ function Workspace({ imageSrc }) {
       <div className="toolbar-sidebar">
         <Toolbar onSelectTool={setActiveTool} />
       </div>
-
+      {/* Main Image Area */}
       <div
         className="image-fullscreen-wrapper"
         onClick={handleNewItem}
@@ -56,23 +56,24 @@ function Workspace({ imageSrc }) {
         />
         {equipment.map(equipment => (
           <Equipment
-            key={equipment.id}
             id={equipment.id}
             type={equipment.type}
             x={equipment.x}
             y={equipment.y}
-            isSelected={itemSelected === equipment.id}
             onSelect={setSelectedItem}
             onUpdatePosition={handleUpdatePosition}
           />
         ))}
         <p className="item-count">Items Placed: {equipment.length}</p>
       </div>
-
+      {/* DB Equipment Selector - TEMPORARY TEST COMPONENT*/}
+      <EquipmentSelector visible={displaySelector} onHide={() => {
+        setDisplaySelector(false);
+      }} />
+      {/* Right Attributes Bar */}
       <AttributesBar
         selectedItemId={itemSelected}
         equipment={equipment}
-        onClose={() => setSelectedItem(null)}
       />
     </div>
   );
