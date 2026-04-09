@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Toolbar, Equipment, EquipmentSelector, AttributesBar } from '../Components/index';
 import api from '../services/api';
 
-function Workspace({ imageSrc, floorId, onSave }) {
+function Workspace({ imageSrc, floorId, onUnsavedChanges }) {
   const [activeTool, setActiveTool] = useState(null);
   const [equipment, setEquipment] = useState([]);
   const [itemSelected, setSelectedItem] = useState(null);
@@ -11,14 +11,12 @@ function Workspace({ imageSrc, floorId, onSave }) {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
 
-  // load existing placements when floor changes
   useEffect(() => {
     if (!floorId) return;
 
     const fetchPlacements = async () => {
       try {
         const res = await api.get(`/api/camerplacements/${floorId}`);
-        // convert saved placements back to equipment format
         const loaded = res.data.map(p => ({
           id: p.placementID,
           type: p.type,
@@ -53,15 +51,20 @@ function Workspace({ imageSrc, floorId, onSave }) {
     setEquipment(prev => [...prev, { id: newId, type: toolToPlace, x, y, rotation: 0 }]);
     setActiveTool(null);
     setDisplaySelector(true);
+
+    // mark unsaved changes
+    onUnsavedChanges(true);
   };
 
   const handleUpdatePosition = (id, newX, newY) => {
     setEquipment(prev => prev.map(item =>
       item.id === id ? { ...item, x: newX, y: newY } : item
     ));
+
+    // mark unsaved changes
+    onUnsavedChanges(true);
   };
 
-  // save all placements to the backend
   const handleSave = async () => {
     if (!floorId) {
       setSaveMessage("No floor layout selected");
@@ -72,7 +75,6 @@ function Workspace({ imageSrc, floorId, onSave }) {
     setSaveMessage("");
 
     try {
-      // convert equipment to placement format for backend
       const placements = equipment.map(item => ({
         floorID: floorId,
         x: item.x,
@@ -84,7 +86,9 @@ function Workspace({ imageSrc, floorId, onSave }) {
       await api.post(`/api/camerplacements/save/${floorId}`, placements);
       setSaveMessage("Saved successfully!");
 
-      // clear success message after 3 seconds
+      // clear unsaved changes after saving
+      onUnsavedChanges(false);
+
       setTimeout(() => setSaveMessage(""), 3000);
     } catch (err) {
       setSaveMessage("Failed to save");
@@ -191,6 +195,7 @@ function DesignPage({ onLogout }) {
   const [floorLayouts, setFloorLayouts] = useState([]);
   const [selectedLayer, setSelectedLayer] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
     if (imageSrcFromState) {
@@ -227,31 +232,35 @@ function DesignPage({ onLogout }) {
 
   if (!currentImageSrc) return <p>No floor layouts found for this project.</p>;
 
-  // get the current floor id for saving placements
   const currentFloorId = floorLayouts.length > 0
     ? floorLayouts[selectedLayer]?.floorID
     : null;
+
+  const handleBackButton = () => {
+    if (hasUnsavedChanges) {
+      const confirm = window.confirm("You have unsaved changes. Do you want to leave without saving?");
+      if (confirm) navigate('/app/projects');
+    } else {
+      navigate('/app/projects');
+    }
+  };
 
   return (
     <div className="design-page-container">
 
       {/* top bar with back button */}
       <div className="design-topbar">
-        <button 
-          onClick={() => {
-            const confirm = window.confirm("Make sure you have saved your work before leaving. Do you want to continue?");
-            if (confirm) {
-              navigate('/app/projects');
-            }
-          }} 
-          className="back-button"
-        >
+        <button onClick={handleBackButton} className="back-button">
           &larr; Back to Project List
         </button>
       </div>
 
-      {/* image workspace area - pass floorId for saving */}
-      <Workspace imageSrc={currentImageSrc} floorId={currentFloorId} />
+      {/* image workspace area */}
+      <Workspace
+        imageSrc={currentImageSrc}
+        floorId={currentFloorId}
+        onUnsavedChanges={setHasUnsavedChanges}
+      />
 
       {/* layer selector at bottom center */}
       {floorLayouts.length > 1 && (
