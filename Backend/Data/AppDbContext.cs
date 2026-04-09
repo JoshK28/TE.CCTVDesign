@@ -27,6 +27,10 @@ namespace Backend.Data
         // allows the app to read and write camera data
         public DbSet<Camera> Cameras => Set<Camera>();
 
+        // represents the Camera Placements table in the database
+        // allows the app to read and write the camera location
+        public DbSet<CameraPlacement> CameraPlacemens => Set<CameraPlacement>();
+
         // this method runs when the database is first being set up
         // it pre-fills the Cameras table with 21 HikVision cameras
         // so the data is automatically available without manual entry
