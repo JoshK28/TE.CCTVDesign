@@ -7,6 +7,8 @@ import Register from './pages/register';
 import Home from './pages/home_page';
 import Dashboard from './pages/Dashboard';
 import ProjectList from './pages/Project_list';
+import StorageCalculator from './pages/StorageCalculator';
+
 import './styles.css';
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 
@@ -28,8 +30,11 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        
 
         {/* protected routes - require login */}
+        <Route path="/app/calculator" element={isLoggedIn ? <StorageCalculator onLogout={handleLogout} />: <Navigate to="/login" replace />} />
+
         <Route
           path="/app/dashboard"
           element={isLoggedIn ? <Dashboard onLogout={handleLogout} /> : <Navigate to="/login" replace />}
