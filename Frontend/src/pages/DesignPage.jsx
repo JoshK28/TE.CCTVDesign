@@ -3,11 +3,37 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Toolbar, Equipment, EquipmentSelector, AttributesBar } from '../Components/index';
 import api from '../services/api';
 
-function Workspace({ imageSrc }) {
+function Workspace({ imageSrc, floorId, onSave }) {
   const [activeTool, setActiveTool] = useState(null);
   const [equipment, setEquipment] = useState([]);
   const [itemSelected, setSelectedItem] = useState(null);
   const [displaySelector, setDisplaySelector] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+
+  // load existing placements when floor changes
+  useEffect(() => {
+    if (!floorId) return;
+
+    const fetchPlacements = async () => {
+      try {
+        const res = await api.get(`/api/camerplacements/${floorId}`);
+        // convert saved placements back to equipment format
+        const loaded = res.data.map(p => ({
+          id: p.placementID,
+          type: p.type,
+          x: p.x,
+          y: p.y,
+          rotation: p.rotation
+        }));
+        setEquipment(loaded);
+      } catch (err) {
+        console.error("Failed to load placements", err);
+      }
+    };
+
+    fetchPlacements();
+  }, [floorId]);
 
   const handleNewItem = (event) => {
     event.preventDefault();
@@ -24,7 +50,7 @@ function Workspace({ imageSrc }) {
     const y = event.clientY - rect.top;
 
     const newId = Date.now();
-    setEquipment(prev => [...prev, { id: newId, type: toolToPlace, x, y }]);
+    setEquipment(prev => [...prev, { id: newId, type: toolToPlace, x, y, rotation: 0 }]);
     setActiveTool(null);
     setDisplaySelector(true);
   };
@@ -35,12 +61,45 @@ function Workspace({ imageSrc }) {
     ));
   };
 
+  // save all placements to the backend
+  const handleSave = async () => {
+    if (!floorId) {
+      setSaveMessage("No floor layout selected");
+      return;
+    }
+
+    setSaving(true);
+    setSaveMessage("");
+
+    try {
+      // convert equipment to placement format for backend
+      const placements = equipment.map(item => ({
+        floorID: floorId,
+        x: item.x,
+        y: item.y,
+        rotation: item.rotation || 0,
+        type: item.type
+      }));
+
+      await api.post(`/api/camerplacements/save/${floorId}`, placements);
+      setSaveMessage("Saved successfully!");
+
+      // clear success message after 3 seconds
+      setTimeout(() => setSaveMessage(""), 3000);
+    } catch (err) {
+      setSaveMessage("Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="design-workspace">
       {/* Left Toolbar */}
       <div className="toolbar-sidebar">
         <Toolbar onSelectTool={setActiveTool} />
       </div>
+
       {/* Main Image Area */}
       <div
         className="image-fullscreen-wrapper"
@@ -56,6 +115,7 @@ function Workspace({ imageSrc }) {
         />
         {equipment.map(equipment => (
           <Equipment
+            key={equipment.id}
             id={equipment.id}
             type={equipment.type}
             x={equipment.x}
@@ -65,11 +125,53 @@ function Workspace({ imageSrc }) {
           />
         ))}
         <p className="item-count">Items Placed: {equipment.length}</p>
+
+        {/* save button and message */}
+        <div style={{
+          position: "absolute",
+          top: "10px",
+          right: "10px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+          gap: "5px",
+          zIndex: 1005
+        }}>
+          <button
+            onClick={(e) => { e.stopPropagation(); handleSave(); }}
+            disabled={saving}
+            style={{
+              padding: "8px 20px",
+              backgroundColor: "#28a745",
+              color: "white",
+              border: "none",
+              borderRadius: "5px",
+              cursor: saving ? "not-allowed" : "pointer",
+              fontSize: "14px"
+            }}
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+          {saveMessage && (
+            <p style={{
+              backgroundColor: saveMessage.includes("Failed") ? "rgba(255,0,0,0.7)" : "rgba(0,0,0,0.6)",
+              color: "white",
+              padding: "5px 10px",
+              borderRadius: "5px",
+              fontSize: "13px",
+              margin: 0
+            }}>
+              {saveMessage}
+            </p>
+          )}
+        </div>
       </div>
-      {/* DB Equipment Selector - TEMPORARY TEST COMPONENT*/}
+
+      {/* DB Equipment Selector */}
       <EquipmentSelector visible={displaySelector} onHide={() => {
         setDisplaySelector(false);
       }} />
+
       {/* Right Attributes Bar */}
       <AttributesBar
         selectedItemId={itemSelected}
@@ -79,9 +181,6 @@ function Workspace({ imageSrc }) {
   );
 }
 
-/*
-The DesignPage component is the main project page interface allowing users to place equipment such as cameras to uploaded floor plans.
-*/
 function DesignPage({ onLogout }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -128,20 +227,33 @@ function DesignPage({ onLogout }) {
 
   if (!currentImageSrc) return <p>No floor layouts found for this project.</p>;
 
+  // get the current floor id for saving placements
+  const currentFloorId = floorLayouts.length > 0
+    ? floorLayouts[selectedLayer]?.floorID
+    : null;
+
   return (
     <div className="design-page-container">
 
       {/* top bar with back button */}
       <div className="design-topbar">
-        <button onClick={() => navigate('/app/projects')} className="back-button">
+        <button 
+          onClick={() => {
+            const confirm = window.confirm("Make sure you have saved your work before leaving. Do you want to continue?");
+            if (confirm) {
+              navigate('/app/projects');
+            }
+          }} 
+          className="back-button"
+        >
           &larr; Back to Project List
         </button>
       </div>
 
-      {/* image workspace area */}
-      <Workspace imageSrc={currentImageSrc} />
+      {/* image workspace area - pass floorId for saving */}
+      <Workspace imageSrc={currentImageSrc} floorId={currentFloorId} />
 
-      {/* layer selector at bottom center - only shows if multiple layers NEEDS TO BE PUT INTO A CSS FILE I'VE ONLY INLINE CODE FOR NOW TO SEE AND TEST*/} 
+      {/* layer selector at bottom center */}
       {floorLayouts.length > 1 && (
         <div style={{
           position: "fixed",
