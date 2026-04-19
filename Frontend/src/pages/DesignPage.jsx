@@ -9,6 +9,27 @@ function Workspace({ imageSrc }) {
   const [itemSelected, setSelectedItem] = useState(null);
   const [displaySelector, setDisplaySelector] = useState(false);
 
+  const updatePlacement = (id, patch) => {
+    setEquipment((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...patch } : item))
+    );
+  };
+
+  const updatePlacementAttributes = (id, attributesPatch) => {
+    setEquipment((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              attributes: { ...(item.attributes ?? {}), ...attributesPatch },
+            }
+          : item
+      )
+    );
+  };
+
+  const selectedItem = equipment.find((item) => item.id === itemSelected);
+
   const handleNewItem = (event) => {
     event.preventDefault();
 
@@ -24,15 +45,28 @@ function Workspace({ imageSrc }) {
     const y = event.clientY - rect.top;
 
     const newId = Date.now();
-    setEquipment(prev => [...prev, { id: newId, type: toolToPlace, x, y }]);
+    setEquipment((prev) => [
+      ...prev,
+      { id: newId, kind: toolToPlace, x, y, rotation: 0, attributes: {} },
+    ]);
+    setSelectedItem(newId);
     setActiveTool(null);
     setDisplaySelector(true);
   };
 
-  const handleUpdatePosition = (id, newX, newY) => {
-    setEquipment(prev => prev.map(item =>
-      item.id === id ? { ...item, x: newX, y: newY } : item
-    ));
+  const handleSelectCamera = (camera) => {
+    const targetId = itemSelected ?? equipment[equipment.length - 1]?.id;
+    if (!targetId) return;
+
+    updatePlacementAttributes(targetId, {
+      cameraId: camera.id,
+      cameraModel: camera.modelNumber,
+      brand: camera.brand,
+      resolution: camera.resolution,
+      cameraType: camera.type,
+    });
+
+    setDisplaySelector(false);
   };
 
   return (
@@ -54,26 +88,32 @@ function Workspace({ imageSrc }) {
           className="fullscreen-image"
           draggable="false"
         />
-        {equipment.map(equipment => (
+        {equipment.map((item) => (
           <Equipment
-            id={equipment.id}
-            type={equipment.type}
-            x={equipment.x}
-            y={equipment.y}
+            key={item.id}
+            id={item.id}
+            kind={item.kind}
+            x={item.x}
+            y={item.y}
+            rotation={item.rotation}
             onSelect={setSelectedItem}
-            onUpdatePosition={handleUpdatePosition}
+            onUpdatePlacement={updatePlacement}
           />
         ))}
         <p className="item-count">Items Placed: {equipment.length}</p>
       </div>
-      {/* DB Equipment Selector - TEMPORARY TEST COMPONENT*/}
-      <EquipmentSelector visible={displaySelector} onHide={() => {
-        setDisplaySelector(false);
-      }} />
+
+      <EquipmentSelector
+        visible={displaySelector}
+        onHide={() => {
+          setDisplaySelector(false);
+        }}
+        onSelectCamera={handleSelectCamera}
+      />
       {/* Right Attributes Bar */}
       <AttributesBar
-        selectedItemId={itemSelected}
-        equipment={equipment}
+        selectedItem={selectedItem}
+        onUpdateAttributes={updatePlacementAttributes}
       />
     </div>
   );
