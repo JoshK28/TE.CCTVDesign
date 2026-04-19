@@ -44,7 +44,8 @@ h2 {
   height: 40px;
 }
 
-.card {
+/* Unique class name — avoids clashing with PrimeReact/toolbar `.card`. */
+.auth-card {
   text-align: center;
   margin-top: 250px;
   align-content: center;
@@ -53,7 +54,7 @@ h2 {
   align-items: center;
 }
 
-.card div {
+.auth-card > div {
   background: #ffffffd9;
   padding: 69px 51px;
   border-radius: 29px;

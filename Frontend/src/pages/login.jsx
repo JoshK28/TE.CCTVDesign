@@ -35,9 +35,8 @@ function Login() {
       setError(err.response?.data || "Login failed");
     }
   };
-  /* html for login page , .*/
   return (
-    <div style={{ textAlign: "center", marginTop: "250px" }} className="card">
+    <div className="auth-card">
       <div>
         <img src={tePNGLogo} className="logo"></img>
         <form style={{ display: "flex", gap: "20px", justifyContent: "center", marginTop: "30px" }} onSubmit={handleLogin} className="login-form">
@@ -61,7 +60,7 @@ function Login() {
         </form>
 
         {error && <p style={{ color: "red" }}>{error}</p>}
-        </div>
+      </div>
     </div>
   );
 }

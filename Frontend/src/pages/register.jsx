@@ -38,7 +38,7 @@ function Register() {
   };
 
   return (
-    <div className="card">
+    <div className="auth-card">
       <div>
         <img src={tePNGLogo} alt="Logo" className="logo" />
         <h2>Register</h2>
