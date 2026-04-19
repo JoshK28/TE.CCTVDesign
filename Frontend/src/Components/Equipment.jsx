@@ -9,7 +9,7 @@ const getIcon = (type) => {
   }
 };
 
-function Equipment({ id, type, x, y, onSelect, onUpdatePosition, onDoubleClick }) {
+function Equipment({ id, type, x, y, onSelect, onUpdatePosition }) {
 
   const [livePos, setLivePos] = useState({ x, y });
 
@@ -23,13 +23,12 @@ function Equipment({ id, type, x, y, onSelect, onUpdatePosition, onDoubleClick }
       const newX = moveEvent.clientX - startX;
       const newY = moveEvent.clientY - startY;
 
-      // Smooth visual movement
       setLivePos({ x: newX, y: newY });
 
-      // NEW: live update to parent state
+      // Live update parent state
       onUpdatePosition(id, newX, newY);
 
-      // Keep selected so AttributesBar updates live
+      // Keep sidebar open and updating
       onSelect(id);
     };
 
@@ -46,11 +45,9 @@ function Equipment({ id, type, x, y, onSelect, onUpdatePosition, onDoubleClick }
     <div
       className="equipment"
       onPointerDown={handlePointerDown}
-      onMouseEnter={() => onSelect(id)}
-      onMouseLeave={() => onSelect(null)}
-      onDoubleClick={(e) => {
+      onClick={(e) => {
         e.stopPropagation();
-        if (onDoubleClick) onDoubleClick(id);
+        onSelect(id);
       }}
       style={{
         left: livePos.x,

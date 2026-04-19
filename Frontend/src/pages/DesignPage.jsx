@@ -9,33 +9,32 @@ function Workspace({ imageSrc }) {
   const [itemSelected, setSelectedItem] = useState(null);
   const [displaySelector, setDisplaySelector] = useState(false);
 
-  const [showCameraModal, setShowCameraModal] = useState(false);
-  const [selectedCamera, setSelectedCamera] = useState(null);
+  // -------------------------------------------------------
+  // FOV MATH (SVG polygon points)
+  // -------------------------------------------------------
+  function calculateFOVPoints(item) {
+    const { x, y, rotation, focalLength } = item;
 
-  const mockCameraSpecs = {
-    camera: {
-      model: "Generic Camera",
-      resolution: "2688 × 1520",
-      fov: { h: [103, 55], v: [83, 45], d: [120, 53] },
-      focalLength: "2.8mm"
-    }
-  };
+    const sensorWidth = 6.4;
+    const hfov = 2 * (Math.atan(sensorWidth / (2 * focalLength))) * (180 / Math.PI);
+    const halfAngle = hfov / 2;
+    const length = 300;
 
-  const openCameraPreview = (id) => {
-    const item = equipment.find(e => e.id === id);
-    if (!item) return;
+    const leftAngle = (rotation - halfAngle) * (Math.PI / 180);
+    const rightAngle = (rotation + halfAngle) * (Math.PI / 180);
 
-    const camData = mockCameraSpecs[item.type] || mockCameraSpecs.camera;
+    const x1 = x + length * Math.cos(leftAngle);
+    const y1 = y + length * Math.sin(leftAngle);
 
-    setSelectedCamera({
-      ...camData,
-      x: item.x,
-      y: item.y
-    });
+    const x2 = x + length * Math.cos(rightAngle);
+    const y2 = y + length * Math.sin(rightAngle);
 
-    setShowCameraModal(true);
-  };
+    return `${x},${y} ${x1},${y1} ${x2},${y2}`;
+  }
 
+  // -------------------------------------------------------
+  // PLACE NEW CAMERA
+  // -------------------------------------------------------
   const handleNewItem = (event) => {
     event.preventDefault();
 
@@ -50,11 +49,32 @@ function Workspace({ imageSrc }) {
     const y = event.clientY - rect.top;
 
     const newId = Date.now();
-    setEquipment(prev => [...prev, { id: newId, type: toolToPlace, x, y }]);
+    setEquipment(prev => [
+      ...prev,
+      {
+        id: newId,
+        type: toolToPlace,
+        x,
+        y,
+        name: "",
+        focalLength: 2.8,
+        height: 3,
+        tilt: 0,
+        rotation: 0,
+        resolution: "1080p",
+        irRange: 30,
+        notes: "",
+        fovColor: "rgba(0, 150, 255, 0.3)"   // default FOV colour
+      }
+    ]);
+
     setActiveTool(null);
     setDisplaySelector(true);
   };
 
+  // -------------------------------------------------------
+  // UPDATE POSITION
+  // -------------------------------------------------------
   const handleUpdatePosition = (id, newX, newY) => {
     setEquipment(prev =>
       prev.map(item =>
@@ -63,15 +83,27 @@ function Workspace({ imageSrc }) {
     );
   };
 
+  // -------------------------------------------------------
+  // UPDATE SETTINGS (Sidebar)
+  // -------------------------------------------------------
+  const handleUpdateSettings = (id, field, value) => {
+    setEquipment(prev =>
+      prev.map(item =>
+        item.id === id ? { ...item, [field]: value } : item
+      )
+    );
+  };
+
   return (
     <div className="design-workspace">
+
       <div className="toolbar-sidebar">
         <Toolbar onSelectTool={setActiveTool} />
       </div>
 
       <div
         className="image-fullscreen-wrapper"
-        onClick={handleNewItem}
+        onClick={() => setSelectedItem(null)}
         onDrop={handleNewItem}
         onDragOver={(e) => e.preventDefault()}
       >
@@ -82,6 +114,24 @@ function Workspace({ imageSrc }) {
           draggable="false"
         />
 
+        {/* -------------------------------------------------------
+            SVG FOV OVERLAY (draws the cone)
+        -------------------------------------------------------- */}
+        <svg className="fov-overlay">
+          {equipment.map(item => (
+            <polygon
+              key={item.id}
+              points={calculateFOVPoints(item)}
+              fill={item.fovColor}
+              stroke={item.fovColor}
+              strokeWidth="2"
+            />
+          ))}
+        </svg>
+
+
+
+        {/* CAMERA ICONS */}
         {equipment.map(item => (
           <Equipment
             key={item.id}
@@ -91,7 +141,6 @@ function Workspace({ imageSrc }) {
             y={item.y}
             onSelect={setSelectedItem}
             onUpdatePosition={handleUpdatePosition}
-            onDoubleClick={openCameraPreview}
           />
         ))}
 
@@ -106,55 +155,9 @@ function Workspace({ imageSrc }) {
       <AttributesBar
         selectedItemId={itemSelected}
         equipment={equipment}
+        onClose={() => setSelectedItem(null)}
+        onUpdateSettings={handleUpdateSettings}
       />
-
-      {showCameraModal && selectedCamera && (
-        <div
-          style={{
-            position: "absolute",
-            left: selectedCamera.x + 40,
-            top: selectedCamera.y - 20,
-            width: "260px",
-            height: "160px",
-            background: "white",
-            border: "1px solid #ccc",
-            borderRadius: "6px",
-            padding: "10px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-            zIndex: 999
-          }}
-        >
-          <h4 style={{ margin: "0 0 8px 0" }}>Camera View</h4>
-
-          <div
-            style={{
-              width: "100%",
-              height: "90px",
-              background: "#000",
-              borderRadius: "4px",
-              marginBottom: "8px"
-            }}
-          />
-
-          <div style={{ fontSize: "12px", color: "#444" }}>
-            <div><strong>Model:</strong> {selectedCamera.model}</div>
-            <div><strong>FOV:</strong> {selectedCamera.fov.h[0]}°</div>
-          </div>
-
-          <button
-            onClick={() => setShowCameraModal(false)}
-            style={{
-              marginTop: "8px",
-              width: "100%",
-              padding: "4px",
-              fontSize: "12px",
-              cursor: "pointer"
-            }}
-          >
-            Close
-          </button>
-        </div>
-      )}
     </div>
   );
 }
@@ -207,6 +210,7 @@ function DesignPage() {
 
   return (
     <div className="design-page-container">
+
       <div className="design-topbar">
         <button onClick={() => navigate('/app/projects')} className="back-button">
           &larr; Back to Project List

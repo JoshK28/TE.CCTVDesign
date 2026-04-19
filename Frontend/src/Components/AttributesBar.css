@@ -1,0 +1,53 @@
+.sidebar-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px; /* consistent spacing between sections */
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* spacing between label and input */
+}
+
+.slider-field {
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* sliders need more breathing room */
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: -10px;
+}
+
+.section-subtitle {
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 10px;
+  margin-bottom: -10px;
+}
+
+.readonly-value {
+  padding: 8px 10px;
+  background: #f4f4f4;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.slider-value {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.section-box {
+  padding: 14px;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
