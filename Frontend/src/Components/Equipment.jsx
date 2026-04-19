@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const getIcon = (kind) => {
   switch (kind) {
@@ -15,48 +15,49 @@ const getIcon = (kind) => {
   }
 };
 
-function Equipment({ id, kind, x, y, rotation = 0, onSelect, onUpdatePlacement }) {
+function Equipment({ placement, onSelect, onUpdatePlacement }) {
+  const { id, kind, x, y, rotation = 0 } = placement;
   const [livePos, setLivePos] = useState({ x, y });
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const isDraggingRef = useRef(false);
 
   useEffect(() => {
     setLivePos({ x, y });
   }, [x, y]);
 
-
   const handlePointerDown = (e) => {
-    e.stopPropagation(); 
+    e.stopPropagation();
     onSelect(id);
-
-    const startX = e.clientX - livePos.x;
-    const startY = e.clientY - livePos.y;
-
-    const handlePointerMove = (moveEvent) => {
-      setLivePos({
-        x: moveEvent.clientX - startX,
-        y: moveEvent.clientY - startY
-      });
+    isDraggingRef.current = true;
+    dragOffsetRef.current = {
+      x: e.clientX - livePos.x,
+      y: e.clientY - livePos.y,
     };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
 
-    const handlePointerUp = (upEvent) => {
+  const handlePointerMove = (e) => {
+    if (!isDraggingRef.current) return;
+    const { x: offsetX, y: offsetY } = dragOffsetRef.current;
+    setLivePos({
+      x: e.clientX - offsetX,
+      y: e.clientY - offsetY,
+    });
+  };
 
-      const finalX = upEvent.clientX - startX;
-      const finalY = upEvent.clientY - startY;
-      
-      // Persist updated coordinates into shared placement state.
-      onUpdatePlacement(id, { x: finalX, y: finalY });
-
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
-    };
-
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
+  const handlePointerUp = (e) => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    onUpdatePlacement(id, { x: livePos.x, y: livePos.y });
   };
 
   return (
     <div
       className="equipment"
       onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
       onClick={(e) => e.stopPropagation()}
       style={{
         left: livePos.x,

@@ -6,7 +6,7 @@ import api from '../services/api';
 function Workspace({ imageSrc }) {
   const [activeTool, setActiveTool] = useState(null);
   const [equipment, setEquipment] = useState([]);
-  const [itemSelected, setSelectedItem] = useState(null);
+  const [selectedItemId, setSelectedItemId] = useState(null);
   const [displaySelector, setDisplaySelector] = useState(false);
 
   const updatePlacement = (id, patch) => {
@@ -28,7 +28,7 @@ function Workspace({ imageSrc }) {
     );
   };
 
-  const selectedItem = equipment.find((item) => item.id === itemSelected);
+  const selectedItem = equipment.find((item) => item.id === selectedItemId);
 
   const handleNewItem = (event) => {
     event.preventDefault();
@@ -36,7 +36,7 @@ function Workspace({ imageSrc }) {
     const toolToPlace = event.dataTransfer ? event.dataTransfer.getData('tool') : activeTool;
 
     if (!toolToPlace) {
-      setSelectedItem(null);
+      setSelectedItemId(null);
       return;
     }
 
@@ -49,13 +49,13 @@ function Workspace({ imageSrc }) {
       ...prev,
       { id: newId, kind: toolToPlace, x, y, rotation: 0, attributes: {} },
     ]);
-    setSelectedItem(newId);
+    setSelectedItemId(newId);
     setActiveTool(null);
     setDisplaySelector(true);
   };
 
   const handleSelectCamera = (camera) => {
-    const targetId = itemSelected ?? equipment[equipment.length - 1]?.id;
+    const targetId = selectedItemId ?? equipment[equipment.length - 1]?.id;
     if (!targetId) return;
 
     updatePlacementAttributes(targetId, {
@@ -65,8 +65,6 @@ function Workspace({ imageSrc }) {
       resolution: camera.resolution,
       cameraType: camera.type,
     });
-
-    setDisplaySelector(false);
   };
 
   return (
@@ -91,12 +89,8 @@ function Workspace({ imageSrc }) {
         {equipment.map((item) => (
           <Equipment
             key={item.id}
-            id={item.id}
-            kind={item.kind}
-            x={item.x}
-            y={item.y}
-            rotation={item.rotation}
-            onSelect={setSelectedItem}
+            deviceInstance={item}
+            onSelect={setSelectedItemId}
             onUpdatePlacement={updatePlacement}
           />
         ))}
@@ -122,7 +116,7 @@ function Workspace({ imageSrc }) {
 /*
 The DesignPage component is the main project page interface allowing users to place equipment such as cameras to uploaded floor plans.
 */
-function DesignPage({ onLogout }) {
+function DesignPage() {
   const location = useLocation();
   const navigate = useNavigate();
 

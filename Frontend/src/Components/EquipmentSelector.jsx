@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from 'primereact/sidebar';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
@@ -17,7 +17,7 @@ export default function EquipmentSelector({ visible, onHide, onSelectCamera }) {
     const manufacturerOptions = [...new Set(cameras.map(c => c.brand))];
 
 
-    const fetchCameras = async (overrideFilters = null) => {
+    const fetchCameras = useCallback(async (overrideFilters = null) => {
         setLoading(true);
 
         const activeFilters = overrideFilters || filters;
@@ -35,7 +35,7 @@ export default function EquipmentSelector({ visible, onHide, onSelectCamera }) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filters]);
 
     const resetParams = async () => {
 
@@ -56,7 +56,7 @@ export default function EquipmentSelector({ visible, onHide, onSelectCamera }) {
 
     useEffect(() => {
     fetchCameras(); 
-    }, []);
+    }, [fetchCameras]);
 
     return (
         <Sidebar 
