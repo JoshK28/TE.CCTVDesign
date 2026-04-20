@@ -3,9 +3,109 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Toolbar, Equipment, EquipmentSelector, AttributesBar, WallDrawingLayer } from '../Components/index';
 import api from '../services/api';
 
+const DEFAULT_CAMERA_SETTINGS = {
+  name: "",
+  focalLength: 2.8,
+  height: 3,
+  tilt: 0,
+  rotation: 0,
+  resolution: "1080p",
+  irRange: 30,
+  notes: "",
+  fovOpacity: 0.3,
+  fovColor: "rgba(0, 150, 255, 0.3)",
+  attributes: {},
+};
+
+const FOV_SENSOR_WIDTH = 6.4;
+const FOV_MAX_DISTANCE = 300;
+const FOV_RAY_COUNT = 48;
+const RAY_EPSILON = 1e-6;
+
+const updateItemById = (items, id, patch) =>
+  items.map((item) => (item.id === id ? { ...item, ...patch } : item));
+
+const updateItemAttributesById = (items, id, attributesPatch) =>
+  items.map((item) =>
+    item.id === id
+      ? { ...item, attributes: { ...(item.attributes ?? {}), ...attributesPatch } }
+      : item
+  );
+
+const createDevice = (tool, x, y) => ({
+  id: Date.now(),
+  kind: tool,
+  type: tool,
+  x,
+  y,
+  ...DEFAULT_CAMERA_SETTINGS,
+});
+
+const getRayWallIntersection = (origin, direction, maxDistance, wall) => {
+  const sx = wall.x2 - wall.x1;
+  const sy = wall.y2 - wall.y1;
+  const cross = direction.x * sy - direction.y * sx;
+
+  if (Math.abs(cross) < RAY_EPSILON) return null;
+
+  const qpx = wall.x1 - origin.x;
+  const qpy = wall.y1 - origin.y;
+  const t = (qpx * sy - qpy * sx) / cross;
+  const u = (qpx * direction.y - qpy * direction.x) / cross;
+
+  if (t < 0 || t > maxDistance || u < 0 || u > 1) return null;
+
+  return {
+    x: origin.x + direction.x * t,
+    y: origin.y + direction.y * t,
+    distance: t,
+  };
+};
+
+const castRayWithWalls = (origin, angle, maxDistance, walls) => {
+  const direction = { x: Math.cos(angle), y: Math.sin(angle) };
+  let closest = {
+    x: origin.x + direction.x * maxDistance,
+    y: origin.y + direction.y * maxDistance,
+    distance: maxDistance,
+  };
+
+  for (const wall of walls) {
+    const hit = getRayWallIntersection(origin, direction, maxDistance, wall);
+    if (hit && hit.distance < closest.distance) {
+      closest = hit;
+    }
+  }
+
+  return closest;
+};
+
+const calculateFovPolygon = (item, walls) => {
+  const x = item.x ?? 0;
+  const y = item.y ?? 0;
+  const rotation = item.rotation ?? 0;
+  const focalLength = item.focalLength ?? DEFAULT_CAMERA_SETTINGS.focalLength;
+  const hfov = 2 * Math.atan(FOV_SENSOR_WIDTH / (2 * focalLength)) * (180 / Math.PI);
+  const halfAngle = hfov / 2;
+  const leftAngle = (rotation - halfAngle) * (Math.PI / 180);
+  const rightAngle = (rotation + halfAngle) * (Math.PI / 180);
+  const origin = { x, y };
+
+  const points = [`${x},${y}`];
+  for (let i = 0; i <= FOV_RAY_COUNT; i += 1) {
+    const ratio = i / FOV_RAY_COUNT;
+    const angle = leftAngle + (rightAngle - leftAngle) * ratio;
+    const hitPoint = castRayWithWalls(origin, angle, FOV_MAX_DISTANCE, walls);
+    points.push(`${hitPoint.x},${hitPoint.y}`);
+  }
+
+  return points.join(' ');
+};
+
 function Workspace({ imageSrc }) {
   const [activeTool, setActiveTool] = useState(null);
   const [equipment, setEquipment] = useState([]);
+  const [walls, setWalls] = useState([]);
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [displaySelector, setDisplaySelector] = useState(false);
 
@@ -22,45 +122,18 @@ function Workspace({ imageSrc }) {
   }, [activeTool]);
 
   const updatePlacement = (id, patch) => {
-    setEquipment((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...patch } : item))
-    );
+    setEquipment((prev) => updateItemById(prev, id, patch));
   };
 
   const updatePlacementAttributes = (id, attributesPatch) => {
-    setEquipment((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              attributes: { ...(item.attributes ?? {}), ...attributesPatch },
-            }
-          : item
-      )
-    );
+    setEquipment((prev) => updateItemAttributesById(prev, id, attributesPatch));
+  };
+
+  const handleAddWall = (wall) => {
+    setWalls((prev) => [...prev, wall]);
   };
 
   const selectedItem = equipment.find((item) => item.id === selectedItemId);
-  const calculateFOVPoints = (item) => {
-    const x = item.x ?? 0;
-    const y = item.y ?? 0;
-    const rotation = item.rotation ?? 0;
-    const focalLength = item.focalLength ?? 2.8;
-    const sensorWidth = 6.4;
-    const hfov = 2 * Math.atan(sensorWidth / (2 * focalLength)) * (180 / Math.PI);
-    const halfAngle = hfov / 2;
-    const length = 300;
-
-    const leftAngle = (rotation - halfAngle) * (Math.PI / 180);
-    const rightAngle = (rotation + halfAngle) * (Math.PI / 180);
-
-    const x1 = x + length * Math.cos(leftAngle);
-    const y1 = y + length * Math.sin(leftAngle);
-    const x2 = x + length * Math.cos(rightAngle);
-    const y2 = y + length * Math.sin(rightAngle);
-
-    return `${x},${y} ${x1},${y1} ${x2},${y2}`;
-  };
   const handleNewItem = (event) => {
     event.preventDefault();
 
@@ -75,29 +148,9 @@ function Workspace({ imageSrc }) {
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
-    const newId = Date.now();
-    setEquipment((prev) => [
-      ...prev,
-      {
-        id: newId,
-        kind: toolToPlace,
-        type: toolToPlace,
-        x,
-        y,
-        name: "",
-        focalLength: 2.8,
-        height: 3,
-        tilt: 0,
-        rotation: 0,
-        resolution: "1080p",
-        irRange: 30,
-        notes: "",
-        fovOpacity: 0.3,
-        fovColor: "rgba(0, 150, 255, 0.3)",
-        attributes: {},
-      },
-    ]);
-    setSelectedItemId(newId);
+    const newDevice = createDevice(toolToPlace, x, y);
+    setEquipment((prev) => [...prev, newDevice]);
+    setSelectedItemId(newDevice.id);
     setActiveTool(null);
     setDisplaySelector(true);
   };
@@ -149,7 +202,7 @@ function Workspace({ imageSrc }) {
             .map((item) => (
             <polygon
               key={item.id}
-              points={calculateFOVPoints(item)}
+              points={calculateFovPolygon(item, walls)}
               fill={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
               stroke={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
               strokeWidth="2"
@@ -165,7 +218,7 @@ function Workspace({ imageSrc }) {
             onUpdatePlacement={updatePlacement}
           />
         ))}
-        <WallDrawingLayer activeTool={activeTool} />
+        <WallDrawingLayer activeTool={activeTool} walls={walls} onAddWall={handleAddWall} />
         <p className="item-count">Items Placed: {equipment.length}</p>
       </div>
 

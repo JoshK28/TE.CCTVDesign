@@ -1,7 +1,6 @@
 import { useState } from 'react';
 
-export default function WallDrawingLayer({ activeTool }) {
-  const [walls, setWalls] = useState([]);
+export default function WallDrawingLayer({ activeTool, walls, onAddWall }) {
   const [draftWall, setDraftWall] = useState(null);
   const wallModeActive = activeTool === 'wall';
 
@@ -32,7 +31,7 @@ export default function WallDrawingLayer({ activeTool }) {
     event.stopPropagation();
     const length = Math.hypot(draftWall.x2 - draftWall.x1, draftWall.y2 - draftWall.y1);
     if (length >= 6) {
-      setWalls((prev) => [...prev, { id: Date.now(), ...draftWall }]);
+      onAddWall?.({ id: Date.now(), ...draftWall });
     }
     setDraftWall(null);
   };
