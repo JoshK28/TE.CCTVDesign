@@ -149,6 +149,7 @@
 .wall-draw-capture.is-active {
   pointer-events: auto;
   cursor: crosshair;
+  background: rgba(90, 90, 90, 0.28);
 }
 
 html, body, #root {
