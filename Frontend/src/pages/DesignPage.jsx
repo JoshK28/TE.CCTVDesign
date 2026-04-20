@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Toolbar, Equipment, EquipmentSelector, AttributesBar, WallDrawingLayer } from '../Components/index';
 import api from '../services/api';
+import { calculateFovPolygon } from '../utils/fov';
 
 const DEFAULT_CAMERA_SETTINGS = {
   name: "",
@@ -16,11 +17,6 @@ const DEFAULT_CAMERA_SETTINGS = {
   fovColor: "rgba(0, 150, 255, 0.3)",
   attributes: {},
 };
-
-const FOV_SENSOR_WIDTH = 6.4;
-const FOV_MAX_DISTANCE = 300;
-const FOV_RAY_COUNT = 48;
-const RAY_EPSILON = 1e-6;
 
 const updateItemById = (items, id, patch) =>
   items.map((item) => (item.id === id ? { ...item, ...patch } : item));
@@ -40,67 +36,6 @@ const createDevice = (tool, x, y) => ({
   y,
   ...DEFAULT_CAMERA_SETTINGS,
 });
-
-const getRayWallIntersection = (origin, direction, maxDistance, wall) => {
-  const sx = wall.x2 - wall.x1;
-  const sy = wall.y2 - wall.y1;
-  const cross = direction.x * sy - direction.y * sx;
-
-  if (Math.abs(cross) < RAY_EPSILON) return null;
-
-  const qpx = wall.x1 - origin.x;
-  const qpy = wall.y1 - origin.y;
-  const t = (qpx * sy - qpy * sx) / cross;
-  const u = (qpx * direction.y - qpy * direction.x) / cross;
-
-  if (t < 0 || t > maxDistance || u < 0 || u > 1) return null;
-
-  return {
-    x: origin.x + direction.x * t,
-    y: origin.y + direction.y * t,
-    distance: t,
-  };
-};
-
-const castRayWithWalls = (origin, angle, maxDistance, walls) => {
-  const direction = { x: Math.cos(angle), y: Math.sin(angle) };
-  let closest = {
-    x: origin.x + direction.x * maxDistance,
-    y: origin.y + direction.y * maxDistance,
-    distance: maxDistance,
-  };
-
-  for (const wall of walls) {
-    const hit = getRayWallIntersection(origin, direction, maxDistance, wall);
-    if (hit && hit.distance < closest.distance) {
-      closest = hit;
-    }
-  }
-
-  return closest;
-};
-
-const calculateFovPolygon = (item, walls) => {
-  const x = item.x ?? 0;
-  const y = item.y ?? 0;
-  const rotation = item.rotation ?? 0;
-  const focalLength = item.focalLength ?? DEFAULT_CAMERA_SETTINGS.focalLength;
-  const hfov = 2 * Math.atan(FOV_SENSOR_WIDTH / (2 * focalLength)) * (180 / Math.PI);
-  const halfAngle = hfov / 2;
-  const leftAngle = (rotation - halfAngle) * (Math.PI / 180);
-  const rightAngle = (rotation + halfAngle) * (Math.PI / 180);
-  const origin = { x, y };
-
-  const points = [`${x},${y}`];
-  for (let i = 0; i <= FOV_RAY_COUNT; i += 1) {
-    const ratio = i / FOV_RAY_COUNT;
-    const angle = leftAngle + (rightAngle - leftAngle) * ratio;
-    const hitPoint = castRayWithWalls(origin, angle, FOV_MAX_DISTANCE, walls);
-    points.push(`${hitPoint.x},${hitPoint.y}`);
-  }
-
-  return points.join(' ');
-};
 
 function Workspace({ imageSrc }) {
   const [activeTool, setActiveTool] = useState(null);
