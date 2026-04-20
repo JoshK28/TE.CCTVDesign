@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Toolbar, Equipment, EquipmentSelector, AttributesBar } from '../Components/index';
+import { Toolbar, Equipment, EquipmentSelector, AttributesBar, WallDrawingLayer } from '../Components/index';
 import api from '../services/api';
 
 function Workspace({ imageSrc }) {
@@ -34,6 +34,7 @@ function Workspace({ imageSrc }) {
     event.preventDefault();
 
     const toolToPlace = event.dataTransfer ? event.dataTransfer.getData('tool') : activeTool;
+    if (toolToPlace === 'wall') return;
 
     if (!toolToPlace) {
       setSelectedItemId(null);
@@ -94,6 +95,7 @@ function Workspace({ imageSrc }) {
             onUpdatePlacement={updatePlacement}
           />
         ))}
+        <WallDrawingLayer activeTool={activeTool} />
         <p className="item-count">Items Placed: {equipment.length}</p>
       </div>
 
