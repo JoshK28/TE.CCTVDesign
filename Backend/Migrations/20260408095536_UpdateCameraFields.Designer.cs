@@ -3,6 +3,7 @@ using Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260408095536_UpdateCameraFields")]
+    partial class UpdateCameraFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -495,43 +498,6 @@ namespace Backend.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Backend.Models.CameraPlacement", b =>
-                {
-                    b.Property<int>("PlacementID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PlacementID"));
-
-                    b.Property<int>("CameraId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("FloorID")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("FloorLayoutFloorID")
-                        .HasColumnType("int");
-
-                    b.Property<double>("Rotation")
-                        .HasColumnType("float");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<double>("X")
-                        .HasColumnType("float");
-
-                    b.Property<double>("Y")
-                        .HasColumnType("float");
-
-                    b.HasKey("PlacementID");
-
-                    b.HasIndex("FloorLayoutFloorID");
-
-                    b.ToTable("CameraPlacemens");
-                });
-
             modelBuilder.Entity("Backend.Models.FloorLayout", b =>
                 {
                     b.Property<int>("FloorID")
@@ -631,15 +597,6 @@ namespace Backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("Backend.Models.CameraPlacement", b =>
-                {
-                    b.HasOne("Backend.Models.FloorLayout", "FloorLayout")
-                        .WithMany()
-                        .HasForeignKey("FloorLayoutFloorID");
-
-                    b.Navigation("FloorLayout");
                 });
 
             modelBuilder.Entity("Backend.Models.FloorLayout", b =>

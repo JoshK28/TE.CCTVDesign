@@ -32,14 +32,6 @@ function Home() {
             >
               Register
             </button>
-
-            {/* Testing button for dev purposes only */}
-            <button 
-              onClick={() => navigate("/imageUploader")} 
-              className="testing-button"
-            >
-              Image Uploader (Test)
-            </button>
           </div>
         </div>
       </div>

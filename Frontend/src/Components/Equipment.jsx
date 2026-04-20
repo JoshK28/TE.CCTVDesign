@@ -1,17 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-const getIcon = (type) => {
-  switch (type) {
-    case 'camera': return { icon: '📷' };
-    case 'router': return { icon: '🖥️' };
-    case 'alarm': return { icon: '📡' };
-    default:       return { icon: '❓' };
+const getIcon = (kind) => {
+  switch (kind) {
+    case 'camera':
+      return { icon: '📷' };
+    case 'router':
+      return { icon: '🖥️' };
+    case 'sensor':
+      return { icon: '📡' };
+    case 'alarm':
+      return { icon: '🔔' };
+    default:
+      return { icon: '❓' };
   }
 };
 
-function Equipment({ id, type, x, y, onSelect, onUpdatePosition }) {
-
+function Equipment({ deviceInstance, onSelect, onUpdatePlacement }) {
+  const { id, kind, x, y, rotation = 0 } = deviceInstance;
   const [livePos, setLivePos] = useState({ x, y });
+
+  useEffect(() => {
+    setLivePos({ x, y });
+  }, [x, y]);
 
   const handlePointerDown = (e) => {
     e.stopPropagation();
@@ -26,13 +36,18 @@ function Equipment({ id, type, x, y, onSelect, onUpdatePosition }) {
       setLivePos({ x: newX, y: newY });
 
       // Live update parent state
-      onUpdatePosition(id, newX, newY);
+      onUpdatePlacement(id, { x: newX, y: newY });
 
       // Keep sidebar open and updating
       onSelect(id);
     };
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (upEvent) => {
+      const finalX = upEvent.clientX - startX;
+      const finalY = upEvent.clientY - startY;
+
+      // Persist updated coordinates into shared placement state.
+      onUpdatePlacement(id, { x: finalX, y: finalY });
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
@@ -53,13 +68,13 @@ function Equipment({ id, type, x, y, onSelect, onUpdatePosition }) {
         left: livePos.x,
         top: livePos.y,
         position: 'absolute',
-        transform: 'translate(-50%, -50%)',
+        transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
         userSelect: 'none',
         fontSize: '24px',
         cursor: 'grab'
       }}
     >
-      {getIcon(type).icon}
+      {getIcon(kind).icon}
     </div>
   );
 }

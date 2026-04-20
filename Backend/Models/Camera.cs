@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Backend.Models
 {
     // this class represents a camera in the database
@@ -28,5 +30,19 @@ namespace Backend.Models
 
         // the lens size of the camera e.g. 2.8mm, Varifocal
         public string LensSize { get; set; } = string.Empty;
+
+        // the lens type of the camera
+        public string LensType { get; set; } = string.Empty;
+
+
+         // FOV split into 3 separate columns
+        public string FovHorizontal { get; set; } = string.Empty;
+        public string FovVertical { get; set; } = string.Empty;
+        public string FovDiagonal { get; set; } = string.Empty;
+
+        public string IrRange { get; set; } = string.Empty;
+        public string Aperture { get; set; } = string.Empty;
+        public string OperatingTemp { get; set; } = string.Empty;
+        public string Price { get; set; } = string.Empty;
     }
 }

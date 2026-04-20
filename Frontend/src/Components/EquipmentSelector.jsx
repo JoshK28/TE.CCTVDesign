@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from 'primereact/sidebar';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import api from '../services/api';
 
-export default function EquipmentSelector({ visible , onHide}) {
+export default function EquipmentSelector({ visible, onHide, onSelectCamera }) {
     const [cameras, setCameras  ] = useState([]); // 2. State camera DB data
     const [loading, setLoading] = useState(true);
     const [searching, setSearch] = useState(false);
@@ -17,7 +17,7 @@ export default function EquipmentSelector({ visible , onHide}) {
     const manufacturerOptions = [...new Set(cameras.map(c => c.brand))];
 
 
-    const fetchCameras = async (overrideFilters = null) => {
+    const fetchCameras = useCallback(async (overrideFilters = null) => {
         setLoading(true);
 
         const activeFilters = overrideFilters || filters;
@@ -35,7 +35,7 @@ export default function EquipmentSelector({ visible , onHide}) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filters]);
 
     const resetParams = async () => {
 
@@ -48,20 +48,21 @@ export default function EquipmentSelector({ visible , onHide}) {
         await fetchCameras(emptyFilters); 
     };
 
+    const closeSelector = () => {
+        onHide();
+        resetParams();
+    };
 
 
     useEffect(() => {
     fetchCameras(); 
-    }, []);
+    }, [fetchCameras]);
 
     return (
         <Sidebar 
             visible={visible} 
             position="center" 
-            onHide={() => {
-                onHide(); 
-                resetParams();}
-            }
+            onHide={closeSelector}
             style={{ width: '500px' }}
         >
             <div className="test-section" style={{ marginTop: '20px', color: 'blue' }}>
@@ -121,10 +122,13 @@ export default function EquipmentSelector({ visible , onHide}) {
                                 <p ><strong>Brand:</strong> {camera.brand}</p>
                                 <p><strong>Camera Type:</strong> {camera.type || 'N/A'}</p>
 
-                                {/* This button just for visual purpose currently */}
+                                {/* Apply this camera to the active placement */}
                                 <Button 
                                 className="p-button p-component p-button-outlined w-full mt-2"
-                                onClick={onHide} 
+                                onClick={() => {
+                                    onSelectCamera?.(camera);
+                                    closeSelector();
+                                }}
                                 label="Select" />
                             </div>
                         ))}
