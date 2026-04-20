@@ -1,135 +1,217 @@
 import { Sidebar } from 'primereact/sidebar';
+import { Dropdown } from 'primereact/dropdown';
+import { Slider } from 'primereact/slider';
+import { InputNumber } from 'primereact/inputnumber';
+import { InputText } from 'primereact/inputtext';
+import { ColorPicker } from 'primereact/colorpicker';
+import './AttributesBar.css';
 
-const sectionStyle = { marginTop: '12px' };
-const inputStyle = { width: '100%', marginTop: '4px', marginBottom: '8px' };
+function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings }) {
+  const selectedItem = equipment.find(e => e.id === selectedItemId);
+  if (!selectedItem) return null;
 
-const numberOrEmpty = (value) => {
-  if (value === '') return '';
-  const parsed = Number(value);
-  return Number.isNaN(parsed) ? '' : parsed;
-};
+  const resolutions = [
+    { label: "720p (HD)", value: "720p" },
+    { label: "1080p (Full HD)", value: "1080p" },
+    { label: "1440p (2K)", value: "1440p" },
+    { label: "2160p (4K)", value: "2160p" }
+  ];
 
-export default function AttributesBar({
-    selectedItem,
-    onUpdateAttributes,
-}) {
-    const kindLabel = selectedItem ? (selectedItem.kind ?? selectedItem.type) : '';
-    const attrs = selectedItem?.attributes ?? {};
-
-    const updateAttr = (key, value) => {
-        if (!selectedItem) return;
-        onUpdateAttributes(selectedItem.id, { [key]: value });
-    };
-
-    const renderKindFields = () => {
-        if (!selectedItem) return null;
-
-        switch (kindLabel) {
-            case 'camera':
-                return (
-                    <div style={sectionStyle}>
-                        <label>Camera model</label>
-                        <input
-                            type="text"
-                            value={attrs.cameraModel ?? ''}
-                            onChange={(e) => updateAttr('cameraModel', e.target.value)}
-                            style={inputStyle}
-                        />
-                        <label>FOV (degrees)</label>
-                        <input
-                            type="number"
-                            value={attrs.fov ?? ''}
-                            onChange={(e) => updateAttr('fov', numberOrEmpty(e.target.value))}
-                            style={inputStyle}
-                        />
-                    </div>
-                );
-            case 'router':
-                return (
-                    <div style={sectionStyle}>
-                        <label>Coverage radius (m)</label>
-                        <input
-                            type="number"
-                            value={attrs.coverageRadius ?? ''}
-                            onChange={(e) => updateAttr('coverageRadius', numberOrEmpty(e.target.value))}
-                            style={inputStyle}
-                        />
-                        <label>Port count</label>
-                        <input
-                            type="number"
-                            value={attrs.portCount ?? ''}
-                            onChange={(e) => updateAttr('portCount', numberOrEmpty(e.target.value))}
-                            style={inputStyle}
-                        />
-                    </div>
-                );
-            case 'sensor':
-                return (
-                    <div style={sectionStyle}>
-                        <label>Sensor subtype</label>
-                        <input
-                            type="text"
-                            value={attrs.sensorSubtype ?? ''}
-                            onChange={(e) => updateAttr('sensorSubtype', e.target.value)}
-                            style={inputStyle}
-                        />
-                        <label>Threshold</label>
-                        <input
-                            type="number"
-                            value={attrs.threshold ?? ''}
-                            onChange={(e) => updateAttr('threshold', numberOrEmpty(e.target.value))}
-                            style={inputStyle}
-                        />
-                    </div>
-                );
-            default:
-                return null;
-        }
-    };
-
+  // -----------------------------
+  // COLOUR CONVERSION HELPERS
+  // -----------------------------
+  function rgbaToHex(rgba) {
+    const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (!match) return "#0096ff";
+    const [_, r, g, b] = match;
     return (
-        <div>
-            <Sidebar 
-                visible={selectedItem !== undefined} 
-                position="right" 
-                onHide={() => {}}
-                modal={false}
-                style={{ width: '300px' }}
-            >
+      "#" +
+      [r, g, b]
+        .map(x => {
+          const hex = parseInt(x).toString(16);
+          return hex.length === 1 ? "0" + hex : hex;
+        })
+        .join("")
+    );
+  }
 
-                <h2>Properties</h2>
-                
-                {selectedItem ? (
-                <div className="property-form">
-                    <p><strong>{kindLabel} ID:</strong> {selectedItem.id}</p>
-                    <p><strong>Kind:</strong> {kindLabel}</p>
-                    <p><strong>Position:</strong> ({selectedItem.x}, {selectedItem.y})</p>
-                    <div style={sectionStyle}>
-                        <label>Label</label>
-                        <input
-                            type="text"
-                            value={attrs.label ?? ''}
-                            onChange={(e) => updateAttr('label', e.target.value)}
-                            style={inputStyle}
-                        />
-                        <label>Notes</label>
-                        <textarea
-                            value={attrs.notes ?? ''}
-                            onChange={(e) => updateAttr('notes', e.target.value)}
-                            style={{ ...inputStyle, minHeight: '72px' }}
-                        />
-                    </div>
-                    {renderKindFields()}
-                </div>
-                ) : (
-                    <p>No item selected.</p>
-                )}
+  function hexToRgba(hex, opacity) {
+    hex = hex.replace("#", "");
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+  }
 
-                <hr />
+  const currentOpacity = selectedItem.fovOpacity ?? 0.3;
 
-                
-            </Sidebar>
+  return (
+    <Sidebar
+      visible={!!selectedItem}
+      position="right"
+      onHide={onClose}
+      modal={false}
+      showCloseIcon={true}
+      dismissable={false}   // ⭐ Prevents sidebar from closing when using colour picker
+      style={{ width: '380px' }}
+    >
+      <div className="sidebar-content">
+
+        {/* HEADER */}
+        <h2 className="section-title">Camera Properties</h2>
+
+        {/* GENERAL */}
+        <h3 className="section-subtitle">General</h3>
+        <div className="section-box">
+
+          <div className="field">
+            <label>Camera Name</label>
+            <InputText
+              value={selectedItem.name || ""}
+              onChange={(e) => onUpdateSettings(selectedItem.id, "name", e.target.value)}
+            />
+          </div>
+
+          <div className="field">
+            <label>Resolution</label>
+            <Dropdown
+              value={selectedItem.resolution || "1080p"}
+              options={resolutions}
+              onChange={(e) => onUpdateSettings(selectedItem.id, "resolution", e.value)}
+              className="w-full"
+            />
+          </div>
+
         </div>
-       
-    )
+
+        {/* LENS */}
+        <h3 className="section-subtitle">Lens & Optics</h3>
+        <div className="section-box">
+
+          <div className="field">
+            <label>Focal Length (mm)</label>
+            <InputNumber
+              value={selectedItem.focalLength || 2.8}
+              onValueChange={(e) => onUpdateSettings(selectedItem.id, "focalLength", e.value)}
+              min={1}
+              max={50}
+              className="w-full"
+            />
+          </div>
+
+        </div>
+
+        {/* ⭐ FOV APPEARANCE */}
+        <h3 className="section-subtitle">FOV Appearance</h3>
+        <div className="section-box">
+
+          <div className="field">
+            <label>FOV Colour</label>
+            <ColorPicker
+              value={rgbaToHex(selectedItem.fovColor)}
+              format="hex"
+              onChange={(e) => {
+                const rgba = hexToRgba(e.value, currentOpacity);
+                onUpdateSettings(selectedItem.id, "fovColor", rgba);
+              }}
+            />
+          </div>
+
+          <div className="field slider-field">
+            <label>Opacity</label>
+            <Slider
+              value={currentOpacity}
+              min={0.05}
+              max={1}
+              step={0.05}
+              onChange={(e) => {
+                const newOpacity = e.value;
+                onUpdateSettings(selectedItem.id, "fovOpacity", newOpacity);
+
+                // Rebuild RGBA with new opacity
+                const hex = rgbaToHex(selectedItem.fovColor);
+                const rgba = hexToRgba(hex, newOpacity);
+                onUpdateSettings(selectedItem.id, "fovColor", rgba);
+              }}
+            />
+            <span className="slider-value">{currentOpacity.toFixed(2)}</span>
+          </div>
+
+        </div>
+
+        {/* PHYSICAL */}
+        <h3 className="section-subtitle">Physical</h3>
+        <div className="section-box">
+
+          <div className="field">
+            <label>Camera Height (m)</label>
+            <InputNumber
+              value={selectedItem.height || 3}
+              onValueChange={(e) => onUpdateSettings(selectedItem.id, "height", e.value)}
+              min={1}
+              max={20}
+              className="w-full"
+            />
+          </div>
+
+          <div className="field slider-field">
+            <label>Rotation (°)</label>
+            <Slider
+              value={selectedItem.rotation || 0}
+              onChange={(e) => onUpdateSettings(selectedItem.id, "rotation", e.value)}
+              min={0}
+              max={360}
+            />
+            <span className="slider-value">{selectedItem.rotation || 0}°</span>
+          </div>
+
+          <div className="field slider-field">
+            <label>Tilt (°)</label>
+            <Slider
+              value={selectedItem.tilt || 0}
+              onChange={(e) => onUpdateSettings(selectedItem.id, "tilt", e.value)}
+              min={-90}
+              max={90}
+            />
+            <span className="slider-value">{selectedItem.tilt || 0}°</span>
+          </div>
+
+        </div>
+
+        {/* IR */}
+        <h3 className="section-subtitle">Infrared</h3>
+        <div className="section-box">
+
+          <div className="field">
+            <label>IR Range (m)</label>
+            <InputNumber
+              value={selectedItem.irRange || 30}
+              onValueChange={(e) => onUpdateSettings(selectedItem.id, "irRange", e.value)}
+              min={0}
+              max={200}
+              className="w-full"
+            />
+          </div>
+
+        </div>
+
+        {/* NOTES */}
+        <h3 className="section-subtitle">Notes</h3>
+        <div className="section-box">
+
+          <div className="field">
+            <InputText
+              value={selectedItem.notes || ""}
+              onChange={(e) => onUpdateSettings(selectedItem.id, "notes", e.target.value)}
+              className="w-full"
+            />
+          </div>
+
+        </div>
+
+      </div>
+    </Sidebar>
+  );
 }
+
+export default AttributesBar;

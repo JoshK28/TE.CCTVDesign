@@ -28,4 +28,4 @@ Backend/obj/
 *.njsproj
 *.sln
 *.sw?
-
+.sfdx/

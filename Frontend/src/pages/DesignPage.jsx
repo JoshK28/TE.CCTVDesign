@@ -29,13 +29,31 @@ function Workspace({ imageSrc }) {
   };
 
   const selectedItem = equipment.find((item) => item.id === selectedItemId);
+  const calculateFOVPoints = (item) => {
+    const x = item.x ?? 0;
+    const y = item.y ?? 0;
+    const rotation = item.rotation ?? 0;
+    const focalLength = item.focalLength ?? 2.8;
+    const sensorWidth = 6.4;
+    const hfov = 2 * Math.atan(sensorWidth / (2 * focalLength)) * (180 / Math.PI);
+    const halfAngle = hfov / 2;
+    const length = 300;
 
+    const leftAngle = (rotation - halfAngle) * (Math.PI / 180);
+    const rightAngle = (rotation + halfAngle) * (Math.PI / 180);
+
+    const x1 = x + length * Math.cos(leftAngle);
+    const y1 = y + length * Math.sin(leftAngle);
+    const x2 = x + length * Math.cos(rightAngle);
+    const y2 = y + length * Math.sin(rightAngle);
+
+    return `${x},${y} ${x1},${y1} ${x2},${y2}`;
+  };
   const handleNewItem = (event) => {
     event.preventDefault();
 
     const toolToPlace = event.dataTransfer ? event.dataTransfer.getData('tool') : activeTool;
     if (toolToPlace === 'wall') return;
-
     if (!toolToPlace) {
       setSelectedItemId(null);
       return;
@@ -48,7 +66,24 @@ function Workspace({ imageSrc }) {
     const newId = Date.now();
     setEquipment((prev) => [
       ...prev,
-      { id: newId, kind: toolToPlace, x, y, rotation: 0, attributes: {} },
+      {
+        id: newId,
+        kind: toolToPlace,
+        type: toolToPlace,
+        x,
+        y,
+        name: "",
+        focalLength: 2.8,
+        height: 3,
+        tilt: 0,
+        rotation: 0,
+        resolution: "1080p",
+        irRange: 30,
+        notes: "",
+        fovOpacity: 0.3,
+        fovColor: "rgba(0, 150, 255, 0.3)",
+        attributes: {},
+      },
     ]);
     setSelectedItemId(newId);
     setActiveTool(null);
@@ -59,6 +94,11 @@ function Workspace({ imageSrc }) {
     const targetId = selectedItemId ?? equipment[equipment.length - 1]?.id;
     if (!targetId) return;
 
+    updatePlacement(targetId, {
+      name: camera.modelNumber ?? '',
+      resolution: camera.resolution ?? '1080p',
+    });
+
     updatePlacementAttributes(targetId, {
       cameraId: camera.id,
       cameraModel: camera.modelNumber,
@@ -68,18 +108,22 @@ function Workspace({ imageSrc }) {
     });
   };
 
+  const handleUpdateSettings = (id, field, value) => {
+    updatePlacement(id, { [field]: value });
+  };
+
   return (
     <div className="design-workspace">
-      {/* Left Toolbar */}
+
       <div className="toolbar-sidebar">
         <Toolbar onSelectTool={setActiveTool} />
       </div>
-      {/* Main Image Area */}
+
       <div
         className="image-fullscreen-wrapper"
-        onClick={handleNewItem}
+        onClick={() => setSelectedItemId(null)}
         onDrop={handleNewItem}
-        onDragOver={(e) => { e.preventDefault(); }}
+        onDragOver={(e) => e.preventDefault()}
       >
         <img
           src={imageSrc}
@@ -87,6 +131,20 @@ function Workspace({ imageSrc }) {
           className="fullscreen-image"
           draggable="false"
         />
+        <svg className="fov-overlay">
+          {equipment
+            .filter((item) => (item.kind ?? item.type) === 'camera')
+            .map((item) => (
+            <polygon
+              key={item.id}
+              points={calculateFOVPoints(item)}
+              fill={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
+              stroke={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
+              strokeWidth="2"
+            />
+          ))}
+        </svg>
+
         {equipment.map((item) => (
           <Equipment
             key={item.id}
@@ -106,18 +164,16 @@ function Workspace({ imageSrc }) {
         }}
         onSelectCamera={handleSelectCamera}
       />
-      {/* Right Attributes Bar */}
       <AttributesBar
-        selectedItem={selectedItem}
-        onUpdateAttributes={updatePlacementAttributes}
+        selectedItemId={selectedItem?.id}
+        equipment={equipment}
+        onClose={() => setSelectedItemId(null)}
+        onUpdateSettings={handleUpdateSettings}
       />
     </div>
   );
 }
 
-/*
-The DesignPage component is the main project page interface allowing users to place equipment such as cameras to uploaded floor plans.
-*/
 function DesignPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -167,17 +223,14 @@ function DesignPage() {
   return (
     <div className="design-page-container">
 
-      {/* top bar with back button */}
       <div className="design-topbar">
         <button onClick={() => navigate('/app/projects')} className="back-button">
           &larr; Back to Project List
         </button>
       </div>
 
-      {/* image workspace area */}
       <Workspace imageSrc={currentImageSrc} />
 
-      {/* layer selector at bottom center - only shows if multiple layers NEEDS TO BE PUT INTO A CSS FILE I'VE ONLY INLINE CODE FOR NOW TO SEE AND TEST*/} 
       {floorLayouts.length > 1 && (
         <div style={{
           position: "fixed",
