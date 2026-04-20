@@ -1,0 +1,118 @@
+.ups-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f8f8f8;
+  color: #222;
+  font-family: "Segoe UI", sans-serif;
+}
+
+.ups-sidebar {
+  width: 220px;
+  background: #1f1f1f;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px 15px;
+}
+
+.ups-logo {
+  width: 120px;
+  margin-bottom: 40px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.sidebar-btn {
+  background: #ffffffd9;
+  color: #222;
+  border: none;
+  border-radius: 10px;
+  padding: 10px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.sidebar-btn.active {
+  background: rgb(4, 66, 105);
+  color: #fff;
+  font-weight: 600;
+}
+
+.logout-button {
+  background: #fff;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.logout-button:hover { background: #ccc; }
+
+.ups-main {
+  flex: 1;
+  padding: 40px;
+  text-align: center;
+}
+
+.add-btn,
+.remove-btn {
+  border: none;
+  border-radius: 30px;
+  width: 40px;
+  height: 40px;
+  margin: 0 5px;
+  font-size: 22px;
+  font-weight: bold;
+  color: #fff;
+  cursor: pointer;
+}
+
+.add-btn { background: #4caf50; }
+.remove-btn { background: #d32f2f; }
+
+.ups-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+th, td {
+  padding: 10px;
+}
+
+input, select {
+  border: none;
+  border-radius: 6px;
+  padding: 6px;
+  width: 120px;
+  text-align: center;
+}
+
+.power-summary {
+  margin-top: 30px;
+}
+
+.battery-input {
+  margin-top: 10px;
+}
+
+.result-box-ups {
+  display: flex;
+  justify-content: space-around;
+  background: #ddd;
+  border-radius: 15px;
+  margin-top: 20px;
+  padding: 20px;
+}
