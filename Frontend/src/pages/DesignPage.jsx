@@ -149,18 +149,25 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
     try {
       const placements = equipment.map((item) => ({
         floorID: floorId,
+        cameraId: item.attributes?.cameraId ?? 0,
         x: item.x,
         y: item.y,
         rotation: item.rotation || 0,
-        type: item.type,
+        type: item.type || item.kind || 'camera',
       }));
 
       await api.post(`/api/camerplacements/save/${floorId}`, placements);
       setSaveMessage('Saved successfully!');
       onUnsavedChanges(false);
       setTimeout(() => setSaveMessage(''), 3000);
-    } catch {
-      setSaveMessage('Failed to save');
+    } catch (err) {
+      const apiMessage = err?.response?.data;
+      const errorText =
+        typeof apiMessage === 'string'
+          ? apiMessage
+          : apiMessage?.message || err?.message || 'Failed to save';
+      setSaveMessage(errorText);
+      console.error('Failed to save placements', err);
     } finally {
       setSaving(false);
     }
