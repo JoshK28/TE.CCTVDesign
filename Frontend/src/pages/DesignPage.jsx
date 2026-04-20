@@ -9,11 +9,36 @@ function Workspace({ imageSrc }) {
   const [itemSelected, setSelectedItem] = useState(null);
   const [displaySelector, setDisplaySelector] = useState(false);
 
+  // -------------------------------------------------------
+  // FOV MATH (SVG polygon points)
+  // -------------------------------------------------------
+  function calculateFOVPoints(item) {
+    const { x, y, rotation, focalLength } = item;
+
+    const sensorWidth = 6.4;
+    const hfov = 2 * (Math.atan(sensorWidth / (2 * focalLength))) * (180 / Math.PI);
+    const halfAngle = hfov / 2;
+    const length = 300;
+
+    const leftAngle = (rotation - halfAngle) * (Math.PI / 180);
+    const rightAngle = (rotation + halfAngle) * (Math.PI / 180);
+
+    const x1 = x + length * Math.cos(leftAngle);
+    const y1 = y + length * Math.sin(leftAngle);
+
+    const x2 = x + length * Math.cos(rightAngle);
+    const y2 = y + length * Math.sin(rightAngle);
+
+    return `${x},${y} ${x1},${y1} ${x2},${y2}`;
+  }
+
+  // -------------------------------------------------------
+  // PLACE NEW CAMERA
+  // -------------------------------------------------------
   const handleNewItem = (event) => {
     event.preventDefault();
 
     const toolToPlace = event.dataTransfer ? event.dataTransfer.getData('tool') : activeTool;
-
     if (!toolToPlace) {
       setSelectedItem(null);
       return;
@@ -24,29 +49,63 @@ function Workspace({ imageSrc }) {
     const y = event.clientY - rect.top;
 
     const newId = Date.now();
-    setEquipment(prev => [...prev, { id: newId, type: toolToPlace, x, y }]);
+    setEquipment(prev => [
+      ...prev,
+      {
+        id: newId,
+        type: toolToPlace,
+        x,
+        y,
+        name: "",
+        focalLength: 2.8,
+        height: 3,
+        tilt: 0,
+        rotation: 0,
+        resolution: "1080p",
+        irRange: 30,
+        notes: "",
+        fovColor: "rgba(0, 150, 255, 0.3)"   // default FOV colour
+      }
+    ]);
+
     setActiveTool(null);
     setDisplaySelector(true);
   };
 
+  // -------------------------------------------------------
+  // UPDATE POSITION
+  // -------------------------------------------------------
   const handleUpdatePosition = (id, newX, newY) => {
-    setEquipment(prev => prev.map(item =>
-      item.id === id ? { ...item, x: newX, y: newY } : item
-    ));
+    setEquipment(prev =>
+      prev.map(item =>
+        item.id === id ? { ...item, x: newX, y: newY } : item
+      )
+    );
+  };
+
+  // -------------------------------------------------------
+  // UPDATE SETTINGS (Sidebar)
+  // -------------------------------------------------------
+  const handleUpdateSettings = (id, field, value) => {
+    setEquipment(prev =>
+      prev.map(item =>
+        item.id === id ? { ...item, [field]: value } : item
+      )
+    );
   };
 
   return (
     <div className="design-workspace">
-      {/* Left Toolbar */}
+
       <div className="toolbar-sidebar">
         <Toolbar onSelectTool={setActiveTool} />
       </div>
-      {/* Main Image Area */}
+
       <div
         className="image-fullscreen-wrapper"
-        onClick={handleNewItem}
+        onClick={() => setSelectedItem(null)}
         onDrop={handleNewItem}
-        onDragOver={(e) => { e.preventDefault(); }}
+        onDragOver={(e) => e.preventDefault()}
       >
         <img
           src={imageSrc}
@@ -54,35 +113,56 @@ function Workspace({ imageSrc }) {
           className="fullscreen-image"
           draggable="false"
         />
-        {equipment.map(equipment => (
+
+        {/* -------------------------------------------------------
+            SVG FOV OVERLAY (draws the cone)
+        -------------------------------------------------------- */}
+        <svg className="fov-overlay">
+          {equipment.map(item => (
+            <polygon
+              key={item.id}
+              points={calculateFOVPoints(item)}
+              fill={item.fovColor}
+              stroke={item.fovColor}
+              strokeWidth="2"
+            />
+          ))}
+        </svg>
+
+
+
+        {/* CAMERA ICONS */}
+        {equipment.map(item => (
           <Equipment
-            id={equipment.id}
-            type={equipment.type}
-            x={equipment.x}
-            y={equipment.y}
+            key={item.id}
+            id={item.id}
+            type={item.type}
+            x={item.x}
+            y={item.y}
             onSelect={setSelectedItem}
             onUpdatePosition={handleUpdatePosition}
           />
         ))}
+
         <p className="item-count">Items Placed: {equipment.length}</p>
       </div>
-      {/* DB Equipment Selector - TEMPORARY TEST COMPONENT*/}
-      <EquipmentSelector visible={displaySelector} onHide={() => {
-        setDisplaySelector(false);
-      }} />
-      {/* Right Attributes Bar */}
+
+      <EquipmentSelector
+        visible={displaySelector}
+        onHide={() => setDisplaySelector(false)}
+      />
+
       <AttributesBar
         selectedItemId={itemSelected}
         equipment={equipment}
+        onClose={() => setSelectedItem(null)}
+        onUpdateSettings={handleUpdateSettings}
       />
     </div>
   );
 }
 
-/*
-The DesignPage component is the main project page interface allowing users to place equipment such as cameras to uploaded floor plans.
-*/
-function DesignPage({ onLogout }) {
+function DesignPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -131,17 +211,14 @@ function DesignPage({ onLogout }) {
   return (
     <div className="design-page-container">
 
-      {/* top bar with back button */}
       <div className="design-topbar">
         <button onClick={() => navigate('/app/projects')} className="back-button">
           &larr; Back to Project List
         </button>
       </div>
 
-      {/* image workspace area */}
       <Workspace imageSrc={currentImageSrc} />
 
-      {/* layer selector at bottom center - only shows if multiple layers NEEDS TO BE PUT INTO A CSS FILE I'VE ONLY INLINE CODE FOR NOW TO SEE AND TEST*/} 
       {floorLayouts.length > 1 && (
         <div style={{
           position: "fixed",

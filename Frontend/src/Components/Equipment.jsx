@@ -9,33 +9,30 @@ const getIcon = (type) => {
   }
 };
 
-function Equipment({ id, type, x, y, onSelect , onUpdatePosition }) {
+function Equipment({ id, type, x, y, onSelect, onUpdatePosition }) {
 
   const [livePos, setLivePos] = useState({ x, y });
 
-
   const handlePointerDown = (e) => {
-    e.stopPropagation(); 
-    onSelect(id);
+    e.stopPropagation();
 
     const startX = e.clientX - livePos.x;
     const startY = e.clientY - livePos.y;
 
     const handlePointerMove = (moveEvent) => {
-      setLivePos({
-        x: moveEvent.clientX - startX,
-        y: moveEvent.clientY - startY
-      });
+      const newX = moveEvent.clientX - startX;
+      const newY = moveEvent.clientY - startY;
+
+      setLivePos({ x: newX, y: newY });
+
+      // Live update parent state
+      onUpdatePosition(id, newX, newY);
+
+      // Keep sidebar open and updating
+      onSelect(id);
     };
 
-    const handlePointerUp = (upEvent) => {
-
-      const finalX = upEvent.clientX - startX;
-      const finalY = upEvent.clientY - startY;
-      
-      // Tell the parent database to permanently save these new coordinates
-      onUpdatePosition(id, finalX, finalY);
-
+    const handlePointerUp = () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
@@ -48,15 +45,19 @@ function Equipment({ id, type, x, y, onSelect , onUpdatePosition }) {
     <div
       className="equipment"
       onPointerDown={handlePointerDown}
-      onClick={(e) => e.stopPropagation()}
-      style={{ 
-        left: livePos.x, 
-        top: livePos.y, 
-        position: 'absolute', 
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(id);
+      }}
+      style={{
+        left: livePos.x,
+        top: livePos.y,
+        position: 'absolute',
         transform: 'translate(-50%, -50%)',
         userSelect: 'none',
         fontSize: '24px',
-      }} 
+        cursor: 'grab'
+      }}
     >
       {getIcon(type).icon}
     </div>
