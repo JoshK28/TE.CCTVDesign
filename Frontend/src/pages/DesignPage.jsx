@@ -9,6 +9,18 @@ function Workspace({ imageSrc }) {
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [displaySelector, setDisplaySelector] = useState(false);
 
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (!activeTool) return;
+      if (event.key === 'Escape' || event.key === 'Enter') {
+        setActiveTool(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTool]);
+
   const updatePlacement = (id, patch) => {
     setEquipment((prev) =>
       prev.map((item) => (item.id === id ? { ...item, ...patch } : item))
