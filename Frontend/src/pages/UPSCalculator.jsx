@@ -30,6 +30,13 @@ function UPSCalculator({ onLogout }) {
 
         <nav className="sidebar-nav">
           <button
+            onClick={() => navigate("/app/dashboard")}
+            className="sidebar-btn"
+          >
+            ⬅ Back to Dashboard
+          </button>
+
+          <button
             onClick={() => navigate("/app/storage")}
             className={`sidebar-btn ${location.pathname === "/app/storage" ? "active" : ""}`}
           >
