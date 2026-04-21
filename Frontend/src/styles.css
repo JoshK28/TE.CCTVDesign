@@ -64,7 +64,7 @@
 }
 
 .back-button:hover {
-  background-color: #0056b3;
+  background-color: #bfc6ce;
 }
 
 /* This wrapper handles the full-screen image */
@@ -106,6 +106,50 @@
     padding: 5px 10px;
     border-radius: 5px;
     z-index: 1004;
+}
+
+.item-count {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  color: white;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 5px 10px;
+  border-radius: 5px;
+  z-index: 1004;
+}
+
+.wall-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1001;
+}
+
+.wall-line {
+  stroke: #30343f;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.wall-line--draft {
+  stroke: #4a90e2;
+  stroke-dasharray: 10 6;
+}
+
+.wall-draw-capture {
+  position: absolute;
+  inset: 0;
+  z-index: 1002;
+  pointer-events: none;
+}
+
+.wall-draw-capture.is-active {
+  pointer-events: auto;
+  cursor: crosshair;
+  background: rgba(90, 90, 90, 0.28);
 }
 
 html, body, #root {

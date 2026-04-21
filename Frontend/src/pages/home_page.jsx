@@ -1,40 +1,39 @@
 import { useNavigate } from "react-router-dom";
-import './home_page.css';
-import tePNGLogo from '../assets/tepng_logo.jpg';
+import "../page_styling/home_page.css";
+import tePNGLogo from "../assets/logo.png";
 
 /*
-The Home component serves as the landing page for the CCTV Design Tool, providing users with options to navigate to the login or registration pages. 
+The Home component is the landing page for the CCTV Design Tool.
+It matches the design of the login and register pages for a consistent UI.
 */
 
 function Home() {
   const navigate = useNavigate();
 
   return (
-    <div style={{ textAlign: "center", marginTop: "200px" }}>
-      <img src={tePNGLogo} width="750" height="300" ></img> 
-      <h1>CCTV Design Tool</h1>
-      <p>Please login or register to continue</p>
-      <div style={{ display: "flex", gap: "50px", justifyContent: "center", marginTop: "30px" }}>
-        
-        <button 
-        onClick={() => navigate("/login")}  
-        className="login-nav-button"
-        style={{ padding: "10px 30px", fontSize: "16px"  }} > 
-          Login
-        </button>
-        
-        <button 
-        onClick={() => navigate("/register")}
-        className="register-nav-button" 
-        style={{ padding: "10px 30px", fontSize: "16px" }} >
-          Register
-        </button>
+    <div className="home-container">
+      <div className="card">
+        <div>
+          <img src={tePNGLogo} alt="CCTV Design Tool logo" className="logo" />
+          <h1 className="home-title">CCTV Design Tool</h1>
+          <p className="home-text">Please login or register to continue</p>
 
+          <div className="home-buttons">
+            <button 
+              onClick={() => navigate("/login")} 
+              className="login-button"
+            >
+              Login
+            </button>
 
-        {/*testing purposes only, to be removed in final version*/}
-        <button onClick={() => navigate("/imageUploader")} style={{ padding: "10px 30px", fontSize: "16px" }}>
-          Testing button to image Uploader
-        </button>
+            <button 
+              onClick={() => navigate("/register")} 
+              className="register-button"
+            >
+              Register
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

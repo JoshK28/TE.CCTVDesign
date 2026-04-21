@@ -7,6 +7,10 @@ import Register from './pages/register';
 import Home from './pages/home_page';
 import Dashboard from './pages/Dashboard';
 import ProjectList from './pages/Project_list';
+import StorageCalculator from './pages/StorageCalculator';
+import UPSCalculator from './pages/UPSCalculator';
+import BillOfMaterials from './pages/BillOfMaterials';
+
 import './styles.css';
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 
@@ -28,8 +32,14 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        
 
         {/* protected routes - require login */}
+        <Route path="/app/calculator" element={isLoggedIn ? <StorageCalculator onLogout={handleLogout} />: <Navigate to="/login" replace />} />
+        <Route path="/app/ups" element={isLoggedIn ? <UPSCalculator onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
+        <Route path="/app/bom" element={isLoggedIn ? <BillOfMaterials onLogout={handleLogout} />: <Navigate to="/login" replace />} />
+
+
         <Route
           path="/app/dashboard"
           element={isLoggedIn ? <Dashboard onLogout={handleLogout} /> : <Navigate to="/login" replace />}
@@ -49,6 +59,7 @@ function App() {
           path="/app/projects"
           element={isLoggedIn ? <ProjectList onLogout={handleLogout} /> : <Navigate to="/login" replace />}
         />
+
 
         {/* catch-all: redirect /app to dashboard */}
         <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
