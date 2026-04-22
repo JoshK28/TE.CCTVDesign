@@ -28,13 +28,15 @@ const updateItemAttributesById = (items, id, attributesPatch) =>
       : item
   );
 
-const createDevice = (tool, x, y, id = Date.now()) => ({
+const createDevice = (tool, x, y, id = Date.now(), rotation = 0) => ({
   id,
   kind: tool,
   type: tool,
   x,
   y,
+  
   ...DEFAULT_CAMERA_SETTINGS,
+  rotation,
 });
 
 function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
@@ -53,7 +55,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
       try {
         const res = await api.get(`/api/camerplacements/${floorId}`);
         const loaded = (res.data ?? []).map((p) =>
-          createDevice(p.type || 'camera', p.x, p.y, p.placementID ?? Date.now())
+          createDevice(p.type || 'camera', p.x, p.y, p.placementID ?? Date.now(), p.rotation ?? 0)
         );
         setEquipment(loaded);
       } catch (err) {
