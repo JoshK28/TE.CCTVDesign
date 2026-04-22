@@ -9,7 +9,7 @@ import tePNGLogo from '../assets/logo.png';
 The login component provides an interface for users to login and access the project program. It sends the login details to the backend through an API call.
 */
  
-function Login() {
+function Login({ onLogin }) {
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -30,11 +30,13 @@ function Login() {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("username", res.data.username);
 
+      onLogin(); // update isLoggedIn in App.jsx
       navigate("/app/dashboard");
     } catch (err) {
       setError(err.response?.data || "Login failed");
     }
   };
+
   return (
     <div className="auth-card">
       <div>
@@ -64,5 +66,4 @@ function Login() {
     </div>
   );
 }
-
 export default Login;
