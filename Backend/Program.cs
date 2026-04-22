@@ -1,17 +1,17 @@
 using Backend.Data;
 using Backend.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 // create the web application builder
-// this sets up the app with all the default settings
 var builder = WebApplication.CreateBuilder(args);
 
 // allows the app to use controllers
-// controllers are the classes that handle incoming requests e.g. AuthController, CameraController
 builder.Services.AddControllers();
 
 // connects the app to the SQL Server database
-// the connection string is read from appsettings.json
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(
@@ -20,43 +20,57 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 });
 
 // registers the JwtService so it can be used in controllers
-// this service is responsible for creating login tokens
 builder.Services.AddScoped<JwtService>();
 
-// sets up CORS (Cross Origin Resource Sharing)
-// this allows the React frontend to make requests to this backend
-// without CORS the browser would block all requests from the frontend
+// sets up JWT authentication so the backend can read and validate tokens
+// the token is sent from the frontend with every request
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+            ),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });
+
+// sets up CORS so the React frontend can talk to the backend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReact", policy =>
-        policy.AllowAnyOrigin()  // allows requests from any URL
-              .AllowAnyHeader()  // allows any request headers
-              .AllowAnyMethod()); // allows GET, POST, PUT, DELETE etc
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod());
 });
 
-// sets up Swagger which is a tool for testing the API in the browser
-// accessible at http://localhost:5113/swagger
+// sets up Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// build the app with all the services registered above
+// build the app
 var app = builder.Build();
 
-// enable Swagger in the browser
+// enable Swagger
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// apply the CORS policy so the React frontend can talk to the backend
+// apply CORS policy
 app.UseCors("AllowReact");
 
-// enables authorization so protected routes can be secured in the future
+// enable authentication and authorization
+// authentication must come before authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
-// maps all controller routes so the app knows which controller handles which request
+// allows serving static files
+app.UseStaticFiles();
+
+// maps all controller routes
 app.MapControllers();
 
-// add this - allows serving uploaded images
-app.UseStaticFiles(); 
-
-// start the app and keep it running
+// start the app
 app.Run();
