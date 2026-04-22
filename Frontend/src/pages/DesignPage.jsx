@@ -39,7 +39,7 @@ const createDevice = (tool, x, y, id = Date.now(), rotation = 0) => ({
   rotation,
 });
 
-function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
+function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedChanges = false }) {
   const [activeTool, setActiveTool] = useState(null);
   const [equipment, setEquipment] = useState([]);
   const [walls, setWalls] = useState([]);
@@ -239,7 +239,8 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
             disabled={saving}
             style={{
               padding: '8px 20px',
-              backgroundColor: '#28a745',
+              backgroundColor: saving ? '#6c757d' : hasUnsavedChanges ? '#dc3545' : '#28a745',
+              // grey when saving, red when unsaved, green when saved
               color: 'white',
               border: 'none',
               borderRadius: '5px',
@@ -247,7 +248,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
               fontSize: '14px',
             }}
           >
-            {saving ? 'Saving...' : 'Save'}
+            {saving ? 'Saving...' : hasUnsavedChanges ? 'Unsaved Changes' : 'Saved'}
           </button>
           {saveMessage && (
             <p
@@ -356,6 +357,7 @@ function DesignPage() {
         imageSrc={currentImageSrc}
         floorId={currentFloorId}
         onUnsavedChanges={setHasUnsavedChanges}
+        hasUnsavedChanges={hasUnsavedChanges}
       />
 
       {floorLayouts.length > 1 && (
