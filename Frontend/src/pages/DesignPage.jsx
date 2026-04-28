@@ -4,6 +4,7 @@ import { Toolbar, Equipment, EquipmentSelector, AttributesBar, WallDrawingLayer 
 import api from '../services/api';
 import { calculateFovPolygon } from '../utils/fov';
 import { getLocalPoint } from '../utils/points';
+import { empty_walls, wallGraphToSegments } from '../utils/wallsConverter';
 
 const DEFAULT_CAMERA_SETTINGS = {
   name: '',
@@ -28,23 +29,6 @@ const createDevice = (tool, x, y, id = Date.now()) => ({
   ...DEFAULT_CAMERA_SETTINGS,
 });
 
-const empty_Walls = { posts: [], links: [] };
-
-const deriveWallSegments = (posts, links) => {
-  const postById = new Map(posts.map((post) => [post.id, post]));
-  return links
-    .map((link) => {
-      const a = postById.get(link.aPostId);
-      const b = postById.get(link.bPostId);
-      if (!a || !b) return null;
-      return { id: link.id, x1: a.x, y1: a.y, x2: b.x, y2: b.y };
-    })
-    .filter(Boolean);
-};
-
-
-
-
 function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
   const [activeTool, setActiveTool] = useState(null);
   const [equipment, setEquipment] = useState([]);
@@ -53,8 +37,8 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
   const [displaySelector, setDisplaySelector] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
-  const currentWallGraph = floorId ? (wallGraphs[floorId] ?? empty_Walls) : empty_Walls;
-  const currentWalls = deriveWallSegments(currentWallGraph.posts, currentWallGraph.links);
+  const currentWallGraph = floorId ? (wallGraphs[floorId] ?? empty_walls) : empty_walls;
+  const currentWalls = wallGraphToSegments(currentWallGraph);
 
 
   useEffect(() => {
@@ -103,7 +87,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
     if (!floorId || typeof updater !== 'function') return;
     setWallGraphs((prev) => ({
       ...prev,
-      [floorId]: updater(prev[floorId] ?? empty_Walls),
+      [floorId]: updater(prev[floorId] ?? empty_walls),
     }));
     onUnsavedChanges(true);
   };

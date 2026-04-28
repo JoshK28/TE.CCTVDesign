@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getLocalPoint } from '../utils/points';
+import { wallGraphToSegments } from '../utils/wallsConverter';
 
 const MIN_LENGTH = 6;
 const ENDPOINT_HIT_RADIUS = 10;
@@ -12,21 +13,8 @@ export default function WallDrawingLayer({ activeTool, wallGraph, onWallGraphCha
   const [mode, setMode] = useState('draw');
   const wallModeActive = activeTool === 'wall';
   const posts = wallGraph?.posts ?? [];
-  const links = wallGraph?.links ?? [];
-
-
   const postById = useMemo(() => new Map(posts.map((post) => [post.id, post])), [posts]);
-  const walls = useMemo(
-    () =>
-      links
-        .map((link) => {
-          const a = postById.get(link.aPostId);
-          const b = postById.get(link.bPostId);
-          return a && b ? { id: link.id, x1: a.x, y1: a.y, x2: b.x, y2: b.y } : null;
-        })
-        .filter(Boolean),
-    [links, postById]
-  );
+  const walls = useMemo(() => wallGraphToSegments(wallGraph), [wallGraph]);
 
   const getPostAtPoint = (point) =>
     posts.find((post) => Math.hypot(post.x - point.x, post.y - point.y) <= ENDPOINT_HIT_RADIUS) ?? null;
