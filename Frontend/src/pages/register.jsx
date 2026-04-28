@@ -26,6 +26,16 @@ function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (!formData.username.trim() || !formData.email.trim() || !formData.password.trim()) {
+      setError("Username, email and password are required");
+      setSuccess("");
+      return;
+    }
+    if (formData.password.length < 8) {
+      setError("Password must be at least 8 characters");
+      setSuccess("");
+      return;
+    }
     try {
       const res = await api.post("/api/auth/register", formData);
       setSuccess(res.data?.message || "Registration successful! Redirecting...");
@@ -48,6 +58,7 @@ function Register() {
             type="text"
             name="username"
             placeholder="Username"
+            required
             onChange={handleChange}
             className="login-input"
           />
@@ -55,6 +66,7 @@ function Register() {
             type="email"
             name="email"
             placeholder="Email"
+            required
             onChange={handleChange}
             className="login-input"
           />
@@ -62,6 +74,8 @@ function Register() {
             type="password"
             name="password"
             placeholder="Password"
+            required
+            minLength={8}
             onChange={handleChange}
             className="login-input"
           />

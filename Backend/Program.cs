@@ -1,6 +1,9 @@
 using Backend.Data;
 using Backend.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 // create the web application builder
 // this sets up the app with all the default settings
@@ -22,6 +25,22 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // registers the JwtService so it can be used in controllers
 // this service is responsible for creating login tokens
 builder.Services.AddScoped<JwtService>();
+
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "DevelopmentOnlyJwtKeyForCapstone123!";
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
 
 // sets up CORS (Cross Origin Resource Sharing)
 // this allows the React frontend to make requests to this backend
@@ -48,6 +67,8 @@ app.UseSwaggerUI();
 
 // apply the CORS policy so the React frontend can talk to the backend
 app.UseCors("AllowReact");
+
+app.UseAuthentication();
 
 // enables authorization so protected routes can be secured in the future
 app.UseAuthorization();

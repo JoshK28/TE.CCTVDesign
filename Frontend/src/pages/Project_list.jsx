@@ -11,6 +11,10 @@ function ProjectList({ onLogout }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
+  const [page, setPage] = useState(1);
+
+  const PAGE_SIZE = 8;
 
   // Fetch all projects when the page loads
   useEffect(() => {
@@ -26,6 +30,32 @@ function ProjectList({ onLogout }) {
     };
     fetchProjects();
   }, []);
+
+  const totalPages = Math.max(1, Math.ceil(projects.length / PAGE_SIZE));
+  const pagedProjects = projects.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const handleDeleteProject = async (projectId) => {
+    const confirmed = window.confirm("Delete this project? This action cannot be undone.");
+    if (!confirmed) return;
+
+    setDeletingId(projectId);
+    setError("");
+    try {
+      await api.delete(`/api/projects/${projectId}`);
+      setProjects((prev) => {
+        const updated = prev.filter((p) => p.projectID !== projectId);
+        const updatedTotalPages = Math.max(1, Math.ceil(updated.length / PAGE_SIZE));
+        if (page > updatedTotalPages) {
+          setPage(updatedTotalPages);
+        }
+        return updated;
+      });
+    } catch (err) {
+      setError("Failed to delete project");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="project-dashboard">
@@ -77,7 +107,7 @@ function ProjectList({ onLogout }) {
               </tr>
             </thead>
             <tbody>
-              {projects.map((project) => (
+              {pagedProjects.map((project) => (
                 <tr key={project.projectID}>
                   <td>{project.title}</td>
                   <td>{project.address}</td>
@@ -93,11 +123,40 @@ function ProjectList({ onLogout }) {
                     >
                       Open
                     </button>
+                    <button
+                      className="table-btn"
+                      onClick={() => handleDeleteProject(project.projectID)}
+                      disabled={deletingId === project.projectID}
+                      style={{ marginLeft: "8px" }}
+                    >
+                      {deletingId === project.projectID ? "Deleting..." : "Delete"}
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        )}
+        {!loading && projects.length > 0 && (
+          <div style={{ display: "flex", justifyContent: "center", gap: "12px", marginTop: "16px" }}>
+            <button
+              className="table-btn"
+              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              disabled={page === 1}
+            >
+              Previous
+            </button>
+            <span style={{ alignSelf: "center" }}>
+              Page {page} of {totalPages}
+            </span>
+            <button
+              className="table-btn"
+              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={page === totalPages}
+            >
+              Next
+            </button>
+          </div>
         )}
       </main>
     </div>

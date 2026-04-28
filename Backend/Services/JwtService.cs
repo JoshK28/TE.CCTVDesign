@@ -18,7 +18,7 @@ namespace Backend.Services
         // gets the secret key from appsettings.json when the service starts
         public JwtService(IConfiguration config)
         {
-            _key = config["Jwt:Key"]!;
+            _key = config["Jwt:Key"] ?? "DevelopmentOnlyJwtKeyForCapstone123!";
         }
 
         // creates and returns a JWT token for the logged in user

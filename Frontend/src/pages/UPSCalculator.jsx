@@ -37,8 +37,8 @@ function UPSCalculator({ onLogout }) {
           </button>
 
           <button
-            onClick={() => navigate("/app/storage")}
-            className={`sidebar-btn ${location.pathname === "/app/storage" ? "active" : ""}`}
+            onClick={() => navigate("/app/calculator")}
+            className={`sidebar-btn ${location.pathname === "/app/calculator" ? "active" : ""}`}
           >
             💾 Storage Calculator
           </button>

@@ -1,12 +1,15 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend.Data;
 using Backend.Models;
 using Backend.DTOs;
+using System.Security.Claims;
 
 namespace Backend.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/projects")]
     public class ProjectController : ControllerBase
     {
@@ -19,18 +22,28 @@ namespace Backend.Controllers
             _context = context;
         }
 
+        private int? GetCurrentUserId()
+        {
+            var claimValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.TryParse(claimValue, out var userId) ? userId : null;
+        }
+
         // handles POST requests to /api/projects/create
         // creates a new project and saves floor images directly to the database
         [HttpPost("create")]
         public async Task<IActionResult> CreateProject([FromForm] CreateProjectDto dto)
         {
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId == null)
+                return Unauthorized("User identity missing");
+
             // create a new project using the data from the form
             var project = new Project
             {
                 Title = dto.Title,
                 Address = dto.Address,
                 Description = dto.Description,
-                UserID = 1, // temporary - will be replaced with logged in user id
+                UserID = currentUserId.Value,
                 ClientID = 1 // temporary - will be replaced with client id
             };
 
@@ -91,9 +104,14 @@ namespace Backend.Controllers
         [HttpGet]
         public async Task<IActionResult> GetProjects()
         {
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId == null)
+                return Unauthorized("User identity missing");
+
             // get all projects from the database and return them
             // excludes image data to keep the response small and fast
             var projects = await _context.Projects
+                .Where(p => p.UserID == currentUserId.Value)
                 .Select(p => new
                 {
                     p.ProjectID,
@@ -112,11 +130,15 @@ namespace Backend.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProject(int id)
         {
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId == null)
+                return Unauthorized("User identity missing");
+
             // look for a project with the provided id
             // also load the floor layouts for the project
             var project = await _context.Projects
                 .Include(p => p.FloorLayouts)
-                .FirstOrDefaultAsync(p => p.ProjectID == id);
+                .FirstOrDefaultAsync(p => p.ProjectID == id && p.UserID == currentUserId.Value);
 
             // if no project found return an error
             if (project == null)
@@ -130,8 +152,13 @@ namespace Backend.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProject(int id)
         {
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId == null)
+                return Unauthorized("User identity missing");
+
             // look for the project to delete
-            var project = await _context.Projects.FindAsync(id);
+            var project = await _context.Projects
+                .FirstOrDefaultAsync(p => p.ProjectID == id && p.UserID == currentUserId.Value);
 
             // if no project found return an error
             if (project == null)

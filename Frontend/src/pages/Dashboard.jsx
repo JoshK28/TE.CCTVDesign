@@ -1,9 +1,10 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import "../page_styling/dashboard.css";
 import tePNGLogo from "../assets/logo.png";
 
 function Dashboard({ onLogout }) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   return (
     <div className="dashboard-layout">

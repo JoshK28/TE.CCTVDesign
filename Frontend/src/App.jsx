@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ImageUploader from './pages/ImageUploader';
 import DesignPage from './pages/DesignPage';
@@ -17,12 +17,13 @@ import "primereact/resources/themes/lara-light-cyan/theme.css";
 /*The App component is the Main root component of the CCTV Design Tool frontend pages. It manages the state of the current user view to navigate between jsx pages.
 */
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
+  const isLoggedIn = !!localStorage.getItem("token");
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("username");
-    setIsLoggedIn(false);
+    // Use replace so browser back does not re-open protected pages.
+    window.location.replace("/");
   };
 
   return (

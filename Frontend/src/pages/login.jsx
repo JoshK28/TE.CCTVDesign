@@ -24,6 +24,10 @@ function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (!formData.email.trim() || !formData.password.trim()) {
+      setError("Email and password are required");
+      return;
+    }
     try {
       const res = await api.post("/api/auth/login", formData);
       
@@ -44,6 +48,7 @@ function Login() {
             type="email"
             name="email"
             placeholder="Email"
+            required
             onChange={handleChange}
             className="login-input"
           />
@@ -51,6 +56,7 @@ function Login() {
             type="password"
             name="password"
             placeholder="Password"
+            required
             onChange={handleChange}
             className="login-input"
           />
