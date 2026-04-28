@@ -36,16 +36,29 @@ const createDevice = (tool, x, y, id = Date.now()) => ({
   y,
   ...DEFAULT_CAMERA_SETTINGS,
 });
+const empty_Walls = { posts: [], links: [] };
+const deriveWallSegments = (posts, links) => {
+  const postById = new Map(posts.map((post) => [post.id, post]));
+  return links
+    .map((link) => {
+      const a = postById.get(link.aPostId);
+      const b = postById.get(link.bPostId);
+      if (!a || !b) return null;
+      return { id: link.id, x1: a.x, y1: a.y, x2: b.x, y2: b.y };
+    })
+    .filter(Boolean);
+};
 
 function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
   const [activeTool, setActiveTool] = useState(null);
   const [equipment, setEquipment] = useState([]);
-  const [walls, setWalls] = useState({});
+  const [wallGraphs, setWallGraphs] = useState({});
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [displaySelector, setDisplaySelector] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
-  const currentWalls = floorId ? (walls[floorId] ?? []) : [];
+  const currentWallGraph = floorId ? (wallGraphs[floorId] ?? empty_Walls) : empty_Walls;
+  const currentWalls = deriveWallSegments(currentWallGraph.posts, currentWallGraph.links);
 
 
   useEffect(() => {
@@ -69,6 +82,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (!activeTool) return;
+      if (activeTool === 'wall') return;
       if (event.key === 'Escape' || event.key === 'Enter') {
         setActiveTool(null);
       }
@@ -88,11 +102,11 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
     onUnsavedChanges(true);
   };
 
-  const handleAddWall = (wall) => {
-    if (!floorId) return;
-    setWalls((prev) => ({
+  const handleWallGraphChange = (updater) => {
+    if (!floorId || typeof updater !== 'function') return;
+    setWallGraphs((prev) => ({
       ...prev,
-      [floorId]: [...(prev[floorId] ?? []), wall],
+      [floorId]: updater(prev[floorId] ?? empty_Walls),
     }));
     onUnsavedChanges(true);
   };
@@ -220,7 +234,12 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
           />
         ))}
 
-        <WallDrawingLayer activeTool={activeTool} walls={currentWalls} onAddWall={handleAddWall} />
+        <WallDrawingLayer
+          activeTool={activeTool}
+          wallGraph={currentWallGraph}
+          onWallGraphChange={handleWallGraphChange}
+          onExitWallMode={() => setActiveTool(null)}
+        />
         <p className="item-count">Items Placed: {equipment.length}</p>
 
         <div

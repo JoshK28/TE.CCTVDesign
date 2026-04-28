@@ -139,6 +139,12 @@
   stroke-dasharray: 10 6;
 }
 
+.wall-post-handle {
+  fill: #ffffff;
+  stroke: #30343f;
+  stroke-width: 2;
+}
+
 .wall-draw-capture {
   position: absolute;
   inset: 0;

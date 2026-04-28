@@ -1,10 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-export default function WallDrawingLayer({ activeTool, walls, onAddWall }) {
-  const [startPost, setStartPost] = useState(null);
-  const [endPost, setEndPost] = useState(null);
+const MIN_LENGTH = 6;
+const ENDPOINT_HIT_RADIUS = 10;
+const newId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+export default function WallDrawingLayer({ activeTool, wallGraph, onWallGraphChange, onExitWallMode }) {
+  const [draft, setDraft] = useState(null); 
+  const [dragPostId, setDragPostId] = useState(null);
+
+  const [mode, setMode] = useState('draw');
   const wallModeActive = activeTool === 'wall';
-  const MIN_LENGTH = 6;
+  const posts = wallGraph?.posts ?? [];
+  const links = wallGraph?.links ?? [];
+
+
+  const postById = useMemo(() => new Map(posts.map((post) => [post.id, post])), [posts]);
+  const walls = useMemo(
+    () =>
+      links
+        .map((link) => {
+          const a = postById.get(link.aPostId);
+          const b = postById.get(link.bPostId);
+          return a && b ? { id: link.id, x1: a.x, y1: a.y, x2: b.x, y2: b.y } : null;
+        })
+        .filter(Boolean),
+    [links, postById]
+  );
 
   const getCanvasPoint = (event) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -14,75 +35,112 @@ export default function WallDrawingLayer({ activeTool, walls, onAddWall }) {
     };
   };
 
-  const endChain = () => {
-    setStartPost(null);
-    setEndPost(null);
-  };
+  const getPostAtPoint = (point) =>
+    posts.find((post) => Math.hypot(post.x - point.x, post.y - point.y) <= ENDPOINT_HIT_RADIUS) ?? null;
 
   useEffect(() => {
-    if (!wallModeActive) endChain();
+    if (wallModeActive) {
+      setMode('draw');
+      return;
+    }
+    setDraft(null);
+    setDragPostId(null);
   }, [wallModeActive]);
 
   useEffect(() => {
     if (!wallModeActive) return undefined;
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape' || event.key === 'Enter') endChain();
+    const onKeyDown = (event) => {
+      if (mode === 'draw' && event.key === 'Enter') {
+        setDraft(null);
+        setMode('edit');
+        return;
+      }
+      if (mode === 'edit' && (event.key === 'Escape' || event.key === 'Enter')) onExitWallMode?.();
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [wallModeActive]);
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [wallModeActive, mode, onExitWallMode]);
 
   const handlePointerMove = (event) => {
-    if (!wallModeActive || !startPost) return;
-    setEndPost(getCanvasPoint(event));
+    if (!wallModeActive) return;
+    const point = getCanvasPoint(event);
+
+    if (mode === 'edit' && dragPostId) {
+      onWallGraphChange?.((graph) => ({
+        ...graph,
+        posts: (graph.posts ?? []).map((post) => (post.id === dragPostId ? { ...post, x: point.x, y: point.y } : post)),
+      }));
+      return;
+    }
+    if (mode === 'draw' && draft) setDraft((prev) => ({ ...prev, previewPoint: point }));
+  };
+
+  const handlePointerDown = (event) => {
+    if (!wallModeActive || mode !== 'edit') return;
+    const hit = getPostAtPoint(getCanvasPoint(event));
+    if (!hit) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setDragPostId(hit.id);
   };
 
   const handleClick = (event) => {
-    if (!wallModeActive) return;
+    if (!wallModeActive || mode !== 'draw') return;
     event.preventDefault();
     event.stopPropagation();
-
     const point = getCanvasPoint(event);
+    const targetPost = getPostAtPoint(point);
 
-    if (!startPost) {
-      setStartPost(point);
+    if (!draft) {
+      const firstPostId = newId();
+      onWallGraphChange?.((graph) => ({ ...graph, posts: [...(graph.posts ?? []), { id: firstPostId, x: point.x, y: point.y }] }));
+      setDraft({ startPostId: firstPostId, previewPoint: point });
       return;
     }
 
-    const length = Math.hypot(point.x - startPost.x, point.y - startPost.y);
-    if (length >= MIN_LENGTH) {
-      onAddWall?.({ id: Date.now(), x1: startPost.x, y1: startPost.y, x2: point.x, y2: point.y });
-      setStartPost(point);
-      setEndPost(point);
-    }
+    const startPost = postById.get(draft.startPostId);
+    if (!startPost) return;
+    const targetPoint = targetPost ? { x: targetPost.x, y: targetPost.y } : point;
+    if (Math.hypot(targetPoint.x - startPost.x, targetPoint.y - startPost.y) < MIN_LENGTH) return;
+
+    const nextPostId = targetPost?.id ?? newId();
+    onWallGraphChange?.((graph) => ({
+      ...graph,
+      posts: targetPost ? graph.posts ?? [] : [...(graph.posts ?? []), { id: nextPostId, x: targetPoint.x, y: targetPoint.y }],
+      links: [...(graph.links ?? []), { id: newId(), aPostId: draft.startPostId, bPostId: nextPostId }],
+    }));
+    setDraft({ startPostId: nextPostId, previewPoint: targetPoint });
   };
+
+  const startPost = draft ? postById.get(draft.startPostId) : null;
 
   return (
     <>
       <svg className="wall-overlay">
+        {/* Persisted wall links rendered as solid segments. */}
         {walls.map((wall) => (
-          <line
-            key={wall.id}
-            x1={wall.x1}
-            y1={wall.y1}
-            x2={wall.x2}
-            y2={wall.y2}
-            className="wall-line"
-          />
+          <line key={wall.id} x1={wall.x1} y1={wall.y1} x2={wall.x2} y2={wall.y2} className="wall-line" />
         ))}
-        {startPost && endPost && (
+        {mode === 'edit' &&
+          /* Existing posts become draggable handles in edit mode. */
+          posts.map((post) => <circle key={post.id} cx={post.x} cy={post.y} r="5" className="wall-post-handle" />)}
+        {mode === 'draw' && startPost && draft?.previewPoint && (
+          /* Live draft segment from chain start to cursor. */
           <line
             x1={startPost.x}
             y1={startPost.y}
-            x2={endPost.x}
-            y2={endPost.y}
+            x2={draft.previewPoint.x}
+            y2={draft.previewPoint.y}
             className="wall-line wall-line--draft"
           />
         )}
       </svg>
       <div
         className={`wall-draw-capture ${wallModeActive ? 'is-active' : ''}`}
+        onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
+        onPointerUp={() => setDragPostId(null)}
+        onPointerLeave={() => setDragPostId(null)}
         onClick={handleClick}
       />
     </>
