@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function WallDrawingLayer({ activeTool, walls, onAddWall }) {
-  const [draftWall, setDraftWall] = useState(null);
+  const [startPost, setStartPost] = useState(null);
+  const [endPost, setEndPost] = useState(null);
   const wallModeActive = activeTool === 'wall';
+  const MIN_LENGTH = 6;
 
   const getCanvasPoint = (event) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -12,28 +14,47 @@ export default function WallDrawingLayer({ activeTool, walls, onAddWall }) {
     };
   };
 
-  const handlePointerDown = (event) => {
+  const endChain = () => {
+    setStartPost(null);
+    setEndPost(null);
+  };
+
+  useEffect(() => {
+    if (!wallModeActive) endChain();
+  }, [wallModeActive]);
+
+  useEffect(() => {
+    if (!wallModeActive) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' || event.key === 'Enter') endChain();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [wallModeActive]);
+
+  const handlePointerMove = (event) => {
+    if (!wallModeActive || !startPost) return;
+    setEndPost(getCanvasPoint(event));
+  };
+
+  const handleClick = (event) => {
     if (!wallModeActive) return;
     event.preventDefault();
     event.stopPropagation();
-    const start = getCanvasPoint(event);
-    setDraftWall({ x1: start.x, y1: start.y, x2: start.x, y2: start.y });
-  };
 
-  const handlePointerMove = (event) => {
-    if (!wallModeActive || !draftWall) return;
-    const current = getCanvasPoint(event);
-    setDraftWall((prev) => (prev ? { ...prev, x2: current.x, y2: current.y } : prev));
-  };
+    const point = getCanvasPoint(event);
 
-  const finishDraftWall = (event) => {
-    if (!wallModeActive || !draftWall) return;
-    event.stopPropagation();
-    const length = Math.hypot(draftWall.x2 - draftWall.x1, draftWall.y2 - draftWall.y1);
-    if (length >= 6) {
-      onAddWall?.({ id: Date.now(), ...draftWall });
+    if (!startPost) {
+      setStartPost(point);
+      return;
     }
-    setDraftWall(null);
+
+    const length = Math.hypot(point.x - startPost.x, point.y - startPost.y);
+    if (length >= MIN_LENGTH) {
+      onAddWall?.({ id: Date.now(), x1: startPost.x, y1: startPost.y, x2: point.x, y2: point.y });
+      setStartPost(point);
+      setEndPost(point);
+    }
   };
 
   return (
@@ -49,27 +70,20 @@ export default function WallDrawingLayer({ activeTool, walls, onAddWall }) {
             className="wall-line"
           />
         ))}
-        {draftWall && (
+        {startPost && endPost && (
           <line
-            x1={draftWall.x1}
-            y1={draftWall.y1}
-            x2={draftWall.x2}
-            y2={draftWall.y2}
+            x1={startPost.x}
+            y1={startPost.y}
+            x2={endPost.x}
+            y2={endPost.y}
             className="wall-line wall-line--draft"
           />
         )}
       </svg>
       <div
         className={`wall-draw-capture ${wallModeActive ? 'is-active' : ''}`}
-        onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
-        onPointerUp={finishDraftWall}
-        onPointerLeave={finishDraftWall}
-        onClick={(event) => {
-          if (!wallModeActive) return;
-          event.preventDefault();
-          event.stopPropagation();
-        }}
+        onClick={handleClick}
       />
     </>
   );
