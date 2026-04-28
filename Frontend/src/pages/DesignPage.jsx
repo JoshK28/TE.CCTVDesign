@@ -40,11 +40,12 @@ const createDevice = (tool, x, y, id = Date.now()) => ({
 function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
   const [activeTool, setActiveTool] = useState(null);
   const [equipment, setEquipment] = useState([]);
-  const [walls, setWalls] = useState([]);
+  const [walls, setWalls] = useState({});
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [displaySelector, setDisplaySelector] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+
 
   useEffect(() => {
     if (!floorId) return;
@@ -87,7 +88,11 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
   };
 
   const handleAddWall = (wall) => {
-    setWalls((prev) => [...prev, wall]);
+    if (!floorId) return;
+    setWalls((prev) => ({
+      ...prev,
+      [floorId]: [...(prev[floorId] ?? []), wall],
+    }));
     onUnsavedChanges(true);
   };
 
@@ -197,7 +202,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
             .map((item) => (
               <polygon
                 key={item.id}
-                points={calculateFovPolygon(item, walls)}
+                points={calculateFovPolygon(item, walls[floorId])}
                 fill={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
                 stroke={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
                 strokeWidth="2"
@@ -214,7 +219,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
           />
         ))}
 
-        <WallDrawingLayer activeTool={activeTool} walls={walls} onAddWall={handleAddWall} />
+        <WallDrawingLayer activeTool={activeTool} walls={walls[floorId]} onAddWall={handleAddWall} />
         <p className="item-count">Items Placed: {equipment.length}</p>
 
         <div
@@ -332,7 +337,6 @@ function DesignPage() {
   if (!currentImageSrc) return <p>No floor layouts found for this project.</p>;
 
   const currentFloorId = floorLayouts.length > 0 ? floorLayouts[selectedLayer]?.floorID : null;
-
   const handleBackButton = () => {
     if (hasUnsavedChanges) {
       const confirm = window.confirm('You have unsaved changes. Do you want to leave without saving?');
