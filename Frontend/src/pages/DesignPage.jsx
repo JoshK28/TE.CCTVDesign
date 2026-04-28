@@ -45,6 +45,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
   const [displaySelector, setDisplaySelector] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+  const currentWalls = floorId ? (walls[floorId] ?? []) : [];
 
 
   useEffect(() => {
@@ -202,7 +203,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
             .map((item) => (
               <polygon
                 key={item.id}
-                points={calculateFovPolygon(item, walls[floorId])}
+                points={calculateFovPolygon(item, currentWalls)}
                 fill={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
                 stroke={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
                 strokeWidth="2"
@@ -219,7 +220,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
           />
         ))}
 
-        <WallDrawingLayer activeTool={activeTool} walls={walls[floorId]} onAddWall={handleAddWall} />
+        <WallDrawingLayer activeTool={activeTool} walls={currentWalls} onAddWall={handleAddWall} />
         <p className="item-count">Items Placed: {equipment.length}</p>
 
         <div
