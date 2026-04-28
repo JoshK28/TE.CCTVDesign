@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { getLocalPoint } from '../utils/points';
 
 const MIN_LENGTH = 6;
 const ENDPOINT_HIT_RADIUS = 10;
@@ -26,14 +27,6 @@ export default function WallDrawingLayer({ activeTool, wallGraph, onWallGraphCha
         .filter(Boolean),
     [links, postById]
   );
-
-  const getCanvasPoint = (event) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    return {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    };
-  };
 
   const getPostAtPoint = (point) =>
     posts.find((post) => Math.hypot(post.x - point.x, post.y - point.y) <= ENDPOINT_HIT_RADIUS) ?? null;
@@ -63,7 +56,7 @@ export default function WallDrawingLayer({ activeTool, wallGraph, onWallGraphCha
 
   const handlePointerMove = (event) => {
     if (!wallModeActive) return;
-    const point = getCanvasPoint(event);
+    const point = getLocalPoint(event, event.currentTarget);
 
     if (mode === 'edit' && dragPostId) {
       onWallGraphChange?.((graph) => ({
@@ -77,7 +70,7 @@ export default function WallDrawingLayer({ activeTool, wallGraph, onWallGraphCha
 
   const handlePointerDown = (event) => {
     if (!wallModeActive || mode !== 'edit') return;
-    const hit = getPostAtPoint(getCanvasPoint(event));
+    const hit = getPostAtPoint(getLocalPoint(event, event.currentTarget));
     if (!hit) return;
     event.preventDefault();
     event.stopPropagation();
@@ -88,7 +81,7 @@ export default function WallDrawingLayer({ activeTool, wallGraph, onWallGraphCha
     if (!wallModeActive || mode !== 'draw') return;
     event.preventDefault();
     event.stopPropagation();
-    const point = getCanvasPoint(event);
+    const point = getLocalPoint(event, event.currentTarget);
     const targetPost = getPostAtPoint(point);
 
     if (!draft) {

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Toolbar, Equipment, EquipmentSelector, AttributesBar, WallDrawingLayer } from '../Components/index';
 import api from '../services/api';
 import { calculateFovPolygon } from '../utils/fov';
+import { getLocalPoint } from '../utils/points';
 
 const DEFAULT_CAMERA_SETTINGS = {
   name: '',
@@ -18,16 +19,6 @@ const DEFAULT_CAMERA_SETTINGS = {
   attributes: {},
 };
 
-const updateItemById = (items, id, patch) =>
-  items.map((item) => (item.id === id ? { ...item, ...patch } : item));
-
-const updateItemAttributesById = (items, id, attributesPatch) =>
-  items.map((item) =>
-    item.id === id
-      ? { ...item, attributes: { ...(item.attributes ?? {}), ...attributesPatch } }
-      : item
-  );
-
 const createDevice = (tool, x, y, id = Date.now()) => ({
   id,
   kind: tool,
@@ -36,7 +27,9 @@ const createDevice = (tool, x, y, id = Date.now()) => ({
   y,
   ...DEFAULT_CAMERA_SETTINGS,
 });
+
 const empty_Walls = { posts: [], links: [] };
+
 const deriveWallSegments = (posts, links) => {
   const postById = new Map(posts.map((post) => [post.id, post]));
   return links
@@ -48,6 +41,9 @@ const deriveWallSegments = (posts, links) => {
     })
     .filter(Boolean);
 };
+
+
+
 
 function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
   const [activeTool, setActiveTool] = useState(null);
@@ -92,13 +88,14 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeTool]);
 
-  const updatePlacement = (id, patch) => {
-    setEquipment((prev) => updateItemById(prev, id, patch));
-    onUnsavedChanges(true);
-  };
-
-  const updatePlacementAttributes = (id, attributesPatch) => {
-    setEquipment((prev) => updateItemAttributesById(prev, id, attributesPatch));
+  const updatePlacement = (id, patchOrBuilder) => {
+    setEquipment((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const patch = typeof patchOrBuilder === 'function' ? patchOrBuilder(item) : patchOrBuilder;
+        return { ...item, ...patch };
+      })
+    );
     onUnsavedChanges(true);
   };
 
@@ -123,9 +120,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
       return;
     }
 
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const { x, y } = getLocalPoint(event, event.currentTarget);
 
     const newDevice = createDevice(toolToPlace, x, y);
     setEquipment((prev) => [...prev, newDevice]);
@@ -139,22 +134,22 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
     const targetId = selectedItemId ?? equipment[equipment.length - 1]?.id;
     if (!targetId) return;
 
-    updatePlacement(targetId, {
+    updatePlacement(targetId, (item) => ({
       name: camera.modelNumber ?? '',
       resolution: camera.resolution ?? '1080p',
-    });
-
-    updatePlacementAttributes(targetId, {
-      cameraId: camera.id,
-      cameraModel: camera.modelNumber,
-      brand: camera.brand,
-      resolution: camera.resolution,
-      cameraType: camera.type,
-    });
+      attributes: {
+        ...(item.attributes ?? {}),
+        cameraId: camera.id,
+        cameraModel: camera.modelNumber,
+        brand: camera.brand,
+        resolution: camera.resolution,
+        cameraType: camera.type,
+      },
+    }));
   };
 
   const handleUpdateSettings = (id, field, value) => {
-    updatePlacement(id, { [field]: value });
+    updatePlacement(id, () => ({ [field]: value }));
   };
 
   const handleSave = async () => {
