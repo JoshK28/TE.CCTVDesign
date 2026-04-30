@@ -31,6 +31,10 @@ namespace Backend.Data
         // allows the app to read and write the camera location
         public DbSet<CameraPlacement> CameraPlacemens => Set<CameraPlacement>();
 
+        // represents the Wall Placements table in the database
+        // allows the app to read and write the Wall location
+        public DbSet<Wall> Walls => Set<Wall>();
+
         // this method runs when the database is first being set up
         // it pre-fills the Cameras table with 21 HikVision cameras
         // so the data is automatically available without manual entry
@@ -61,6 +65,12 @@ namespace Backend.Data
                 new Camera { Id = 20, ModelNumber = "HUD-PT20X-SE-GY-G3", Description = "Camera PTZOptics Auto Tracking 20X Opt Zoom 1080p", Brand = "PTZOptics", Type = "PTZ", Resolution = "1080p", Range = "100m", LensSize = "20x Optical Zoom", LensType = "PTZ", FovHorizontal = "59°–2.3°", FovVertical = "", FovDiagonal = "", IrRange = "100m", Aperture = "F1.6", OperatingTemp = "–30°C to 60°C", Price = "$1200–$1600" },
                 new Camera { Id = 21, ModelNumber = "DS-2DE7530IW-AE", Description = "Camera PTZ 5MP 30x Zoom 150m IR IP66 Pendant HikVision", Brand = "HikVision", Type = "PTZ", Resolution = "5MP", Range = "150m", LensSize = "30x Optical Zoom", LensType = "PTZ", FovHorizontal = "60°–2.3°", FovVertical = "", FovDiagonal = "", IrRange = "200m", Aperture = "F1.5", OperatingTemp = "–30°C to 60°C", Price = "$2500–$3200" }
             );
+
+            modelBuilder.Entity<Wall>()
+                .HasOne(w => w.FloorLayout)
+                .WithMany()
+                .HasForeignKey(w => w.FloorID)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
