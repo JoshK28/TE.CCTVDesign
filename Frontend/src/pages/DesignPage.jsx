@@ -4,7 +4,7 @@ import { Toolbar, Equipment, EquipmentSelector, AttributesBar, WallDrawingLayer 
 import api from '../services/api';
 import { calculateFovPolygon } from '../utils/fov';
 import { getLocalPoint } from '../utils/points';
-import { empty_walls, wallGraphToSegments } from '../utils/wallsConverter';
+import { empty_Walls, wallToSegments } from '../utils/wallsConverter';
 
 const DEFAULT_CAMERA_SETTINGS = {
   name: '',
@@ -37,8 +37,8 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
   const [displaySelector, setDisplaySelector] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
-  const currentWallGraph = floorId ? (wallGraphs[floorId] ?? empty_walls) : empty_walls;
-  const currentWalls = wallGraphToSegments(currentWallGraph);
+  const currentWallGraph = floorId ? (wallGraphs[floorId] ?? empty_Walls) : empty_Walls;
+  const currentWalls = wallToSegments(currentWallGraph);
 
 
   useEffect(() => {
@@ -87,7 +87,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
     if (!floorId || typeof updater !== 'function') return;
     setWallGraphs((prev) => ({
       ...prev,
-      [floorId]: updater(prev[floorId] ?? empty_walls),
+      [floorId]: updater(prev[floorId] ?? empty_Walls),
     }));
     onUnsavedChanges(true);
   };
@@ -134,6 +134,12 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
 
   const handleUpdateSettings = (id, field, value) => {
     updatePlacement(id, () => ({ [field]: value }));
+  };
+
+  const handleDeleteEquipment = (id) => {
+    setEquipment((prev) => prev.filter((item) => item.id !== id));
+    setSelectedItemId(null);
+    onUnsavedChanges(true);
   };
 
   const handleSave = async () => {
@@ -283,6 +289,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
         equipment={equipment}
         onClose={() => setSelectedItemId(null)}
         onUpdateSettings={handleUpdateSettings}
+        onDeleteEquipment={handleDeleteEquipment}
       />
     </div>
   );

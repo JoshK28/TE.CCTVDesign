@@ -1,4 +1,5 @@
 import { Sidebar } from 'primereact/sidebar';
+import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
 import { Slider } from 'primereact/slider';
 import { InputNumber } from 'primereact/inputnumber';
@@ -6,7 +7,7 @@ import { InputText } from 'primereact/inputtext';
 import { ColorPicker } from 'primereact/colorpicker';
 import './AttributesBar.css';
 
-function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings }) {
+function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings, onDeleteEquipment }) {
   const selectedItem = equipment.find(e => e.id === selectedItemId);
   if (!selectedItem) return null;
 
@@ -59,6 +60,25 @@ function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings })
 
         {/* HEADER */}
         <h2 className="section-title">Camera Properties</h2>
+        
+        {onDeleteEquipment && (
+          <div className="attributes-delete-section">
+            <Button
+              type="button"
+              label="Delete equipment"
+              icon="pi pi-trash"
+              severity="danger"
+              outlined
+              className="w-full"
+              onClick={() => {
+                if (window.confirm('Remove this equipment from the layout?')) {
+                  onDeleteEquipment(selectedItem.id);
+                }
+              }}
+            />
+          </div>
+        )}
+
 
         {/* GENERAL */}
         <h3 className="section-subtitle">General</h3>
@@ -195,19 +215,6 @@ function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings })
 
         </div>
 
-        {/* NOTES */}
-        <h3 className="section-subtitle">Notes</h3>
-        <div className="section-box">
-
-          <div className="field">
-            <InputText
-              value={selectedItem.notes || ""}
-              onChange={(e) => onUpdateSettings(selectedItem.id, "notes", e.target.value)}
-              className="w-full"
-            />
-          </div>
-
-        </div>
 
       </div>
     </Sidebar>
