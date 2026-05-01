@@ -5,13 +5,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
-// create the web application builder
 var builder = WebApplication.CreateBuilder(args);
 
-// allows the app to use controllers
 builder.Services.AddControllers();
 
-// connects the app to the SQL Server database
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(
@@ -19,11 +16,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     );
 });
 
-// registers the JwtService so it can be used in controllers
 builder.Services.AddScoped<JwtService>();
 
-// sets up JWT authentication so the backend can read and validate tokens
-// the token is sent from the frontend with every request
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -38,7 +32,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// sets up CORS so the React frontend can talk to the backend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReact", policy =>
@@ -47,64 +40,69 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod());
 });
 
-// sets up Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// build the app
 var app = builder.Build();
 
-// enable Swagger
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// apply CORS policy
 app.UseCors("AllowReact");
-
-// enable authentication and authorization
-// authentication must come before authorization
 app.UseAuthentication();
 app.UseAuthorization();
-
-// allows serving static files
 app.UseStaticFiles();
-
-// maps all controller routes
 app.MapControllers();
 
-// start the React frontend automatically when backend starts
 if (app.Environment.IsDevelopment())
 {
     var frontendPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "Frontend");
-    // start the frontend
-    // start the frontend
-    var npmProcess = new System.Diagnostics.Process
-    {
-        StartInfo = new System.Diagnostics.ProcessStartInfo
-        {
-            FileName = "cmd.exe",
-            Arguments = "/c npm run dev",
-            WorkingDirectory = frontendPath,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        }
-    };
-    npmProcess.Start();
-    
-    // open browser after a short delay
+
+    // start frontend after a short delay to allow previous process to close
     _ = Task.Run(async () =>
     {
-        await Task.Delay(3000); // wait 3 seconds for frontend to start
+        // wait for any previous frontend process to fully close
+        await Task.Delay(1000);
+
+        var npmProcess = new System.Diagnostics.Process
+        {
+            StartInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = "/c npm run dev",
+                WorkingDirectory = frontendPath,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+        npmProcess.Start();
+
+        // stop the frontend when the backend stops
+        var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+        lifetime.ApplicationStopping.Register(() =>
+        {
+            try
+            {
+                if (!npmProcess.HasExited)
+                {
+                    npmProcess.Kill(true);
+                    npmProcess.WaitForExit();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to stop frontend: {ex.Message}");
+            }
+        });
+
+        // open browser after frontend has had time to start
+        await Task.Delay(3000);
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
         {
             FileName = "http://localhost:5173",
             UseShellExecute = true
         });
     });
+}
 
-    }
-
-// start the app
 app.Run();
-
-
