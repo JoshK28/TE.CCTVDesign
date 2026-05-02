@@ -4,12 +4,7 @@ import api from "../services/api";
 import '../page_styling/login.css';
 import tePNGLogo from '../assets/logo.png';
 
-
-/*
-The login component provides an interface for users to login and access the project program. It sends the login details to the backend through an API call.
-*/
- 
-function Login() {
+function Login({ onLogin }) {
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -30,6 +25,7 @@ function Login() {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("username", res.data.username);
 
+      onLogin();
       navigate("/app/dashboard");
     } catch (err) {
       setError(err.response?.data || "Login failed");
@@ -38,8 +34,8 @@ function Login() {
   return (
     <div className="auth-card">
       <div>
-        <img src={tePNGLogo} className="logo"></img>
-        <form style={{ display: "flex", gap: "20px", justifyContent: "center", marginTop: "30px" }} onSubmit={handleLogin} className="login-form">
+        <img src={tePNGLogo} className="logo" />
+        <form onSubmit={handleLogin} className="login-form">
           <input
             type="email"
             name="email"
@@ -55,11 +51,13 @@ function Login() {
             className="login-input"
           />
           <button type="submit" className="login-button">LOGIN</button>
-          <br/>
-          <a href="register" className="forgot"> Forgot Password?</a>
+          <button type="button" onClick={() => navigate('/')} className="back-to-home-button">
+            &larr; BACK TO HOME
+          </button>
         </form>
 
         {error && <p style={{ color: "red" }}>{error}</p>}
+        <a href="register" className="forgot">Forgot Password?</a>
       </div>
     </div>
   );

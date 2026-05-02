@@ -28,32 +28,40 @@ const updateItemAttributesById = (items, id, attributesPatch) =>
       : item
   );
 
-const createDevice = (tool, x, y, id = Date.now()) => ({
+const createDevice = (tool, x, y, id = Date.now(), rotation = 0) => ({
   id,
   kind: tool,
   type: tool,
   x,
   y,
   ...DEFAULT_CAMERA_SETTINGS,
+  rotation,
 });
 
-function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
+function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedChanges = false }) {
   const [activeTool, setActiveTool] = useState(null);
   const [equipment, setEquipment] = useState([]);
-  const [walls, setWalls] = useState([]);
+  const [wallsByFloor, setWallsByFloor] = useState({});
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [displaySelector, setDisplaySelector] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
 
+  // get walls for current floor only
+  const walls = wallsByFloor[floorId] ?? [];
+
   useEffect(() => {
     if (!floorId) return;
 
+    // clear equipment when switching floors
+    setEquipment([]);
+
+    // fetch camera placements for this floor
     const fetchPlacements = async () => {
       try {
         const res = await api.get(`/api/camerplacements/${floorId}`);
         const loaded = (res.data ?? []).map((p) =>
-          createDevice(p.type || 'camera', p.x, p.y, p.placementID ?? Date.now())
+          createDevice(p.type || 'camera', p.x, p.y, p.placementID ?? Date.now(), p.rotation ?? 0)
         );
         setEquipment(loaded);
       } catch (err) {
@@ -61,7 +69,28 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
       }
     };
 
+    // fetch walls for this floor
+    const fetchWalls = async () => {
+      try {
+        const res = await api.get(`/api/walls/${floorId}`);
+        const loadedWalls = (res.data ?? []).map((w) => ({
+          id: w.wallID,
+          x1: w.x1,
+          y1: w.y1,
+          x2: w.x2,
+          y2: w.y2,
+          length: w.length,
+          realWorldLength: w.realWorldLength,
+          realWorldHeight: w.realWorldHeight
+        }));
+        setWallsByFloor(prev => ({ ...prev, [floorId]: loadedWalls }));
+      } catch (err) {
+        console.error('Failed to load walls', err);
+      }
+    };
+
     fetchPlacements();
+    fetchWalls();
   }, [floorId]);
 
   useEffect(() => {
@@ -86,8 +115,12 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
     onUnsavedChanges(true);
   };
 
+  // add wall to current floor only
   const handleAddWall = (wall) => {
-    setWalls((prev) => [...prev, wall]);
+    setWallsByFloor(prev => ({
+      ...prev,
+      [floorId]: [...(prev[floorId] ?? []), wall]
+    }));
     onUnsavedChanges(true);
   };
 
@@ -147,6 +180,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
     setSaveMessage('');
 
     try {
+      // save camera placements
       const placements = equipment.map((item) => ({
         floorID: floorId,
         cameraId: item.attributes?.cameraId ?? 0,
@@ -157,6 +191,21 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
       }));
 
       await api.post(`/api/camerplacements/save/${floorId}`, placements);
+
+      // save walls for current floor
+      const wallsToSave = walls.map((wall) => ({
+        floorID: floorId,
+        x1: wall.x1,
+        y1: wall.y1,
+        x2: wall.x2,
+        y2: wall.y2,
+        length: wall.length ?? Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1),
+        realWorldLength: wall.realWorldLength ?? 0,
+        realWorldHeight: wall.realWorldHeight ?? 0
+      }));
+
+      await api.post(`/api/walls/save/${floorId}`, wallsToSave);
+
       setSaveMessage('Saved successfully!');
       onUnsavedChanges(false);
       setTimeout(() => setSaveMessage(''), 3000);
@@ -167,7 +216,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
           ? apiMessage
           : apiMessage?.message || err?.message || 'Failed to save';
       setSaveMessage(errorText);
-      console.error('Failed to save placements', err);
+      console.error('Failed to save', err);
     } finally {
       setSaving(false);
     }
@@ -214,6 +263,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
           />
         ))}
 
+        {/* walls filtered to current floor only */}
         <WallDrawingLayer activeTool={activeTool} walls={walls} onAddWall={handleAddWall} />
         <p className="item-count">Items Placed: {equipment.length}</p>
 
@@ -237,7 +287,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
             disabled={saving}
             style={{
               padding: '8px 20px',
-              backgroundColor: '#28a745',
+              backgroundColor: saving ? '#6c757d' : hasUnsavedChanges ? '#dc3545' : '#28a745',
               color: 'white',
               border: 'none',
               borderRadius: '5px',
@@ -245,7 +295,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
               fontSize: '14px',
             }}
           >
-            {saving ? 'Saving...' : 'Save'}
+            {saving ? 'Saving...' : hasUnsavedChanges ? 'Unsaved Changes' : 'Saved'}
           </button>
           {saveMessage && (
             <p
@@ -268,9 +318,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
 
       <EquipmentSelector
         visible={displaySelector}
-        onHide={() => {
-          setDisplaySelector(false);
-        }}
+        onHide={() => setDisplaySelector(false)}
         onSelectCamera={handleSelectCamera}
       />
 
@@ -354,6 +402,7 @@ function DesignPage() {
         imageSrc={currentImageSrc}
         floorId={currentFloorId}
         onUnsavedChanges={setHasUnsavedChanges}
+        hasUnsavedChanges={hasUnsavedChanges}
       />
 
       {floorLayouts.length > 1 && (

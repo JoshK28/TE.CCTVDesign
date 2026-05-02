@@ -31,7 +31,13 @@ export default function WallDrawingLayer({ activeTool, walls, onAddWall }) {
     event.stopPropagation();
     const length = Math.hypot(draftWall.x2 - draftWall.x1, draftWall.y2 - draftWall.y1);
     if (length >= 6) {
-      onAddWall?.({ id: Date.now(), ...draftWall });
+      onAddWall?.({ 
+        id: Date.now(), 
+        ...draftWall,
+        length: length,           // pixel length for rendering
+        realWorldLength: 0,       // real world length in metres - will be filled by popup later
+        realWorldHeight: 0        // real world height in metres - will be filled by popup later
+      });
     }
     setDraftWall(null);
   };

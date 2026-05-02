@@ -1,17 +1,14 @@
 using Backend.Data;
 using Backend.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
-// create the web application builder
-// this sets up the app with all the default settings
 var builder = WebApplication.CreateBuilder(args);
 
-// allows the app to use controllers
-// controllers are the classes that handle incoming requests e.g. AuthController, CameraController
 builder.Services.AddControllers();
 
-// connects the app to the SQL Server database
-// the connection string is read from appsettings.json
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(
@@ -19,44 +16,93 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     );
 });
 
-// registers the JwtService so it can be used in controllers
-// this service is responsible for creating login tokens
 builder.Services.AddScoped<JwtService>();
 
-// sets up CORS (Cross Origin Resource Sharing)
-// this allows the React frontend to make requests to this backend
-// without CORS the browser would block all requests from the frontend
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+            ),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReact", policy =>
-        policy.AllowAnyOrigin()  // allows requests from any URL
-              .AllowAnyHeader()  // allows any request headers
-              .AllowAnyMethod()); // allows GET, POST, PUT, DELETE etc
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod());
 });
 
-// sets up Swagger which is a tool for testing the API in the browser
-// accessible at http://localhost:5113/swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// build the app with all the services registered above
 var app = builder.Build();
 
-// enable Swagger in the browser
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// apply the CORS policy so the React frontend can talk to the backend
 app.UseCors("AllowReact");
-
-// enables authorization so protected routes can be secured in the future
+app.UseAuthentication();
 app.UseAuthorization();
-
-// maps all controller routes so the app knows which controller handles which request
+app.UseStaticFiles();
 app.MapControllers();
 
-// add this - allows serving uploaded images
-app.UseStaticFiles(); 
+if (app.Environment.IsDevelopment())
+{
+    var frontendPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "Frontend");
 
-// start the app and keep it running
+    // start frontend after a short delay to allow previous process to close
+    _ = Task.Run(async () =>
+    {
+        // wait for any previous frontend process to fully close
+        await Task.Delay(1000);
+
+        var npmProcess = new System.Diagnostics.Process
+        {
+            StartInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = "/c npm run dev",
+                WorkingDirectory = frontendPath,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+        npmProcess.Start();
+
+        // stop the frontend when the backend stops
+        var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+        lifetime.ApplicationStopping.Register(() =>
+        {
+            try
+            {
+                if (!npmProcess.HasExited)
+                {
+                    npmProcess.Kill(true);
+                    npmProcess.WaitForExit();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to stop frontend: {ex.Message}");
+            }
+        });
+
+        // open browser after frontend has had time to start
+        await Task.Delay(3000);
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "http://localhost:5173",
+            UseShellExecute = true
+        });
+    });
+}
+
 app.Run();

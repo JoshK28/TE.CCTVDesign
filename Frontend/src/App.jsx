@@ -30,7 +30,7 @@ function App() {
       <Routes>
         {/* public routes */}
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<Login onLogin={() => setIsLoggedIn(true)} />} />
         <Route path="/register" element={<Register />} />
         
 
@@ -42,22 +42,22 @@ function App() {
 
         <Route
           path="/app/dashboard"
-          element={isLoggedIn ? <Dashboard onLogout={handleLogout} /> : <Navigate to="/login" replace />}
+          element={isLoggedIn ? <Dashboard onLogout={handleLogout} /> : <Navigate to="/" replace />}
         />
 
         <Route
           path="/app/upload"
-          element={isLoggedIn ? <ImageUploader onLogout={handleLogout} /> : <Navigate to="/login" replace />}
+          element={isLoggedIn ? <ImageUploader onLogout={handleLogout} /> : <Navigate to="/" replace />}
         />
 
         <Route
           path="/app/design"
-          element={isLoggedIn ? <DesignPage onLogout={handleLogout} /> : <Navigate to="/login" replace />}
+          element={isLoggedIn ? <DesignPage onLogout={handleLogout} /> : <Navigate to="/" replace />}
         />
 
         <Route
           path="/app/projects"
-          element={isLoggedIn ? <ProjectList onLogout={handleLogout} /> : <Navigate to="/login" replace />}
+          element={isLoggedIn ? <ProjectList onLogout={handleLogout} /> : <Navigate to="/" replace />}
         />
 
 
