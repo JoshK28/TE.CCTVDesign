@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Toast } from 'primereact/toast';
 import { Toolbar, Equipment, EquipmentSelector, AttributesBar, WallDrawingLayer } from '../Components/index';
 import api from '../services/api';
 import { calculateFovPolygon } from '../utils/fov';
@@ -31,15 +32,17 @@ const createDevice = (tool, x, y, id = Date.now()) => ({
 
 function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
   const [activeTool, setActiveTool] = useState(null);
-  const [equipment, setEquipment] = useState([]);
-  const [wallGraphs, setWallGraphs] = useState({});
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [displaySelector, setDisplaySelector] = useState(false);
+
+  const [equipment, setEquipment] = useState([]);
+  const [wallGraphs, setWallGraphs] = useState({});
+
   const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState('');
+  const toastRef = useRef(null);
+
   const currentWallGraph = floorId ? (wallGraphs[floorId] ?? empty_Walls) : empty_Walls;
   const currentWalls = wallToSegments(currentWallGraph);
-
 
   useEffect(() => {
     if (!floorId) return;
@@ -83,17 +86,6 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
     onUnsavedChanges(true);
   };
 
-  const handleWallGraphChange = (updater) => {
-    if (!floorId || typeof updater !== 'function') return;
-    setWallGraphs((prev) => ({
-      ...prev,
-      [floorId]: updater(prev[floorId] ?? empty_Walls),
-    }));
-    onUnsavedChanges(true);
-  };
-
-  const selectedItem = equipment.find((item) => item.id === selectedItemId);
-
   const handleNewItem = (event) => {
     event.preventDefault();
 
@@ -132,24 +124,32 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
     }));
   };
 
-  const handleUpdateSettings = (id, field, value) => {
-    updatePlacement(id, () => ({ [field]: value }));
-  };
-
   const handleDeleteEquipment = (id) => {
     setEquipment((prev) => prev.filter((item) => item.id !== id));
     setSelectedItemId(null);
     onUnsavedChanges(true);
   };
 
+  const handleWallGraphChange = (updater) => {
+    if (!floorId || typeof updater !== 'function') return;
+    setWallGraphs((prev) => ({
+      ...prev,
+      [floorId]: updater(prev[floorId] ?? empty_Walls),
+    }));
+    onUnsavedChanges(true);
+  };
+
   const handleSave = async () => {
     if (!floorId) {
-      setSaveMessage('No floor layout selected');
+      toastRef.current?.show({
+        severity: 'warn',
+        summary: 'Cannot save',
+        detail: 'No floor layout selected',
+      });
       return;
     }
 
     setSaving(true);
-    setSaveMessage('');
 
     try {
       const placements = equipment.map((item) => ({
@@ -162,16 +162,22 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
       }));
 
       await api.post(`/api/camerplacements/save/${floorId}`, placements);
-      setSaveMessage('Saved successfully!');
+      toastRef.current?.show({
+        severity: 'success',
+        detail: 'Placements saved successfully.',
+      });
       onUnsavedChanges(false);
-      setTimeout(() => setSaveMessage(''), 3000);
     } catch (err) {
       const apiMessage = err?.response?.data;
       const errorText =
         typeof apiMessage === 'string'
           ? apiMessage
           : apiMessage?.message || err?.message || 'Failed to save';
-      setSaveMessage(errorText);
+      toastRef.current?.show({
+        severity: 'error',
+        summary: 'Save failed',
+        detail: errorText,
+      });
       console.error('Failed to save placements', err);
     } finally {
       setSaving(false);
@@ -180,6 +186,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
 
   return (
     <div className="design-workspace">
+      <Toast ref={toastRef} position="top-right" />
       <div className="toolbar-sidebar">
         <Toolbar onSelectTool={setActiveTool} />
       </div>
@@ -232,10 +239,6 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
             position: 'absolute',
             top: '10px',
             right: '10px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-end',
-            gap: '5px',
             zIndex: 1005,
           }}
         >
@@ -257,22 +260,6 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
           >
             {saving ? 'Saving...' : 'Save'}
           </button>
-          {saveMessage && (
-            <p
-              style={{
-                backgroundColor: saveMessage.includes('Failed')
-                  ? 'rgba(255,0,0,0.7)'
-                  : 'rgba(0,0,0,0.6)',
-                color: 'white',
-                padding: '5px 10px',
-                borderRadius: '5px',
-                fontSize: '13px',
-                margin: 0,
-              }}
-            >
-              {saveMessage}
-            </p>
-          )}
         </div>
       </div>
 
@@ -285,10 +272,10 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
       />
 
       <AttributesBar
-        selectedItemId={selectedItem?.id}
+        selectedItemId={selectedItemId}
         equipment={equipment}
         onClose={() => setSelectedItemId(null)}
-        onUpdateSettings={handleUpdateSettings}
+        onUpdateSettings={(id, field, value) => updatePlacement(id, () => ({ [field]: value }))}
         onDeleteEquipment={handleDeleteEquipment}
       />
     </div>
