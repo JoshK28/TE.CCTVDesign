@@ -153,5 +153,33 @@ namespace Backend.Controllers
 
             return Ok("Project deleted successfully");
         }
+        
+        // handles PUT requests to /api/projects/{id}
+        // updates a project belonging to the logged in user
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateProject(int id, [FromBody] CreateProjectDto dto)
+        {
+            var userId = GetUserId();
+
+            var project = await _context.Projects
+                .FirstOrDefaultAsync(p => p.ProjectID == id && p.UserID == userId);
+
+            if (project == null)
+                return NotFound("Project not found");
+
+            project.Title = dto.Title;
+            project.Address = dto.Address;
+            project.Description = dto.Description;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                project.ProjectID,
+                project.Title,
+                project.Address,
+                project.Description
+            });
+        }
     }
 }
