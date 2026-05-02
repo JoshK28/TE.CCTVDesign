@@ -7,6 +7,7 @@ import { InputText } from 'primereact/inputtext';
 import { ColorPicker } from 'primereact/colorpicker';
 import './AttributesBar.css';
 
+
 function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings, onDeleteEquipment }) {
   const selectedItem = equipment.find(e => e.id === selectedItemId);
   if (!selectedItem) return null;
@@ -45,6 +46,11 @@ function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings, o
   }
 
   const currentOpacity = selectedItem.fovOpacity ?? 0.3;
+  const attrs = selectedItem.attributes ?? {};
+  const brandName = attrs.brand ?? '';
+  const modelName = attrs.cameraModel ?? selectedItem.name ?? '';
+
+  const propertiesTitle = `${selectedItem.type ?? ''} properties`;
 
   return (
     <Sidebar
@@ -53,13 +59,25 @@ function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings, o
       onHide={onClose}
       modal={false}
       showCloseIcon={true}
-      dismissable={false}   // ⭐ Prevents sidebar from closing when using colour picker
+      dismissable={false}
       style={{ width: '380px' }}
     >
       <div className="sidebar-content">
+        <h2 className="section-title">{propertiesTitle}</h2>
 
-        {/* HEADER */}
-        <h2 className="section-title">Camera Properties</h2>
+        <h3 className="section-subtitle">Equipment details</h3>
+        <div className="section-box">
+          <div className="field">
+            <label>Brand name</label>
+            <div className="readonly-value">{brandName || '—'}</div>
+          </div>
+          <div className="field">
+            <label>Model name</label>
+            <div className="readonly-value">{modelName || '—'}</div>
+          </div>
+        </div>
+
+        
         
         {onDeleteEquipment && (
           <div className="attributes-delete-section">
@@ -121,7 +139,7 @@ function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings, o
 
         </div>
 
-        {/* ⭐ FOV APPEARANCE */}
+        
         <h3 className="section-subtitle">FOV Appearance</h3>
         <div className="section-box">
 

@@ -23,7 +23,6 @@ const DEFAULT_CAMERA_SETTINGS = {
 
 const createDevice = (tool, x, y, id = Date.now()) => ({
   id,
-  kind: tool,
   type: tool,
   x,
   y,
@@ -51,7 +50,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
       try {
         const res = await api.get(`/api/camerplacements/${floorId}`);
         const loaded = (res.data ?? []).map((p) =>
-          createDevice(p.type || 'camera', p.x, p.y, p.placementID ?? Date.now())
+          createDevice(p.type || p.kind || 'camera', p.x, p.y, p.placementID ?? Date.now())
         );
         setEquipment(loaded);
       } catch (err) {
@@ -158,7 +157,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
         x: item.x,
         y: item.y,
         rotation: item.rotation || 0,
-        type: item.type || item.kind || 'camera',
+        type: item.type || 'camera',
       }));
 
       await api.post(`/api/camerplacements/save/${floorId}`, placements);
@@ -205,7 +204,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
         />
         <svg className="fov-overlay">
           {equipment
-            .filter((item) => (item.kind ?? item.type) === 'camera')
+            .filter((item) => item.type === 'camera')
             .map((item) => (
               <polygon
                 key={item.id}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
-const getIcon = (kind) => {
-  switch (kind) {
+const getIcon = (equipmentType) => {
+  switch (equipmentType) {
     case 'camera':
       return { icon: '📷' };
     case 'router':
@@ -16,7 +16,7 @@ const getIcon = (kind) => {
 };
 
 function Equipment({ deviceInstance, onSelect, onUpdatePlacement }) {
-  const { id, kind, x, y, rotation = 0 } = deviceInstance;
+  const { id, type, x, y, rotation = 0 } = deviceInstance;
   const [livePos, setLivePos] = useState({ x, y });
 
   useEffect(() => {
@@ -74,7 +74,7 @@ function Equipment({ deviceInstance, onSelect, onUpdatePlacement }) {
         cursor: 'grab'
       }}
     >
-      {getIcon(kind).icon}
+      {getIcon(type).icon}
     </div>
   );
 }

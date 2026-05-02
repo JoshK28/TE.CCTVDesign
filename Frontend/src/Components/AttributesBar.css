@@ -30,6 +30,10 @@
   margin-bottom: -10px;
 }
 
+.sidebar-content > .section-subtitle:first-of-type {
+  margin-top: 0;
+}
+
 .readonly-value {
   padding: 8px 10px;
   background: #f4f4f4;
