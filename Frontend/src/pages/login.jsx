@@ -31,7 +31,6 @@ function Login({ onLogin }) {
       setError(err.response?.data || "Login failed");
     }
   };
-
   return (
     <div className="auth-card">
       <div>
