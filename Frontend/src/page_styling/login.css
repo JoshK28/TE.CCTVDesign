@@ -69,3 +69,16 @@ h2 {
 .forgot {
   color: black;
 }
+
+.back-to-home-button {
+  text-align: center;
+  background: rgb(100, 100, 100);
+  color: white;
+  border: none;
+  cursor: pointer;
+  height: 40px;
+}
+
+.back-to-home-button:hover {
+  background: rgb(70, 70, 70);
+}
