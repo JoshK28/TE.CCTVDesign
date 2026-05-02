@@ -169,3 +169,21 @@
     padding: 10px;
   }
 }
+
+.edit-btn {
+  background-color: #f0a500;
+  color: white;
+}
+
+.edit-btn:hover {
+  background-color: #cc8c00;
+}
+
+.delete-btn {
+  background-color: #dc3545;
+  color: rgb(0, 0, 0);
+}
+
+.delete-btn:hover {
+  background-color: #a71d2a;
+}
