@@ -111,7 +111,28 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
 
   const handleConfirmPlacement = ({ camera, displayName } = {}) => {
     if (!pendingPlacement) return;
-    const { x, y, type } = pendingPlacement;
+    const { x, y, type, replaceItemId } = pendingPlacement;
+
+    if (replaceItemId != null) {
+      if (type === 'camera' && camera) {
+        updatePlacement(replaceItemId, (item) => ({
+          ...item,
+          name: camera.modelNumber ?? item.name,
+          resolution: camera.resolution ?? item.resolution,
+          attributes: {
+            ...(item.attributes ?? {}),
+            cameraId: camera.id,
+            cameraModel: camera.modelNumber,
+            brand: camera.brand,
+            resolution: camera.resolution,
+            cameraType: camera.type,
+          },
+        }));
+        setSelectedItemId(replaceItemId);
+      }
+      return;
+    }
+
     const base = createDevice(type, x, y);
     let newObject = displayName ? { ...base, name: displayName } : base;
 
@@ -135,6 +156,13 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
     setSelectedItemId(newObject.id);
     setPendingPlacement(null);
     onUnsavedChanges(true);
+  };
+
+  const handleChangeCameraModel = (item) => {
+    if (!item || item.type !== 'camera') return;
+    setPendingPlacement({ x: item.x, y: item.y, type: 'camera', replaceItemId: item.id });
+    setSelectorOpen(true);
+    setSelectedItemId(null);
   };
 
   const handleDeleteEquipment = (id) => {
@@ -287,10 +315,12 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
       />
 
       <AttributesBar
-        selectedItem={ selectedItemId == null ? null
-          : equipment.find((e) => e.id === selectedItemId) ?? null }
+        selectedItem={
+          selectedItemId == null ? null : equipment.find((e) => e.id === selectedItemId) ?? null
+        }
         onClose={() => setSelectedItemId(null)}
         onUpdateSettings={(id, field, value) => updatePlacement(id, () => ({ [field]: value }))}
+        onChangeCameraModel={handleChangeCameraModel}
         onDeleteEquipment={handleDeleteEquipment}
       />
     </div>

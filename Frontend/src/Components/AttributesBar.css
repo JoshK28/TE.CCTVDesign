@@ -56,6 +56,14 @@
   gap: 14px;
 }
 
+.attributes-change-model-section {
+  margin-top: 4px;
+}
+
+.attributes-change-model-section .p-button {
+  width: 100%;
+}
+
 .attributes-delete-section {
   margin-top: 4px;
 }

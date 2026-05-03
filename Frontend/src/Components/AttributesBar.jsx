@@ -8,7 +8,13 @@ import { ColorPicker } from 'primereact/colorpicker';
 import './AttributesBar.css';
 
 
-function AttributesBar({ selectedItem, onClose, onUpdateSettings, onDeleteEquipment }) {
+function AttributesBar({
+  selectedItem,
+  onClose,
+  onUpdateSettings,
+  onChangeCameraModel,
+  onDeleteEquipment,
+}) {
   if (!selectedItem) return null;
 
   const resolutions = [
@@ -76,8 +82,18 @@ function AttributesBar({ selectedItem, onClose, onUpdateSettings, onDeleteEquipm
           </div>
         </div>
 
-        
-        
+        {selectedItem.type === 'camera' && typeof onChangeCameraModel === 'function' && (
+          <div className="attributes-change-model-section">
+            <Button
+              type="button"
+              label="Change camera model"
+              icon="pi pi-sync"
+              outlined
+              onClick={() => onChangeCameraModel(selectedItem)}
+            />
+          </div>
+        )}
+
         {onDeleteEquipment && (
           <div className="attributes-delete-section">
             <Button
