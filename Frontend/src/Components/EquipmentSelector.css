@@ -19,6 +19,23 @@
   width: 100%;
 }
 
+/* Clear field edge so the model filter is visible on all themes / sidebar backgrounds */
+.equipment-selector-catalog-controls .equipment-selector-model-input.p-inputtext {
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--surface-border, color-mix(in srgb, var(--text-color, #213547) 28%, transparent));
+}
+
+.equipment-selector-catalog-controls .equipment-selector-model-input.p-inputtext:enabled:hover {
+  border-color: var(--surface-400, color-mix(in srgb, var(--text-color, #213547) 40%, transparent));
+}
+
+.equipment-selector-catalog-controls .equipment-selector-model-input.p-inputtext:enabled:focus {
+  border-color: var(--primary-color, #646cff);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color, #646cff) 35%, transparent);
+  outline: none;
+}
+
 .equipment-selector-catalog-divider.p-divider-vertical {
   margin: 0 0.5rem;
   flex-shrink: 0;
@@ -80,11 +97,6 @@
 
 .equipment-selector-cam-row.p-button.p-button-text:hover {
   background: var(--surface-hover);
-}
-
-.equipment-selector-cam-row--selected.p-button.p-button-text {
-  outline: 2px solid var(--primary-color);
-  outline-offset: 0;
 }
 
 .equipment-selector-cam-row-body {
