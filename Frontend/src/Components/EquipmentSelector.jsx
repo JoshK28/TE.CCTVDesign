@@ -83,7 +83,15 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
       if (filters.model) rows = rows.filter((c) => c.modelNumber === filters.model);
       setCameras(rows);
       setCameraResultsRequested(true);
-      setSelectedCamera(null);
+      setSelectedCamera((prev) => {
+        if (rows.length === 0) return null;
+        if (prev && rows.some((c) => c.id === prev.id)) return prev;
+        if (filters.model) {
+          const match = rows.find((c) => c.modelNumber === filters.model);
+          if (match) return match;
+        }
+        return null;
+      });
     } catch (err) {
       console.error('Fetch failed:', err);
       setCameras([]);
@@ -128,51 +136,50 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     <TabView activeIndex={catalogTabIndex} onTabChange={(e) => setCatalogTabIndex(e.index)}>
       <TabPanel header="Catalog">
         <div className="equipment-selector-stack">
-          <div style={{ position: 'relative' }}>
-            <InputText
-              value={filters.searchQuery}
-              onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  void runCatalogSearch();
-                }
-              }}
-              placeholder="Type to search..."
-            />
-            <i
-              className="pi pi-search"
-              aria-hidden
-              style={{
-                position: 'absolute',
-                right: '0.65rem',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'var(--text-color-secondary)',
-                pointerEvents: 'none',
-              }}
-            />
-          </div>
+          <InputText
+            value={filters.searchQuery}
+            onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                void runCatalogSearch();
+              }
+            }}
+            placeholder="Type to search..."
+          />
 
           <p className="equipment-selector-or">or select from the list:</p>
 
           <Dropdown
             value={filters.manufacturer}
             options={manufacturerOptions}
-            onChange={(e) =>
+            onChange={(e) => {
               setFilters({
                 ...filters,
                 manufacturer: e.value,
                 model: null,
-              })
-            }
+              });
+              setSelectedCamera(null);
+            }}
             placeholder="Manufacturers"
             showClear
           />
           <Dropdown
             value={filters.model}
             options={modelOptions}
-            onChange={(e) => setFilters({ ...filters, model: e.value })}
+            onChange={(e) => {
+              const model = e.value;
+              setFilters({ ...filters, model });
+              if (!model) {
+                setSelectedCamera(null);
+                return;
+              }
+              let matches = allCameras.filter((c) => c.modelNumber === model);
+              if (filters.manufacturer) {
+                matches = matches.filter((c) => c.brand === filters.manufacturer);
+              }
+              setSelectedCamera(matches[0] ?? null);
+            }}
             placeholder="Models"
             showClear
           />
@@ -181,9 +188,10 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
             <Button type="button" label="Clear filters" outlined onClick={resetCameraPanel} />
             <Button
               type="button"
-              label="Add"
+              label="Add object"
               icon="pi pi-plus"
-              disabled={!selectedCamera}
+              severity="success"
+              disabled={!selectedCamera?.id}
               onClick={confirmSelectedCamera}
             />
           </div>
@@ -191,7 +199,8 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
 
         {!cameraResultsRequested ? (
           <p className="equipment-selector-muted">
-            Press Enter in the search field to load results, or use the dropdowns then Enter.
+            Press Enter to load the catalog. Choosing a model selects that camera; you can also pick a row after
+            results load. Use Add object to place it on the layout.
           </p>
         ) : loading ? (
           <p className="equipment-selector-muted">Loading…</p>
