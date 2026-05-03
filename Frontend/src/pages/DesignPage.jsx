@@ -32,7 +32,8 @@ const createDevice = (tool, x, y, id = Date.now()) => ({
 function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
   const [activeTool, setActiveTool] = useState(null);
   const [selectedItemId, setSelectedItemId] = useState(null);
-  const [displaySelector, setDisplaySelector] = useState(false);
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  const [pendingPlacement, setPendingPlacement] = useState(null);
 
   const [equipment, setEquipment] = useState([]);
   const [wallGraphs, setWallGraphs] = useState({});
@@ -97,30 +98,43 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
 
     const { x, y } = getLocalPoint(event, event.currentTarget);
 
-    const newDevice = createDevice(toolToPlace, x, y);
-    setEquipment((prev) => [...prev, newDevice]);
-    setSelectedItemId(newDevice.id);
+    setPendingPlacement({ x, y, type: toolToPlace });
+    setSelectedItemId(null);
     setActiveTool(null);
-    setDisplaySelector(true);
-    onUnsavedChanges(true);
+    setSelectorOpen(true);
   };
 
-  const handleSelectCamera = (camera) => {
-    const targetId = selectedItemId ?? equipment[equipment.length - 1]?.id;
-    if (!targetId) return;
+  const closeSelector = () => {
+    setSelectorOpen(false);
+    setPendingPlacement(null);
+  };
 
-    updatePlacement(targetId, (item) => ({
-      name: camera.modelNumber ?? '',
-      resolution: camera.resolution ?? '1080p',
-      attributes: {
-        ...(item.attributes ?? {}),
-        cameraId: camera.id,
-        cameraModel: camera.modelNumber,
-        brand: camera.brand,
-        resolution: camera.resolution,
-        cameraType: camera.type,
-      },
-    }));
+  const handleConfirmPlacement = ({ camera, displayName } = {}) => {
+    if (!pendingPlacement) return;
+    const { x, y, type } = pendingPlacement;
+    const base = createDevice(type, x, y);
+    let newObject = displayName ? { ...base, name: displayName } : base;
+
+    if (type === 'camera' && camera) {
+      newObject = {
+        ...newObject,
+        name: camera.modelNumber ?? newObject.name,
+        resolution: camera.resolution ?? newObject.resolution,
+        attributes: {
+          ...(newObject.attributes ?? {}),
+          cameraId: camera.id,
+          cameraModel: camera.modelNumber,
+          brand: camera.brand,
+          resolution: camera.resolution,
+          cameraType: camera.type,
+        },
+      };
+    }
+
+    setEquipment((prev) => [...prev, newObject]);
+    setSelectedItemId(newObject.id);
+    setPendingPlacement(null);
+    onUnsavedChanges(true);
   };
 
   const handleDeleteEquipment = (id) => {
@@ -192,7 +206,10 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
 
       <div
         className="image-fullscreen-wrapper"
-        onClick={() => setSelectedItemId(null)}
+        onClick={() => {
+          setSelectedItemId(null);
+          closeSelector();
+        }}
         onDrop={handleNewItem}
         onDragOver={(e) => e.preventDefault()}
       >
@@ -263,16 +280,15 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
       </div>
 
       <EquipmentSelector
-        visible={displaySelector}
-        onHide={() => {
-          setDisplaySelector(false);
-        }}
-        onSelectCamera={handleSelectCamera}
+        visible={selectorOpen}
+        placementType={pendingPlacement?.type ?? null}
+        onHide={closeSelector}
+        onConfirmSelection={handleConfirmPlacement}
       />
 
       <AttributesBar
-        selectedItemId={selectedItemId}
-        equipment={equipment}
+        selectedItem={ selectedItemId == null ? null
+          : equipment.find((e) => e.id === selectedItemId) ?? null }
         onClose={() => setSelectedItemId(null)}
         onUpdateSettings={(id, field, value) => updatePlacement(id, () => ({ [field]: value }))}
         onDeleteEquipment={handleDeleteEquipment}

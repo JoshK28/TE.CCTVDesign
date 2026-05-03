@@ -8,8 +8,7 @@ import { ColorPicker } from 'primereact/colorpicker';
 import './AttributesBar.css';
 
 
-function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings, onDeleteEquipment }) {
-  const selectedItem = equipment.find(e => e.id === selectedItemId);
+function AttributesBar({ selectedItem, onClose, onUpdateSettings, onDeleteEquipment }) {
   if (!selectedItem) return null;
 
   const resolutions = [
@@ -232,8 +231,6 @@ function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings, o
           </div>
 
         </div>
-
-
       </div>
     </Sidebar>
   );
