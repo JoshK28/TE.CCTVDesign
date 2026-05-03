@@ -15,8 +15,57 @@
 }
 
 .equipment-selector-catalog-controls .p-dropdown,
+.equipment-selector-catalog-controls .p-multiselect,
 .equipment-selector-catalog-controls .p-inputtext {
   width: 100%;
+}
+
+.equipment-selector-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.equipment-selector-filter-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.equipment-selector-filter-icon {
+  color: var(--primary-color, #646cff);
+  font-size: 0.95rem;
+}
+
+.equipment-selector-filter-title {
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+}
+
+.equipment-selector-filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary-color, #646cff);
+  background: color-mix(in srgb, var(--primary-color, #646cff) 18%, transparent);
+}
+
+.equipment-selector-selected-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+/* Drop overlay filter row + header chrome; list starts with options (close by click-outside / Esc). */
+.equipment-selector-multiselect-panel .p-multiselect-header {
+  display: none;
 }
 
 /* Clear field edge so the model filter is visible on all themes / sidebar backgrounds */

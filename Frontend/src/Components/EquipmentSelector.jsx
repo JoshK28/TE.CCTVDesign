@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Sidebar } from 'primereact/sidebar';
-import { Dropdown } from 'primereact/dropdown';
+import { MultiSelect } from 'primereact/multiselect';
+import { Chip } from 'primereact/chip';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import { Divider } from 'primereact/divider';
 import api from '../services/api';
 import './EquipmentSelector.css';
 
-const EMPTY_FILTERS = { manufacturer: null, cameraType: null, modelContains: '' };
+const EMPTY_FILTERS = { manufacturers: [], cameraTypes: [], modelContains: '' };
 
 const CAMERA_TYPE_FILTER_OPTIONS = ['Bullet', 'Dome', 'PTZ', 'Box'];
 
@@ -51,11 +52,12 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     setSearchLoading(true);
 
     try {
-      const params = { limit: 500 };
-      if (modelQ) params.search = modelQ;
-      if (filters.manufacturer) params.brand = filters.manufacturer;
-      if (filters.cameraType) params.type = filters.cameraType;
-      const res = await api.get('/api/cameras', { params });
+      const qs = new URLSearchParams();
+      qs.set('limit', '500');
+      if (modelQ) qs.set('search', modelQ);
+      for (const b of filters.manufacturers) qs.append('brand', b);
+      for (const t of filters.cameraTypes) qs.append('type', t);
+      const res = await api.get(`/api/cameras?${qs.toString()}`);
       setSearchResults(res.data ?? []);
     } catch {
       setSearchResults([]);
@@ -113,21 +115,85 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
           />
         </div>
 
-        <Dropdown
-          value={filters.manufacturer}
-          options={brands.map((value) => ({ label: value, value }))}
-          onChange={(e) => setFilters({ ...filters, manufacturer: e.value })}
-          placeholder="Manufacturer"
-          showClear
-        />
+        <div className="equipment-selector-filter-group">
+          <div className="equipment-selector-filter-heading">
+            <i className="pi pi-building equipment-selector-filter-icon" aria-hidden />
+            <span className="equipment-selector-filter-title">Manufacturer</span>
+            {filters.manufacturers.length > 0 ? (
+              <span className="equipment-selector-filter-count">{filters.manufacturers.length}</span>
+            ) : null}
+          </div>
+          <MultiSelect
+            value={filters.manufacturers}
+            options={brands}
+            onChange={(e) => setFilters({ ...filters, manufacturers: e.value ?? [] })}
+            placeholder="Manufacturer"
+            filter={false}
+            showClear
+            showSelectAll={false}
+            maxSelectedLabels={0}
+            selectedItemsLabel="{0} selected"
+            className="equipment-selector-multiselect"
+            panelClassName="equipment-selector-multiselect-panel"
+          />
+          {filters.manufacturers.length > 0 ? (
+            <div className="equipment-selector-selected-chips">
+              {filters.manufacturers.map((m) => (
+                <Chip
+                  key={m}
+                  label={m}
+                  removable
+                  onRemove={() =>
+                    setFilters({
+                      ...filters,
+                      manufacturers: filters.manufacturers.filter((x) => x !== m),
+                    })
+                  }
+                />
+              ))}
+            </div>
+          ) : null}
+        </div>
 
-        <Dropdown
-          value={filters.cameraType}
-          options={CAMERA_TYPE_FILTER_OPTIONS.map((value) => ({ label: value, value }))}
-          onChange={(e) => setFilters({ ...filters, cameraType: e.value })}
-          placeholder="Camera type"
-          showClear
-        />
+        <div className="equipment-selector-filter-group">
+          <div className="equipment-selector-filter-heading">
+            <i className="pi pi-video equipment-selector-filter-icon" aria-hidden />
+            <span className="equipment-selector-filter-title">Camera type</span>
+            {filters.cameraTypes.length > 0 ? (
+              <span className="equipment-selector-filter-count">{filters.cameraTypes.length}</span>
+            ) : null}
+          </div>
+          <MultiSelect
+            value={filters.cameraTypes}
+            options={CAMERA_TYPE_FILTER_OPTIONS}
+            onChange={(e) => setFilters({ ...filters, cameraTypes: e.value ?? [] })}
+            placeholder="Camera type"
+            filter={false}
+            showClear
+            showSelectAll={false}
+            maxSelectedLabels={0}
+            selectedItemsLabel="{0} selected"
+            className="equipment-selector-multiselect"
+            panelClassName="equipment-selector-multiselect-panel"
+          />
+          {filters.cameraTypes.length > 0 ? (
+            <div className="equipment-selector-selected-chips">
+              {filters.cameraTypes.map((t) => (
+                <Chip
+                  key={t}
+                  label={t}
+                  removable
+                  onRemove={() =>
+                    setFilters({
+                      ...filters,
+                      cameraTypes: filters.cameraTypes.filter((x) => x !== t),
+                    })
+                  }
+                />
+              ))}
+            </div>
+          ) : null}
+        </div>
 
         <div className="equipment-selector-actions">
           <Button
