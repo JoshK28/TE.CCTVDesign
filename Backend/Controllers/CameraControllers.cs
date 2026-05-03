@@ -20,6 +20,7 @@ namespace Backend.Controllers
     public async Task<IActionResult> GetCameras(
         [FromQuery] string? search,
         [FromQuery] string? brand,
+        [FromQuery] string? type,
         [FromQuery] int limit = 500)
     {
         var query = _context.Cameras.AsNoTracking().AsQueryable();
@@ -32,6 +33,11 @@ namespace Backend.Controllers
         if (!string.IsNullOrEmpty(brand))
         {
             query = query.Where(c => c.Brand == brand);
+        }
+
+        if (!string.IsNullOrEmpty(type))
+        {
+            query = query.Where(c => c.Type == type);
         }
 
         var take = Math.Clamp(limit, 1, 1000);

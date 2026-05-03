@@ -7,7 +7,9 @@ import { Divider } from 'primereact/divider';
 import api from '../services/api';
 import './EquipmentSelector.css';
 
-const EMPTY_FILTERS = { manufacturer: null, modelContains: '' };
+const EMPTY_FILTERS = { manufacturer: null, cameraType: null, modelContains: '' };
+
+const CAMERA_TYPE_FILTER_OPTIONS = ['Bullet', 'Dome', 'PTZ', 'Box'];
 
 export default function EquipmentSelector({ visible, placementType, onHide, onConfirmSelection }) {
   const [brands, setBrands] = useState([]);
@@ -52,6 +54,7 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
       const params = { limit: 500 };
       if (modelQ) params.search = modelQ;
       if (filters.manufacturer) params.brand = filters.manufacturer;
+      if (filters.cameraType) params.type = filters.cameraType;
       const res = await api.get('/api/cameras', { params });
       setSearchResults(res.data ?? []);
     } catch {
@@ -92,14 +95,6 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
   const renderCameraPanel = () => (
     <div className="equipment-selector-catalog-layout">
       <div className="equipment-selector-catalog-controls">
-        <Dropdown
-          value={filters.manufacturer}
-          options={brands.map((value) => ({ label: value, value }))}
-          onChange={(e) => setFilters({ ...filters, manufacturer: e.value })}
-          placeholder="Manufacturer"
-          showClear
-        />
-
         <div>
           <label htmlFor="eq-model-contains" style={{ display: 'block', marginBottom: '0.35rem' }}>
             Model Number contains
@@ -117,6 +112,22 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
             }}
           />
         </div>
+
+        <Dropdown
+          value={filters.manufacturer}
+          options={brands.map((value) => ({ label: value, value }))}
+          onChange={(e) => setFilters({ ...filters, manufacturer: e.value })}
+          placeholder="Manufacturer"
+          showClear
+        />
+
+        <Dropdown
+          value={filters.cameraType}
+          options={CAMERA_TYPE_FILTER_OPTIONS.map((value) => ({ label: value, value }))}
+          onChange={(e) => setFilters({ ...filters, cameraType: e.value })}
+          placeholder="Camera type"
+          showClear
+        />
 
         <div className="equipment-selector-actions">
           <Button
