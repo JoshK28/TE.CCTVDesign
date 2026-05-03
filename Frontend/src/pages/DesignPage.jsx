@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Toast } from 'primereact/toast';
+import { Button } from 'primereact/button';
 import { Toolbar, Equipment, EquipmentSelector, AttributesBar, WallDrawingLayer } from '../Components/index';
 import api from '../services/api';
 import { calculateFovPolygon } from '../utils/fov';
@@ -286,24 +287,18 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
             zIndex: 1005,
           }}
         >
-          <button
+          <Button
+            type="button"
+            label="Save"
+            icon="pi pi-save"
+            severity="success"
+            loading={saving}
+            disabled={saving}
             onClick={(e) => {
               e.stopPropagation();
               handleSave();
             }}
-            disabled={saving}
-            style={{
-              padding: '8px 20px',
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: saving ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-            }}
-          >
-            {saving ? 'Saving...' : 'Save'}
-          </button>
+          />
         </div>
       </div>
 
@@ -387,9 +382,12 @@ function DesignPage() {
   return (
     <div className="design-page-container">
       <div className="design-topbar">
-        <button onClick={handleBackButton} className="back-button">
-          &larr; Back to Project List
-        </button>
+        <Button
+          type="button"
+          className="back-button"
+          label="← Back to Project List"
+          onClick={handleBackButton}
+        />
       </div>
 
       <Workspace
@@ -414,21 +412,20 @@ function DesignPage() {
           }}
         >
           {floorLayouts.map((layout, index) => (
-            <button
+            <Button
               key={layout.floorID}
+              type="button"
+              label={`Layer ${layout.layer}`}
               onClick={() => setSelectedLayer(index)}
               style={{
                 padding: '8px 16px',
                 borderRadius: '20px',
-                border: 'none',
-                cursor: 'pointer',
                 backgroundColor: selectedLayer === index ? '#007bff' : '#fff',
                 color: selectedLayer === index ? '#fff' : '#000',
                 fontWeight: selectedLayer === index ? 'bold' : 'normal',
+                border: 'none',
               }}
-            >
-              Layer {layout.layer}
-            </button>
+            />
           ))}
         </div>
       )}

@@ -35,8 +35,7 @@ h1 {
   line-height: 1.1;
 }
 
-/* Do not style PrimeReact controls — they use <button> with p-* classes */
-button:not([class*='p-']) {
+button {
   border-radius: 8px;
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
@@ -47,11 +46,11 @@ button:not([class*='p-']) {
   cursor: pointer;
   transition: border-color 0.25s;
 }
-button:not([class*='p-']):hover {
+button:hover {
   border-color: #646cff;
 }
-button:not([class*='p-']):focus,
-button:not([class*='p-']):focus-visible {
+button:focus,
+button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
@@ -63,8 +62,8 @@ button:not([class*='p-']):focus-visible {
   a:hover {
     color: #747bff;
   }
-  button:not([class*='p-']) {
-    background-color: #f9f9f9;
+  button {
+    background-color: #a5a5a5;
   }
 }
 
