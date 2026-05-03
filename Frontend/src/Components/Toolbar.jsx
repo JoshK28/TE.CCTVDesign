@@ -1,10 +1,11 @@
-
 import { MegaMenu } from 'primereact/megamenu';
 import 'primeicons/primeicons.css';
+import securityCameraIcon from '../assets/Icons/security-camera.png';
 
 export default function Toolbar({ onSelectTool }) {
 
     const draggableItem = (item) => {
+        const isCamera = item.label === 'camera';
         return (
             <div 
                 draggable 
@@ -12,7 +13,11 @@ export default function Toolbar({ onSelectTool }) {
                 onClick={()=> onSelectTool(item.label)}
                 style={{ padding: '0.75rem 1.25rem', cursor: 'grab' }}
             >
-                <span className="pi pi-camera" style={{ marginRight: '0.5rem' }}></span>
+                {isCamera ? (
+                    <img src={securityCameraIcon} alt="" style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                ) : (
+                    <span className="pi pi-camera" style={{ marginRight: '0.5rem' }}></span>
+                )}
                 {item.label}
             </div>
         );
