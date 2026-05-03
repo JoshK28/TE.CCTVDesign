@@ -1,0 +1,54 @@
+/* Minimal layout only — colors come from the global PrimeReact theme */
+.equipment-selector-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.equipment-selector-stack .p-dropdown,
+.equipment-selector-stack .p-inputtext {
+  width: 100%;
+}
+
+.equipment-selector-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.equipment-selector-actions .p-button {
+  flex: 1;
+  min-width: 120px;
+}
+
+.equipment-selector-cam-row {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+}
+
+.equipment-selector-cam-row:hover {
+  background: var(--surface-hover);
+}
+
+.equipment-selector-cam-row--selected {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 0;
+}
+
+.equipment-selector-muted {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  color: var(--text-color-secondary);
+  text-align: center;
+}
+
+.equipment-selector-or {
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-color-secondary);
+  margin: 0.5rem 0;
+}

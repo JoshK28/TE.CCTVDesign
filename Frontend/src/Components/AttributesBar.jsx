@@ -86,7 +86,6 @@ function AttributesBar({ selectedItem, onClose, onUpdateSettings, onDeleteEquipm
               icon="pi pi-trash"
               severity="danger"
               outlined
-              className="w-full"
               onClick={() => {
                 if (window.confirm('Remove this equipment from the layout?')) {
                   onDeleteEquipment(selectedItem.id);
@@ -115,7 +114,6 @@ function AttributesBar({ selectedItem, onClose, onUpdateSettings, onDeleteEquipm
               value={selectedItem.resolution || "1080p"}
               options={resolutions}
               onChange={(e) => onUpdateSettings(selectedItem.id, "resolution", e.value)}
-              className="w-full"
             />
           </div>
 
@@ -132,7 +130,6 @@ function AttributesBar({ selectedItem, onClose, onUpdateSettings, onDeleteEquipm
               onValueChange={(e) => onUpdateSettings(selectedItem.id, "focalLength", e.value)}
               min={1}
               max={50}
-              className="w-full"
             />
           </div>
 
@@ -187,7 +184,6 @@ function AttributesBar({ selectedItem, onClose, onUpdateSettings, onDeleteEquipm
               onValueChange={(e) => onUpdateSettings(selectedItem.id, "height", e.value)}
               min={1}
               max={20}
-              className="w-full"
             />
           </div>
 
@@ -226,7 +222,6 @@ function AttributesBar({ selectedItem, onClose, onUpdateSettings, onDeleteEquipm
               onValueChange={(e) => onUpdateSettings(selectedItem.id, "irRange", e.value)}
               min={0}
               max={200}
-              className="w-full"
             />
           </div>
 
