@@ -3,6 +3,7 @@ import { Sidebar } from 'primereact/sidebar';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
+import { Divider } from 'primereact/divider';
 import api from '../services/api';
 import './EquipmentSelector.css';
 
@@ -108,97 +109,107 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
   );
 
   const renderCameraPanel = () => (
-    <div className="equipment-selector-stack">
-      <InputText
-        value={filters.searchQuery}
-        onChange={(e) => {
-          setSelectedCameraId(null);
-          setFilters({ ...filters, searchQuery: e.target.value });
-        }}
-        placeholder="Search cameras..."
-      />
-
-      <Dropdown
-        value={filters.manufacturer}
-        options={manufacturerOptions}
-        onChange={(e) => {
-          setSelectedCameraId(null);
-          setFilters({ ...filters, manufacturer: e.value, model: null });
-        }}
-        placeholder="Manufacturer"
-        showClear
-      />
-
-      <Dropdown
-        value={filters.model}
-        options={modelOptions}
-        onChange={(e) => {
-          const model = e.value;
-          setFilters({ ...filters, model });
-          if (!model) {
+    <div className="equipment-selector-catalog-layout">
+      <div className="equipment-selector-catalog-controls">
+        <InputText
+          value={filters.searchQuery}
+          onChange={(e) => {
             setSelectedCameraId(null);
-            return;
-          }
-          const match = catalog.find((camera) => camera.modelNumber === model);
-          setSelectedCameraId(match?.id ?? null);
-        }}
-        placeholder="Model"
-        showClear
-      />
-
-      <div className="equipment-selector-actions">
-        <Button
-          type="button"
-          label="Clear filters"
-          outlined
-          onClick={() => {
-            setFilters(EMPTY_FILTERS);
-            setSelectedCameraId(null);
+            setFilters({ ...filters, searchQuery: e.target.value });
           }}
+          placeholder="Search cameras..."
         />
-        <Button
-          type="button"
-          label="Add object"
-          icon="pi pi-plus"
-          severity="success"
-          disabled={!selectedCamera}
-          onClick={placeSelectedCamera}
+
+        <Dropdown
+          value={filters.manufacturer}
+          options={manufacturerOptions}
+          onChange={(e) => {
+            setSelectedCameraId(null);
+            setFilters({ ...filters, manufacturer: e.value, model: null });
+          }}
+          placeholder="Manufacturer"
+          showClear
         />
+
+        <Dropdown
+          value={filters.model}
+          options={modelOptions}
+          onChange={(e) => {
+            const model = e.value;
+            setFilters({ ...filters, model });
+            if (!model) {
+              setSelectedCameraId(null);
+              return;
+            }
+            const match = catalog.find((camera) => camera.modelNumber === model);
+            setSelectedCameraId(match?.id ?? null);
+          }}
+          placeholder="Model"
+          showClear
+        />
+
+        <div className="equipment-selector-actions">
+          <Button
+            type="button"
+            label="Clear filters"
+            outlined
+            onClick={() => {
+              setFilters(EMPTY_FILTERS);
+              setSelectedCameraId(null);
+            }}
+          />
+          <Button
+            type="button"
+            label="Add object"
+            icon="pi pi-plus"
+            severity="success"
+            disabled={!selectedCamera}
+            onClick={placeSelectedCamera}
+          />
+        </div>
       </div>
 
-      {loading ? (
-        <p className="equipment-selector-muted">Loading...</p>
-      ) : !filters.searchQuery.trim() ? (
-        <p className="equipment-selector-muted">Type a search term to view matching cameras.</p>
-      ) : filteredCameras.length === 0 ? (
-        <p className="equipment-selector-muted">No cameras match these filters.</p>
-      ) : (
-        <div className="equipment-selector-cam-list">
-          {filteredCameras.map((camera) => (
-            <Button
-              key={camera.id}
-              type="button"
-              text
-              className={`equipment-selector-cam-row${
-                selectedCameraId === camera.id ? ' equipment-selector-cam-row--selected' : ''
-              }`}
-              onClick={() => setSelectedCameraId(camera.id)}
-            >
-              <span className="equipment-selector-cam-row-body">
-                <span className="equipment-selector-cam-line">
-                  <strong>Model:</strong> {camera.modelNumber}
+      <Divider layout="vertical" className="equipment-selector-catalog-divider" />
+
+      <div className="equipment-selector-catalog-results">
+        {loading ? (
+          <p className="equipment-selector-muted equipment-selector-catalog-results-msg">Loading...</p>
+        ) : !filters.searchQuery.trim() ? (
+          <p className="equipment-selector-muted equipment-selector-catalog-results-msg">
+            Type a search term to view matching cameras.
+          </p>
+        ) : filteredCameras.length === 0 ? (
+          <p className="equipment-selector-muted equipment-selector-catalog-results-msg">
+            No cameras match these filters.
+          </p>
+        ) : (
+          <div className="equipment-selector-cam-list">
+            {filteredCameras.map((camera) => (
+              <Button
+                key={camera.id}
+                type="button"
+                text
+                className={`equipment-selector-cam-row${
+                  selectedCameraId === camera.id ? ' equipment-selector-cam-row--selected' : ''
+                }`}
+                onClick={() => setSelectedCameraId(camera.id)}
+              >
+                <span className="equipment-selector-cam-row-body">
+                  <span className="equipment-selector-cam-line">
+                    <strong>Model:</strong> {camera.modelNumber}
+                  </span>
+                  <span className="equipment-selector-cam-line">
+                    <strong>Brand:</strong> {camera.brand}
+                  </span>
+                  <span className="equipment-selector-cam-line">
+                    <strong>Type:</strong> {camera.type || 'N/A'}
+                  </span>
                 </span>
-                <span className="equipment-selector-cam-line">
-                  <strong>Brand:</strong> {camera.brand}
-                </span>
-                <span className="equipment-selector-cam-line">
-                  <strong>Type:</strong> {camera.type || 'N/A'}
-                </span>
-              </span>
-            </Button>
-          ))}
-        </div>
-      )}
+              </Button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -215,7 +226,7 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
       visible={visible}
       position="center"
       onHide={onHide}
-      style={{ width: 'min(480px, 94vw)' }}
+      style={{ width: 'min(800px, 96vw)' }}
       header="Equipment"
       dismissable
       modal
