@@ -21,6 +21,7 @@ namespace Backend.Controllers
         [FromQuery] string? search,
         [FromQuery] List<string>? brand,
         [FromQuery] List<string>? type,
+        [FromQuery] List<string>? resolution,
         [FromQuery] int limit = 500)
     {
         var query = _context.Cameras.AsNoTracking().AsQueryable();
@@ -38,6 +39,11 @@ namespace Backend.Controllers
         if (type is { Count: > 0 })
         {
             query = query.Where(c => type.Contains(c.Type));
+        }
+
+        if (resolution is { Count: > 0 })
+        {
+            query = query.Where(c => resolution.Contains(c.Resolution));
         }
 
         var take = Math.Clamp(limit, 1, 1000);

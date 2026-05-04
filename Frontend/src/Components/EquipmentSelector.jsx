@@ -8,9 +8,10 @@ import { Divider } from 'primereact/divider';
 import api from '../services/api';
 import './EquipmentSelector.css';
 
-const EMPTY_FILTERS = { manufacturers: [], cameraTypes: [], modelContains: '' };
+const EMPTY_FILTERS = { manufacturers: [], cameraTypes: [], resolutions: [], modelContains: '' };
 
-const CAMERA_TYPE_FILTER_OPTIONS = ['Bullet', 'Dome', 'PTZ', 'Box'];
+const CAMERA_TYPE_OPTIONS = ['Bullet', 'Dome', 'PTZ', 'Box'];
+const CAMERA_RESOLUTION_OPTIONS = Array.from({ length: 16 }, (_, i) => `${i + 1}MP`);
 
 export default function EquipmentSelector({ visible, placementType, onHide, onConfirmSelection }) {
   const [brands, setBrands] = useState([]);
@@ -52,6 +53,7 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
       if (modelQ) qs.set('search', modelQ);
       for (const b of filters.manufacturers) qs.append('brand', b);
       for (const t of filters.cameraTypes) qs.append('type', t);
+      for (const r of filters.resolutions) qs.append('resolution', r);
       const res = await api.get(`/api/cameras?${qs.toString()}`);
       setSearchResults(res.data ?? []);
     } catch {
@@ -61,7 +63,15 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     }
   };
 
-  const renderLabelPlacement = () => (
+  const renderBody = () => {
+    if (placementType === 'camera') return renderCameraPanel();
+    if (placementType === 'router' || placementType === 'sensor' || placementType === 'alarm') {
+      return renderObjectPanel();
+    }
+    return <p className="equipment-selector-muted">Unknown equipment type.</p>;
+  };
+
+  const renderObjectPanel = () => (
     <div className="equipment-selector-stack">
       <Button
         type="button"
@@ -145,7 +155,7 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
           </div>
           <MultiSelect
             value={filters.cameraTypes}
-            options={CAMERA_TYPE_FILTER_OPTIONS}
+            options={CAMERA_TYPE_OPTIONS}
             onChange={(e) => setFilters({ ...filters, cameraTypes: e.value ?? [] })}
             placeholder="Camera type"
             filter={false}
@@ -167,6 +177,46 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
                     setFilters({
                       ...filters,
                       cameraTypes: filters.cameraTypes.filter((x) => x !== t),
+                    })
+                  }
+                />
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="equipment-selector-filter-group">
+          <div className="equipment-selector-filter-heading">
+            <i className="pi pi-chart-bar equipment-selector-filter-icon" aria-hidden />
+            <span className="equipment-selector-filter-title">Resolution</span>
+            {filters.resolutions.length > 0 ? (
+              <span className="equipment-selector-filter-count">{filters.resolutions.length}</span>
+            ) : null}
+          </div>
+          <MultiSelect
+            value={filters.resolutions}
+            options={CAMERA_RESOLUTION_OPTIONS}
+            onChange={(e) => setFilters({ ...filters, resolutions: e.value ?? [] })}
+            placeholder="Resolution"
+            filter={false}
+            showClear
+            showSelectAll={false}
+            maxSelectedLabels={0}
+            selectedItemsLabel="{0} selected"
+            className="equipment-selector-multiselect"
+            panelClassName="equipment-selector-multiselect-panel"
+          />
+          {filters.resolutions.length > 0 ? (
+            <div className="equipment-selector-selected-chips">
+              {filters.resolutions.map((res) => (
+                <Chip
+                  key={res}
+                  label={res}
+                  removable
+                  onRemove={() =>
+                    setFilters({
+                      ...filters,
+                      resolutions: filters.resolutions.filter((x) => x !== res),
                     })
                   }
                 />
@@ -221,6 +271,9 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
                   <span className="equipment-selector-cam-line">
                     <strong>Type:</strong> {camera.type || 'N/A'}
                   </span>
+                  <span className="equipment-selector-cam-line">
+                    <strong>Price:</strong> {camera.price || 'N/A'}
+                  </span>
                 </span>
               </Button>
             ))}
@@ -229,14 +282,6 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
       </div>
     </div>
   );
-
-  const renderBody = () => {
-    if (placementType === 'camera') return renderCameraPanel();
-    if (placementType === 'router' || placementType === 'sensor' || placementType === 'alarm') {
-      return renderLabelPlacement();
-    }
-    return <p className="equipment-selector-muted">Unknown equipment type.</p>;
-  };
 
   return (
     <Sidebar
@@ -248,7 +293,7 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
       dismissable
       modal
     >
-      <div>{visible && placementType ? renderBody() : null}</div>
+      <div>{renderBody()}</div>
     </Sidebar>
   );
 }
