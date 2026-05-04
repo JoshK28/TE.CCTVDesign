@@ -8,11 +8,13 @@ function ImageUploader({ onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [projectName, setProjectName] = useState("");
-  const [clientName, setClientName] = useState("");
-  const [address, setAddress] = useState("");
-  const [description, setDescription] = useState("");
-  const [scale, setScale] = useState("1:100");
+  const [form, setForm] = useState({
+    projectName: "",
+    clientName: "",
+    address: "",
+    description: "",
+    scale: "1:100",
+  });
   const [floorImages, setFloorImages] = useState([
     { file: null, preview: null, imageWidth: 80 },
   ]);
@@ -20,6 +22,10 @@ function ImageUploader({ onLogout }) {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [showScalingStep, setShowScalingStep] = useState(false);
+
+  const setField = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
 
   const handleAddLayer = () =>
     setFloorImages([...floorImages, { file: null, preview: null, imageWidth: 80 }]);
@@ -54,7 +60,7 @@ function ImageUploader({ onLogout }) {
   };
 
   const handleSubmit = async () => {
-    if (!projectName || !clientName || !address)
+    if (!form.projectName || !form.clientName || !form.address)
       return setError("Please fill all required fields.");
     if (floorImages.every((f) => !f.file))
       return setError("Please upload at least one floor image.");
@@ -63,11 +69,11 @@ function ImageUploader({ onLogout }) {
     setError("");
     try {
       const formData = new FormData();
-      formData.append("Title", projectName);
-      formData.append("ClientName", clientName);
-      formData.append("Address", address);
-      formData.append("Description", description);
-      formData.append("Scale", scale);
+      formData.append("Title", form.projectName);
+      formData.append("ClientName", form.clientName);
+      formData.append("Address", form.address);
+      formData.append("Description", form.description);
+      formData.append("Scale", form.scale);
       floorImages.forEach((f) => f.file && formData.append("FloorImages", f.file));
 
       const res = await api.post("/api/projects/create", formData, {
@@ -90,7 +96,7 @@ function ImageUploader({ onLogout }) {
   };
 
   const handleOpenScalingStep = () => {
-    if (!projectName || !clientName || !address) {
+    if (!form.projectName || !form.clientName || !form.address) {
       setError("Please fill all required fields.");
       return;
     }
@@ -151,29 +157,29 @@ function ImageUploader({ onLogout }) {
             <input
               type="text"
               placeholder="Project Name"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
+              value={form.projectName}
+              onChange={(e) => setField("projectName", e.target.value)}
             />
             <input
               type="text"
               placeholder="Client Name"
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
+              value={form.clientName}
+              onChange={(e) => setField("clientName", e.target.value)}
             />
           </div>
 
           <textarea
             placeholder="Address"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
+            value={form.address}
+            onChange={(e) => setField("address", e.target.value)}
           />
 
           <div className="form-row">
             <input
               type="text"
               placeholder="Description (optional)"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              value={form.description}
+              onChange={(e) => setField("description", e.target.value)}
             />
           </div>
 
@@ -229,8 +235,8 @@ function ImageUploader({ onLogout }) {
               <input
                 type="text"
                 placeholder="Scale (e.g. 1:100)"
-                value={scale}
-                onChange={(e) => setScale(e.target.value)}
+                value={form.scale}
+                onChange={(e) => setField("scale", e.target.value)}
               />
             </div>
           )}
