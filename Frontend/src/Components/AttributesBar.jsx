@@ -5,8 +5,8 @@ import { Slider } from 'primereact/slider';
 import { InputNumber } from 'primereact/inputnumber';
 import { InputText } from 'primereact/inputtext';
 import { ColorPicker } from 'primereact/colorpicker';
+import { useState, useRef, useEffect } from 'react';
 import './AttributesBar.css';
-
 
 function AttributesBar({
   selectedItem,
@@ -15,8 +15,37 @@ function AttributesBar({
   onChangeCameraModel,
   onDeleteEquipment,
 }) {
+
+  // -----------------------------
+  // HOOKS MUST ALWAYS RUN FIRST
+  // -----------------------------
+  const [showPicker, setShowPicker] = useState(false);
+  const pickerRef = useRef(null);
+  const swatchRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (
+        pickerRef.current &&
+        !pickerRef.current.contains(e.target) &&
+        swatchRef.current &&
+        !swatchRef.current.contains(e.target)
+      ) {
+        setShowPicker(false);
+      }
+    }
+    if (showPicker) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showPicker]);
+
+  // -----------------------------
+  // CONDITIONAL RETURN MUST COME AFTER HOOKS
+  // -----------------------------
   if (!selectedItem) return null;
 
+  // -----------------------------
+  // STATIC DATA
+  // -----------------------------
   const resolutions = [
     { label: "720p (HD)", value: "720p" },
     { label: "1080p (Full HD)", value: "1080p" },
@@ -24,8 +53,17 @@ function AttributesBar({
     { label: "2160p (4K)", value: "2160p" }
   ];
 
+  const presetColors = [
+    "rgba(0, 150, 255, 0.3)",
+    "rgba(255, 0, 0, 0.3)",
+    "rgba(0, 255, 0, 0.3)",
+    "rgba(255, 165, 0, 0.3)",
+    "rgba(128, 0, 128, 0.3)",
+    "rgba(255, 255, 0, 0.3)"
+  ];
+
   // -----------------------------
-  // COLOUR CONVERSION HELPERS
+  // COLOUR HELPERS
   // -----------------------------
   function rgbaToHex(rgba) {
     const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
@@ -33,12 +71,10 @@ function AttributesBar({
     const [_, r, g, b] = match;
     return (
       "#" +
-      [r, g, b]
-        .map(x => {
-          const hex = parseInt(x).toString(16);
-          return hex.length === 1 ? "0" + hex : hex;
-        })
-        .join("")
+      [r, g, b].map(x => {
+        const hex = parseInt(x).toString(16);
+        return hex.length === 1 ? "0" + hex : hex;
+      }).join("")
     );
   }
 
@@ -50,11 +86,18 @@ function AttributesBar({
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   }
 
+  function stripOpacity(rgba) {
+    return rgba.replace(/,?\s*[\d.]+\)$/,'') + ')';
+  }
+
   const currentOpacity = selectedItem.fovOpacity ?? 0.3;
+  const isPreset = presetColors.some(
+    preset => stripOpacity(preset) === stripOpacity(selectedItem.fovColor)
+  );
+
   const attrs = selectedItem.attributes ?? {};
   const brandName = attrs.brand ?? '';
   const modelName = attrs.cameraModel ?? selectedItem.name ?? '';
-
   const propertiesTitle = `${selectedItem.type ?? ''} properties`;
 
   return (
@@ -68,8 +111,10 @@ function AttributesBar({
       style={{ width: '380px' }}
     >
       <div className="sidebar-content">
+
         <h2 className="section-title">{propertiesTitle}</h2>
 
+        {/* Equipment details */}
         <h3 className="section-subtitle">Equipment details</h3>
         <div className="section-box">
           <div className="field">
@@ -111,11 +156,9 @@ function AttributesBar({
           </div>
         )}
 
-
         {/* GENERAL */}
         <h3 className="section-subtitle">General</h3>
         <div className="section-box">
-
           <div className="field">
             <label>Camera Name</label>
             <InputText
@@ -132,13 +175,11 @@ function AttributesBar({
               onChange={(e) => onUpdateSettings(selectedItem.id, "resolution", e.value)}
             />
           </div>
-
         </div>
 
         {/* LENS */}
         <h3 className="section-subtitle">Lens & Optics</h3>
         <div className="section-box">
-
           <div className="field">
             <label>Focal Length (mm)</label>
             <InputNumber
@@ -148,25 +189,61 @@ function AttributesBar({
               max={50}
             />
           </div>
-
         </div>
 
-        
+        {/* FOV APPEARANCE */}
         <h3 className="section-subtitle">FOV Appearance</h3>
         <div className="section-box">
 
+          {/* PRESET COLOURS */}
           <div className="field">
-            <label>FOV Colour</label>
-            <ColorPicker
-              value={rgbaToHex(selectedItem.fovColor)}
-              format="hex"
-              onChange={(e) => {
-                const rgba = hexToRgba(e.value, currentOpacity);
-                onUpdateSettings(selectedItem.id, "fovColor", rgba);
-              }}
-            />
+            <label>Preset Colours</label>
+            <div className="fov-swatches">
+              {presetColors.map((color, index) => (
+                <div
+                  key={index}
+                  className={`fov-swatch ${
+                    stripOpacity(color) === stripOpacity(selectedItem.fovColor) ? "selected" : ""
+                  }`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => {
+                    setShowPicker(false);
+                    onUpdateSettings(selectedItem.id, "fovColor", color);
+                  }}
+                />
+              ))}
+
+              {/* CUSTOM COLOUR SWATCH */}
+              <div
+                ref={swatchRef}
+                className={`fov-swatch custom ${!isPreset ? "selected" : ""}`}
+                style={{ backgroundColor: selectedItem.fovColor }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPicker(prev => !prev);
+                }}
+              >
+                <span className="edit-indicator">✎</span>
+              </div>
+            </div>
+
+            {/* INLINE PICKER */}
+            {showPicker && (
+              <div ref={pickerRef} className="picker-inline">
+                <ColorPicker
+                  value={rgbaToHex(selectedItem.fovColor)}
+                  format="hex"
+                  inline
+                  onChange={(e) => {
+                    const rgba = hexToRgba(e.value, currentOpacity);
+                    onUpdateSettings(selectedItem.id, "fovColor", rgba);
+                  }}
+                />
+              </div>
+            )}
           </div>
 
+          {/* OPACITY */}
           <div className="field slider-field">
             <label>Opacity</label>
             <Slider
@@ -178,7 +255,6 @@ function AttributesBar({
                 const newOpacity = e.value;
                 onUpdateSettings(selectedItem.id, "fovOpacity", newOpacity);
 
-                // Rebuild RGBA with new opacity
                 const hex = rgbaToHex(selectedItem.fovColor);
                 const rgba = hexToRgba(hex, newOpacity);
                 onUpdateSettings(selectedItem.id, "fovColor", rgba);
@@ -192,7 +268,6 @@ function AttributesBar({
         {/* PHYSICAL */}
         <h3 className="section-subtitle">Physical</h3>
         <div className="section-box">
-
           <div className="field">
             <label>Camera Height (m)</label>
             <InputNumber
@@ -224,13 +299,11 @@ function AttributesBar({
             />
             <span className="slider-value">{selectedItem.tilt || 0}°</span>
           </div>
-
         </div>
 
         {/* IR */}
         <h3 className="section-subtitle">Infrared</h3>
         <div className="section-box">
-
           <div className="field">
             <label>IR Range (m)</label>
             <InputNumber
@@ -240,8 +313,8 @@ function AttributesBar({
               max={200}
             />
           </div>
-
         </div>
+
       </div>
     </Sidebar>
   );
