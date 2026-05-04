@@ -13,3 +13,26 @@ export const wallToSegments = (wallGraph) => {
     })
     .filter(Boolean);
 };
+
+export const segmentsToWallGraph = (segments = []) => {
+  const posts = [];
+  const postIdByKey = new Map();
+
+  const vertexId = (x, y) => {
+    const key = `${x}:${y}`;
+    let id = postIdByKey.get(key);
+    if (id) return id;
+    id = `post-${posts.length}`;
+    posts.push({ id, x, y });
+    postIdByKey.set(key, id);
+    return id;
+  };
+
+  const links = segments.map((segment, i) => ({
+    id: segment.id ?? `link-${i}`,
+    aPostId: vertexId(segment.x1, segment.y1),
+    bPostId: vertexId(segment.x2, segment.y2),
+  }));
+
+  return { posts, links };
+};

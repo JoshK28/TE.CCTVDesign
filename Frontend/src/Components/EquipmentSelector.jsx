@@ -14,20 +14,15 @@ const CAMERA_TYPE_FILTER_OPTIONS = ['Bullet', 'Dome', 'PTZ', 'Box'];
 
 export default function EquipmentSelector({ visible, placementType, onHide, onConfirmSelection }) {
   const [brands, setBrands] = useState([]);
-  const [searchResults, setSearchResults] = useState([]);
+  const [searchResults, setSearchResults] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
-  /** True after Search finishes at least once this open (distinguishes “no results yet” vs “search returned nothing”). */
-  const [hasSearched, setHasSearched] = useState(false);
-  const [customLabel, setCustomLabel] = useState('');
 
   useEffect(() => {
     if (!visible) return;
 
     setFilters(EMPTY_FILTERS);
-    setHasSearched(false);
-    setSearchResults([]);
-    setCustomLabel('');
+    setSearchResults(null);
 
     if (placementType !== 'camera') return;
 
@@ -63,34 +58,19 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
       setSearchResults([]);
     } finally {
       setSearchLoading(false);
-      setHasSearched(true);
     }
   };
 
-  const placeCustomLabel = () => {
-    onConfirmSelection?.({ displayName: customLabel.trim() || undefined });
-    onHide();
-  };
-
-  const placeCameraFromRow = (camera) => {
-    onConfirmSelection?.({ camera });
-    onHide();
-  };
-
-  const renderLabelPlacement = (inputId) => (
+  const renderLabelPlacement = () => (
     <div className="equipment-selector-stack">
-      <div>
-        <label htmlFor={inputId} style={{ display: 'block', marginBottom: '0.35rem' }}>
-          Label (optional)
-        </label>
-        <InputText
-          id={inputId}
-          value={customLabel}
-          onChange={(e) => setCustomLabel(e.target.value)}
-          placeholder="e.g. Front entrance"
-        />
-      </div>
-      <Button type="button" label="Place on layout" onClick={placeCustomLabel} />
+      <Button
+        type="button"
+        label="Place on layout"
+        onClick={() => {
+          onConfirmSelection?.({});
+          onHide();
+        }}
+      />
     </div>
   );
 
@@ -202,8 +182,7 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
             outlined
             onClick={() => {
               setFilters(EMPTY_FILTERS);
-              setHasSearched(false);
-              setSearchResults([]);
+              setSearchResults(null);
             }}
           />
           <Button type="button" label="Search" icon="pi pi-search" onClick={() => void runSearch()} />
@@ -215,11 +194,7 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
       <div className="equipment-selector-catalog-results">
         {searchLoading ? (
           <p className="equipment-selector-muted equipment-selector-catalog-results-msg">Searching...</p>
-        ) : !hasSearched ? (
-          <p className="equipment-selector-muted equipment-selector-catalog-results-msg">
-            Select filters and click Search. Click a result to add it to the layout.
-          </p>
-        ) : searchResults.length === 0 ? (
+        ) : searchResults === null ? null : searchResults.length === 0 ? (
           <p className="equipment-selector-muted equipment-selector-catalog-results-msg">
             No cameras match these filters.
           </p>
@@ -231,7 +206,10 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
                 type="button"
                 text
                 className="equipment-selector-cam-row"
-                onClick={() => placeCameraFromRow(camera)}
+                onClick={() => {
+                  onConfirmSelection?.({ camera });
+                  onHide();
+                }}
               >
                 <span className="equipment-selector-cam-row-body">
                   <span className="equipment-selector-cam-line">
@@ -255,7 +233,7 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
   const renderBody = () => {
     if (placementType === 'camera') return renderCameraPanel();
     if (placementType === 'router' || placementType === 'sensor' || placementType === 'alarm') {
-      return renderLabelPlacement(`eq-label-${placementType}`);
+      return renderLabelPlacement();
     }
     return <p className="equipment-selector-muted">Unknown equipment type.</p>;
   };

@@ -6,7 +6,7 @@ import { Toolbar, Equipment, EquipmentSelector, AttributesBar, WallDrawingLayer 
 import api from '../services/api';
 import { calculateFovPolygon } from '../utils/fov';
 import { getLocalPoint } from '../utils/points';
-import { empty_Walls, wallToSegments } from '../utils/wallsConverter';
+import { empty_Walls, segmentsToWallGraph, wallToSegments } from '../utils/wallsConverter';
 
 const DEFAULT_CAMERA_SETTINGS = {
   name: '',
@@ -31,40 +31,9 @@ const createDevice = (tool, x, y, id = Date.now(), rotation = 0) => ({
   rotation,
 });
 
-const pointKey = (x, y) => `${Math.round(x * 1000) / 1000}:${Math.round(y * 1000) / 1000}`;
-
-const segmentsToWallGraph = (segments = []) => {
-  const posts = [];
-  const links = [];
-  const postIdByKey = new Map();
-
-  const getOrCreatePostId = (x, y) => {
-    const key = pointKey(x, y);
-    const existingId = postIdByKey.get(key);
-    if (existingId) return existingId;
-    const id = `post-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    posts.push({ id, x, y });
-    postIdByKey.set(key, id);
-    return id;
-  };
-
-  for (const segment of segments) {
-    const aPostId = getOrCreatePostId(segment.x1, segment.y1);
-    const bPostId = getOrCreatePostId(segment.x2, segment.y2);
-    links.push({
-      id: segment.id ?? `link-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      aPostId,
-      bPostId,
-    });
-  }
-
-  return { posts, links };
-};
-
 function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedChanges = false }) {
   const [activeTool, setActiveTool] = useState(null);
   const [selectedItemId, setSelectedItemId] = useState(null);
-  const [selectorOpen, setSelectorOpen] = useState(false);
   const [pendingPlacement, setPendingPlacement] = useState(null);
 
   const [equipment, setEquipment] = useState([]);
@@ -158,13 +127,9 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     setPendingPlacement({ x, y, type: toolToPlace });
     setSelectedItemId(null);
     setActiveTool(null);
-    setSelectorOpen(true);
   };
 
-  const closeSelector = () => {
-    setSelectorOpen(false);
-    setPendingPlacement(null);
-  };
+  const closeSelector = () => setPendingPlacement(null);
 
   const handleConfirmPlacement = ({ camera, displayName } = {}) => {
     if (!pendingPlacement) return;
@@ -211,14 +176,12 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
 
     setEquipment((prev) => [...prev, newObject]);
     setSelectedItemId(newObject.id);
-    setPendingPlacement(null);
     onUnsavedChanges(true);
   };
 
   const handleChangeCameraModel = (item) => {
     if (!item || item.type !== 'camera') return;
     setPendingPlacement({ x: item.x, y: item.y, type: 'camera', replaceItemId: item.id });
-    setSelectorOpen(true);
     setSelectedItemId(null);
   };
 
@@ -374,7 +337,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
       </div>
 
       <EquipmentSelector
-        visible={selectorOpen}
+        visible={pendingPlacement != null}
         placementType={pendingPlacement?.type ?? null}
         onHide={closeSelector}
         onConfirmSelection={handleConfirmPlacement}
