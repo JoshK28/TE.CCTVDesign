@@ -74,7 +74,7 @@
 /* === Main Content === */
 .project-main {
   flex: 1;
-  padding: 40px;
+  padding: 28px 20px;
   text-align: center;
 }
 
@@ -89,7 +89,7 @@
 
 /* === Table Styling === */
 .project-table {
-  width: 90%;
+  width: min(98%, 1500px);
   margin: 0 auto;
   border-collapse: collapse;
   background: #ffffffd9;
@@ -101,7 +101,7 @@
 
 .project-table th,
 .project-table td {
-  padding: 15px 20px;
+  padding: 18px 22px;
   text-align: left;
   border-bottom: 1px solid #ddd;
 }

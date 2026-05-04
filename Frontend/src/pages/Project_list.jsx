@@ -23,7 +23,7 @@ function ProjectList({ onLogout }) {
 
   // fetch all projects when the page loads
   useEffect(() => {
-    fetchProjects();
+    void fetchProjects();
   }, []);
 
   const fetchProjects = async () => {
@@ -43,34 +43,37 @@ function ProjectList({ onLogout }) {
     setEditForm({
       title: project.title,
       address: project.address,
-      description: project.description
+      description: project.description,
     });
+    setEditError("");
+    setEditSuccess("");
+  };
+
+  const closeEditModal = () => {
+    setEditProject(null);
     setEditError("");
     setEditSuccess("");
   };
 
   // save edited project
   const handleEditSave = async () => {
-    if (!editForm.title) return setEditError("Project name is required");
-    if (!editForm.address) return setEditError("Address is required");
+    if (!editForm.title.trim()) return setEditError("Project name is required");
+    if (!editForm.address.trim()) return setEditError("Address is required");
+    setEditError("");
 
     try {
       await api.put(`/api/projects/${editProject.projectID}`, editForm);
       setEditSuccess("Project updated successfully!");
 
-      // update the project in the list
-      setProjects(prev => prev.map(p =>
-        p.projectID === editProject.projectID
-          ? { ...p, ...editForm }
-          : p
-      ));
+      setProjects((prev) =>
+        prev.map((p) => (p.projectID === editProject.projectID ? { ...p, ...editForm } : p))
+      );
 
       // close popup after 1.5 seconds
       setTimeout(() => {
-        setEditProject(null);
-        setEditSuccess("");
+        closeEditModal();
       }, 1500);
-    } catch (err) {
+    } catch {
       setEditError("Failed to update project");
     }
   };
@@ -79,9 +82,9 @@ function ProjectList({ onLogout }) {
   const handleDeleteConfirm = async () => {
     try {
       await api.delete(`/api/projects/${deleteProjectId}`);
-      setProjects(prev => prev.filter(p => p.projectID !== deleteProjectId));
+      setProjects((prev) => prev.filter((p) => p.projectID !== deleteProjectId));
       setDeleteProjectId(null);
-    } catch (err) {
+    } catch {
       setError("Failed to delete project");
       setDeleteProjectId(null);
     }
@@ -137,7 +140,7 @@ function ProjectList({ onLogout }) {
                   <td>{project.title}</td>
                   <td>{project.address}</td>
                   <td>{project.description}</td>
-                  <td style={{ display: "flex", gap: "8px" }}>
+                  <td style={overlayStyles.actionCell}>
                     <button
                       className="table-btn"
                       onClick={() =>
@@ -203,10 +206,7 @@ function ProjectList({ onLogout }) {
               <button className="table-btn" onClick={handleEditSave}>
                 Save
               </button>
-              <button
-                className="table-btn delete-btn"
-                onClick={() => setEditProject(null)}
-              >
+              <button className="table-btn delete-btn" onClick={closeEditModal}>
                 Cancel
               </button>
             </div>
@@ -265,8 +265,12 @@ const overlayStyles = {
     borderRadius: "5px",
     border: "1px solid #ccc",
     fontSize: "14px",
-    boxSizing: "border-box"
-  }
+    boxSizing: "border-box",
+  },
+  actionCell: {
+    display: "flex",
+    gap: "8px",
+  },
 };
 
 export default ProjectList;

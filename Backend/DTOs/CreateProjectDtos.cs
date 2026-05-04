@@ -13,8 +13,8 @@ namespace Backend.DTOs
         // the address entered in the form
         public string Address { get; set; } = string.Empty;
 
-        // a description of the project
-        public string Description { get; set; } = string.Empty;
+        // a description of the project (optional)
+        public string? Description { get; set; }
 
         // the floor layout images uploaded with the project
         // a project can have multiple floor layouts (layers)

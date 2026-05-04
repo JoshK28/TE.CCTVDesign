@@ -19,6 +19,7 @@ function ImageUploader({ onLogout }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showScalingStep, setShowScalingStep] = useState(false);
 
   const handleAddLayer = () =>
     setFloorImages([...floorImages, { file: null, preview: null, imageWidth: 80 }]);
@@ -86,6 +87,19 @@ function ImageUploader({ onLogout }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOpenScalingStep = () => {
+    if (!projectName || !clientName || !address) {
+      setError("Please fill all required fields.");
+      return;
+    }
+    if (floorImages.every((f) => !f.file)) {
+      setError("Please upload at least one floor image.");
+      return;
+    }
+    setError("");
+    setShowScalingStep(true);
   };
 
   return (
@@ -161,12 +175,6 @@ function ImageUploader({ onLogout }) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
-            <input
-              type="text"
-              placeholder="Scale (e.g. 1:100)"
-              value={scale}
-              onChange={(e) => setScale(e.target.value)}
-            />
           </div>
 
           {/* Floor layers */}
@@ -212,6 +220,21 @@ function ImageUploader({ onLogout }) {
             ➕ Add New Layer
           </button>
 
+          {showScalingStep && (
+            <div className="scaling-section">
+              <h3>Scaling</h3>
+              <p className="scaling-help">
+                Set the project scale before creating the project.
+              </p>
+              <input
+                type="text"
+                placeholder="Scale (e.g. 1:100)"
+                value={scale}
+                onChange={(e) => setScale(e.target.value)}
+              />
+            </div>
+          )}
+
           {error && <p className="error">{error}</p>}
           {success && <p className="success">{success}</p>}
 
@@ -219,9 +242,15 @@ function ImageUploader({ onLogout }) {
             <button onClick={() => navigate("/app/dashboard")} className="cancel-btn">
               Cancel
             </button>
-            <button onClick={handleSubmit} disabled={loading} className="create-btn">
-              {loading ? "Creating..." : "Create Project"}
-            </button>
+            {!showScalingStep ? (
+              <button onClick={handleOpenScalingStep} className="create-btn">
+                Configure Scaling
+              </button>
+            ) : (
+              <button onClick={handleSubmit} disabled={loading} className="create-btn">
+                {loading ? "Creating..." : "Create Project"}
+              </button>
+            )}
           </div>
         </div>
       </main>
