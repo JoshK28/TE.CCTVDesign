@@ -66,6 +66,9 @@ function Register() {
             className="login-input"
           />
           <button type="submit" className="login-button">REGISTER</button>
+          <button type="button" onClick={() => navigate('/')} className="back-to-home-button">
+            &larr; BACK TO HOME
+          </button>
 
           <br />
           <a href="/login" className="forgot">Already have an account? Login</a>
