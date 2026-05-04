@@ -44,11 +44,13 @@ function Login() {
     }
     try {
       const res = await api.post("/api/auth/login", formData);
+      localStorage.removeItem("token");
+      localStorage.removeItem("username");
       
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("username", res.data.username);
 
-      navigate("/app/dashboard");
+      window.location.replace("/app/dashboard");
     } catch (err) {
       setError(formatApiError(err.response?.data));
     }

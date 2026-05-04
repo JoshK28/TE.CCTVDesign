@@ -17,7 +17,6 @@ function ProjectList({ onLogout }) {
 
   const PAGE_SIZE = 8;
 
-  // Fetch all projects when the page loads
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -46,9 +45,7 @@ function ProjectList({ onLogout }) {
       setProjects((prev) => {
         const updated = prev.filter((p) => p.projectID !== projectId);
         const updatedTotalPages = Math.max(1, Math.ceil(updated.length / PAGE_SIZE));
-        if (page > updatedTotalPages) {
-          setPage(updatedTotalPages);
-        }
+        if (page > updatedTotalPages) setPage(updatedTotalPages);
         return updated;
       });
     } catch (err) {
@@ -61,32 +58,17 @@ function ProjectList({ onLogout }) {
   const handleEditProject = async (project) => {
     const title = window.prompt("Project title", project.title ?? "");
     if (title === null) return;
-
     const address = window.prompt("Project address", project.address ?? "");
     if (address === null) return;
-
     const description = window.prompt("Project description", project.description ?? "");
     if (description === null) return;
 
     setEditingId(project.projectID);
-    setError("");
     try {
-      const res = await api.put(`/api/projects/${project.projectID}`, {
-        title,
-        address,
-        description,
-      });
-
+      const res = await api.put(`/api/projects/${project.projectID}`, { title, address, description });
       setProjects((prev) =>
         prev.map((item) =>
-          item.projectID === project.projectID
-            ? {
-                ...item,
-                title: res.data.title,
-                address: res.data.address,
-                description: res.data.description,
-              }
-            : item
+          item.projectID === project.projectID ? { ...item, ...res.data } : item
         )
       );
     } catch (err) {
@@ -97,114 +79,66 @@ function ProjectList({ onLogout }) {
   };
 
   return (
-    <div className="project-dashboard">
-      {/* Sidebar */}
+    <div className="project-layout">
+      {/* Sidebar - Consistent with Dashboard */}
       <aside className="project-sidebar">
         <img src={tePNGLogo} alt="Logo" className="project-logo" />
-
         <nav className="sidebar-nav">
-          <button
-            onClick={() => navigate("/app/dashboard")}
-            className="sidebar-btn"
-          >
-            ⬅ Back to Dashboard
-          </button>
-          <button
-            onClick={() => navigate("/app/upload")}
-            className={`sidebar-btn ${
-              location.pathname === "/app/upload" ? "active" : ""
-            }`}
-          >
-            📁 New Project
-          </button>
+          <button onClick={() => navigate("/app/dashboard")} className="sidebar-btn">📂 Dashboard</button>
+          <button onClick={() => navigate("/app/upload")} className="sidebar-btn active">➕ New Project</button>
+          <button onClick={() => navigate("/app/calculator")} className="sidebar-btn">📊 Storage Calculator</button>
+          <button onClick={() => navigate("/app/ups")} className="sidebar-btn">🔋 UPS Calculator</button>
         </nav>
-
-        <button onClick={onLogout} className="logout-button">
-          Logout
-        </button>
+        <button onClick={onLogout} className="logout-button">Logout</button>
       </aside>
 
-      {/* Main content */}
+      {/* Main content offset for fixed sidebar */}
       <main className="project-main">
-        <h1>Projects</h1>
+        <h1>Project Management</h1>
 
-        {loading && <p>Loading projects...</p>}
-        {error && <p className="error">{error}</p>}
+        {error && <p className="error-message">{error}</p>}
 
-        {!loading && projects.length === 0 && (
-          <p>No projects found. Create a new project to get started!</p>
-        )}
+        <div className="project-card-container">
+          {loading ? (
+            <p>Loading projects...</p>
+          ) : projects.length === 0 ? (
+            <p>No projects found. Create a new project to get started!</p>
+          ) : (
+            <>
+              <table className="project-table">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Address</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagedProjects.map((project) => (
+                    <tr key={project.projectID}>
+                      <td className="bold-text">{project.title}</td>
+                      <td>{project.address}</td>
+                      <td>{project.description}</td>
+                      <td className="table-actions">
+                        <button className="open-btn" onClick={() => navigate("/app/design", { state: { projectId: project.projectID } })}>Open</button>
+                        <button className="edit-btn" onClick={() => handleEditProject(project)} disabled={editingId === project.projectID}>{editingId === project.projectID ? "..." : "Edit"}</button>
+                        <button className="delete-btn" onClick={() => handleDeleteProject(project.projectID)} disabled={deletingId === project.projectID}>Delete</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-        {!loading && projects.length > 0 && (
-          <table className="project-table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Address</th>
-                <th>Description</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pagedProjects.map((project) => (
-                <tr key={project.projectID}>
-                  <td>{project.title}</td>
-                  <td>{project.address}</td>
-                  <td>{project.description}</td>
-                  <td>
-                    <button
-                      className="table-btn"
-                      onClick={() =>
-                        navigate("/app/design", {
-                          state: { projectId: project.projectID },
-                        })
-                      }
-                    >
-                      Open
-                    </button>
-                    <button
-                      className="table-btn"
-                      onClick={() => handleEditProject(project)}
-                      disabled={editingId === project.projectID}
-                      style={{ marginLeft: "8px" }}
-                    >
-                      {editingId === project.projectID ? "Saving..." : "Edit"}
-                    </button>
-                    <button
-                      className="table-btn"
-                      onClick={() => handleDeleteProject(project.projectID)}
-                      disabled={deletingId === project.projectID}
-                      style={{ marginLeft: "8px" }}
-                    >
-                      {deletingId === project.projectID ? "Deleting..." : "Delete"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        {!loading && projects.length > 0 && (
-          <div style={{ display: "flex", justifyContent: "center", gap: "12px", marginTop: "16px" }}>
-            <button
-              className="table-btn"
-              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-              disabled={page === 1}
-            >
-              Previous
-            </button>
-            <span style={{ alignSelf: "center" }}>
-              Page {page} of {totalPages}
-            </span>
-            <button
-              className="table-btn"
-              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-              disabled={page === totalPages}
-            >
-              Next
-            </button>
-          </div>
-        )}
+              {/* Pagination */}
+              <div className="pagination">
+                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Previous</button>
+                <span>Page {page} of {totalPages}</span>
+                <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next</button>
+              </div>
+            </>
+          )}
+        </div>
       </main>
     </div>
   );

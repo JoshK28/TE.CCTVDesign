@@ -17,7 +17,6 @@ function UPSCalculator({ onLogout }) {
 
   const [catalog, setCatalog] = useState([]);
   const [catalogError, setCatalogError] = useState("");
-
   const [rows, setRows] = useState([{ id: 1, product: "", power: 0, units: 1 }]);
   const [batterySize, setBatterySize] = useState(100);
 
@@ -26,10 +25,9 @@ function UPSCalculator({ onLogout }) {
       try {
         const res = await api.get("/api/ups/devices");
         setCatalog(res.data ?? []);
-        setCatalogError("");
       } catch {
         setCatalog(fallbackLibrary);
-        setCatalogError("Could not load UPS catalog from API; using offline defaults.");
+        setCatalogError("Using offline defaults.");
       }
     };
     load();
@@ -45,38 +43,18 @@ function UPSCalculator({ onLogout }) {
     <div className="ups-layout">
       <aside className="ups-sidebar">
         <img src={tePNGLogo} alt="Logo" className="ups-logo" />
-
         <nav className="sidebar-nav">
-          <button
-            onClick={() => navigate("/app/dashboard")}
-            className="sidebar-btn"
-          >
-            ⬅ Back to Dashboard
-          </button>
-
-          <button
-            onClick={() => navigate("/app/calculator")}
-            className={`sidebar-btn ${location.pathname === "/app/calculator" ? "active" : ""}`}
-          >
-            💾 Storage Calculator
-          </button>
-          <button
-            onClick={() => navigate("/app/ups")}
-            className={`sidebar-btn ${location.pathname === "/app/ups" ? "active" : ""}`}
-          >
-            🔋 UPS Calculator
-          </button>
+          <button onClick={() => navigate("/app/dashboard")} className="sidebar-btn">📂 Dashboard</button>
+          <button onClick={() => navigate("/app/calculator")} className={`sidebar-btn ${location.pathname.includes("calculator") ? "active" : ""}`}>📊 Storage Calculator</button>
+          <button onClick={() => navigate("/app/ups")} className={`sidebar-btn ${location.pathname.includes("ups") ? "active" : ""}`}>🔋 UPS Calculator</button>
+          <button onClick={() => navigate("/app/bom")} className={`sidebar-btn ${location.pathname.includes("bom") ? "active" : ""}`}>📦 Bill of Materials</button>
         </nav>
-
-        <button onClick={onLogout} className="logout-button">
-          Logout
-        </button>
+        <button onClick={onLogout} className="logout-button">Logout</button>
       </aside>
 
       <main className="ups-main">
-        <h1>UPS Calculator</h1>
-        {catalogError && <p style={{ color: "tomato" }}>{catalogError}</p>}
-
+        <h1>UPS Power Calculator</h1>
+        
         <div className="controls">
           <button className="add-btn" onClick={addRow}>+</button>
           <button className="remove-btn" onClick={removeRow}>−</button>
@@ -106,34 +84,22 @@ function UPSCalculator({ onLogout }) {
                     }}
                   >
                     <option value="">Select Device</option>
-                    {catalog.map((p) => (
-                      <option key={p.name} value={p.name}>
-                        {p.name}
-                      </option>
-                    ))}
+                    {catalog.map((p) => (<option key={p.name} value={p.name}>{p.name}</option>))}
                   </select>
                 </td>
                 <td>
-                  <input
-                    type="number"
-                    value={r.power}
-                    onChange={(e) => {
-                      const updated = [...rows];
-                      updated[i].power = Number(e.target.value);
-                      setRows(updated);
-                    }}
-                  />
+                  <input type="number" value={r.power} onChange={(e) => {
+                    const updated = [...rows];
+                    updated[i].power = Number(e.target.value);
+                    setRows(updated);
+                  }} />
                 </td>
                 <td>
-                  <input
-                    type="number"
-                    value={r.units}
-                    onChange={(e) => {
-                      const updated = [...rows];
-                      updated[i].units = Number(e.target.value);
-                      setRows(updated);
-                    }}
-                  />
+                  <input type="number" value={r.units} onChange={(e) => {
+                    const updated = [...rows];
+                    updated[i].units = Number(e.target.value);
+                    setRows(updated);
+                  }} />
                 </td>
               </tr>
             ))}
@@ -141,24 +107,19 @@ function UPSCalculator({ onLogout }) {
         </table>
 
         <div className="power-summary">
-          <p><strong>Overall Power Consumption:</strong> {totalPower} W</p>
-
+          <p><strong>Overall Load:</strong> {totalPower} Watts</p>
           <div className="battery-input">
             <label>Battery Size (Ah): </label>
-            <input
-              type="number"
-              value={batterySize}
-              onChange={(e) => setBatterySize(e.target.value)}
-            />
+            <input type="number" value={batterySize} onChange={(e) => setBatterySize(e.target.value)} />
           </div>
 
           <div className="result-box-ups">
             <div>
-              <h4>Battery Size</h4>
+              <h4>Capacity</h4>
               <p>{batterySize} Ah</p>
             </div>
             <div>
-              <h4>Predicted Uptime</h4>
+              <h4>Est. Uptime</h4>
               <p>{predictedUptime} Hours</p>
             </div>
           </div>

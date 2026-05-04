@@ -93,134 +93,80 @@ function ImageUploader({ onLogout }) {
       {/* Sidebar */}
       <aside className="upload-sidebar">
         <img src={tePNGLogo} alt="Logo" className="upload-logo" />
-
         <nav className="sidebar-nav">
-          
-          <button
-            onClick={() => navigate("/app/dashboard")}
-            className="sidebar-btn"
-          >
-            ⬅ Back to Dashboard
-          </button>
-          
-          <button
-            onClick={() => navigate("/app/upload")}
-            className={`sidebar-btn ${
-              location.pathname === "/app/upload" ? "active" : ""
-            }`}
-          >
-            📁 New Project
-          </button>
-
-          <button
-            onClick={() => navigate("/app/projects")}
-            className={`sidebar-btn ${
-              location.pathname === "/app/projects" ? "active" : ""
-            }`}
-          >
-            📂 View Projects
-          </button>
+          <button onClick={() => navigate("/app/dashboard")} className="sidebar-btn">📂 Dashboard</button>
+          <button onClick={() => navigate("/app/upload")} className={`sidebar-btn ${location.pathname === "/app/upload" ? "active" : ""}`}>➕ New Project</button>
+          <button onClick={() => navigate("/app/projects")} className="sidebar-btn">📂 View Projects</button>
         </nav>
-
-        <button onClick={onLogout} className="logout-button">
-          Logout
-        </button>
+        <button onClick={onLogout} className="logout-button">Logout</button>
       </aside>
 
       {/* Main Content */}
       <main className="upload-main">
-        <h1>Create Project</h1>
+        <h1>Create New Design Project</h1>
 
-        <div className="form-container">
-          {/* Project details */}
-          <div className="form-row">
-            <input
-              type="text"
-              placeholder="Project Name"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Client Name"
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-            />
+        <div className="upload-card">
+          <h3>Project Specifications</h3>
+          <div className="form-grid">
+            <div className="input-group">
+              <label>Project Name *</label>
+              <input type="text" placeholder="e.g. Warehouse Security" value={projectName} onChange={(e) => setProjectName(e.target.value)} />
+            </div>
+            <div className="input-group">
+              <label>Client Name *</label>
+              <input type="text" placeholder="e.g. Acme Corp" value={clientName} onChange={(e) => setClientName(e.target.value)} />
+            </div>
           </div>
 
-          <textarea
-            placeholder="Address"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-
-          <div className="form-row">
-            <input
-              type="text"
-              placeholder="Description (optional)"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Scale (e.g. 1:100)"
-              value={scale}
-              onChange={(e) => setScale(e.target.value)}
-            />
+          <div className="input-group">
+            <label>Site Address *</label>
+            <textarea placeholder="Full site location" value={address} onChange={(e) => setAddress(e.target.value)} />
           </div>
 
-          {/* Floor layers */}
+          <div className="form-grid">
+            <div className="input-group">
+              <label>Description</label>
+              <input type="text" placeholder="Optional notes" value={description} onChange={(e) => setDescription(e.target.value)} />
+            </div>
+            <div className="input-group">
+              <label>Initial Scale</label>
+              <input type="text" placeholder="1:100" value={scale} onChange={(e) => setScale(e.target.value)} />
+            </div>
+          </div>
+
+          <hr className="form-divider" />
+
+          <h3>Floor Plans & Layers</h3>
           {floorImages.map((layer, index) => (
             <div key={index} className="layer-section">
               <div className="layer-header">
-                <p>Layer {index + 1}</p>
-                <input
-                  type="file"
-                  accept="image/png, image/jpeg"
-                  id={`file-${index}`}
-                  onChange={(e) => handleImageChange(e, index)}
-                  style={{ display: "none" }}
-                />
-                <label htmlFor={`file-${index}`} className="upload-btn">
-                  Upload Floor Image
-                </label>
-                {floorImages.length > 1 && (
-                  <button
-                    onClick={() => handleRemoveLayer(index)}
-                    className="remove-layer-btn"
-                  >
-                    ✕
-                  </button>
-                )}
+                <span>Floor Level / Layer {index + 1}</span>
+                <div className="layer-actions">
+                  <input type="file" accept="image/png, image/jpeg" id={`file-${index}`} onChange={(e) => handleImageChange(e, index)} style={{ display: "none" }} />
+                  <label htmlFor={`file-${index}`} className="file-label">Choose File</label>
+                  {floorImages.length > 1 && (
+                    <button onClick={() => handleRemoveLayer(index)} className="remove-btn">Remove</button>
+                  )}
+                </div>
               </div>
 
               {layer.preview && (
-                <div className="image-preview">
-                  <p>Preview:</p>
-                  <img
-                    src={layer.preview}
-                    alt="Layer preview"
-                    style={{ width: `${layer.imageWidth}%` }}
-                    onWheel={(e) => handleWheel(e, index)}
-                  />
+                <div className="image-preview-container">
+                  <p className="hint">Scroll on image to resize preview</p>
+                  <img src={layer.preview} alt="Preview" style={{ width: `${layer.imageWidth}%` }} onWheel={(e) => handleWheel(e, index)} />
                 </div>
               )}
             </div>
           ))}
 
-          <button onClick={handleAddLayer} className="add-layer-btn">
-            ➕ Add New Layer
-          </button>
+          <button onClick={handleAddLayer} className="add-layer-btn">➕ Add Another Floor</button>
 
-          {error && <p className="error">{error}</p>}
-          {success && <p className="success">{success}</p>}
+          {error && <div className="error-box">{error}</div>}
+          {success && <div className="success-box">{success}</div>}
 
-          <div className="form-actions">
-            <button onClick={() => navigate("/app/dashboard")} className="cancel-btn">
-              Cancel
-            </button>
-            <button onClick={handleSubmit} disabled={loading} className="create-btn">
-              {loading ? "Creating..." : "Create Project"}
+          <div className="form-footer">
+            <button onClick={handleSubmit} disabled={loading} className="submit-btn">
+              {loading ? "Processing..." : "Generate Project"}
             </button>
           </div>
         </div>

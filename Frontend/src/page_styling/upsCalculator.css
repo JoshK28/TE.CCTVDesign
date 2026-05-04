@@ -1,118 +1,177 @@
+:root {
+  --primary: #245d91;
+  --secondary: #6aaee6;
+  --surface: #dee7ef;
+  --white: #ffffff;
+}
+
 .ups-layout {
   display: flex;
   min-height: 100vh;
-  background: #f8f8f8;
-  color: #222;
+  background-color: var(--surface);
   font-family: "Segoe UI", sans-serif;
 }
 
+/* Sidebar - Matches Dashboard and BOM */
 .ups-sidebar {
-  width: 220px;
-  background: #1f1f1f;
+  width: 260px;
+  background-color: var(--primary);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  padding: 25px 15px;
+  padding: 40px 20px;
+  position: fixed; /* Keeps sidebar locked on left */
+  height: 100vh;
+  z-index: 1000;
+  box-shadow: 4px 0 10px rgba(0,0,0,0.1);
 }
 
 .ups-logo {
-  width: 120px;
-  margin-bottom: 40px;
+  width: 140px;
+  margin: 0 auto 40px;
+  filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.2));
+  display: block;
+  object-fit: contain;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
+  flex-grow: 1;
 }
 
 .sidebar-btn {
-  background: #ffffffd9;
-  color: #222;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
   border: none;
-  border-radius: 10px;
-  padding: 10px;
+  border-radius: 8px;
+  padding: 12px 15px;
   width: 100%;
   text-align: left;
   cursor: pointer;
   transition: 0.3s;
+  font-weight: 500;
+}
+
+.sidebar-btn:hover {
+  background: var(--white);
+  transform: translateX(5px);
 }
 
 .sidebar-btn.active {
-  background: rgb(4, 66, 105);
+  background: var(--secondary);
   color: #fff;
-  font-weight: 600;
+  font-weight: bold;
 }
 
 .logout-button {
-  background: #fff;
-  color: #000;
+  background: var(--white);
+  color: var(--primary);
   border: none;
-  border-radius: 6px;
-  padding: 8px 16px;
+  border-radius: 8px;
+  padding: 10px;
   cursor: pointer;
-  transition: 0.3s;
+  font-weight: bold;
+  margin-top: auto;
 }
-.logout-button:hover { background: #ccc; }
 
+/* Main Content - Offset for fixed sidebar */
 .ups-main {
   flex: 1;
+  margin-left: 260px;
   padding: 40px;
-  text-align: center;
 }
 
-.add-btn,
-.remove-btn {
+.ups-main h1 {
+  color: var(--primary);
+  font-weight: 800;
+  margin-bottom: 25px;
+}
+
+/* Buttons */
+.add-btn, .remove-btn {
   border: none;
-  border-radius: 30px;
-  width: 40px;
-  height: 40px;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
   margin: 0 5px;
-  font-size: 22px;
-  font-weight: bold;
+  font-size: 20px;
   color: #fff;
   cursor: pointer;
 }
-
 .add-btn { background: #4caf50; }
 .remove-btn { background: #d32f2f; }
 
+/* Table - Clean White Surface */
 .ups-table {
   width: 100%;
   border-collapse: collapse;
-  background: #e0e0e0;
-  border-radius: 10px;
+  background: var(--white);
+  border-radius: 12px;
   overflow: hidden;
-  margin-top: 10px;
+  margin-top: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
-th, td {
-  padding: 10px;
+.ups-table th {
+  background: var(--primary);
+  color: white;
+  padding: 15px;
+  text-align: left;
 }
 
-input, select {
-  border: none;
+.ups-table td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.ups-table input, .ups-table select {
+  border: 1px solid #ccc;
   border-radius: 6px;
-  padding: 6px;
-  width: 120px;
-  text-align: center;
+  padding: 8px;
+  width: 90%;
 }
 
+/* Results Section */
 .power-summary {
   margin-top: 30px;
+  background: var(--white);
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
 }
 
 .battery-input {
-  margin-top: 10px;
+  margin: 20px 0;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.battery-input input {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-left: 10px;
 }
 
 .result-box-ups {
   display: flex;
   justify-content: space-around;
-  background: #ddd;
+  background: var(--primary);
+  color: white;
   border-radius: 15px;
-  margin-top: 20px;
-  padding: 20px;
+  padding: 25px;
+}
+
+.result-box-ups h4 {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.result-box-ups p {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 5px 0 0 0;
 }
