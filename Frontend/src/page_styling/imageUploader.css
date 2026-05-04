@@ -90,6 +90,11 @@
   margin: 0 auto;
 }
 
+.form-container--scaling {
+  max-width: min(1200px, 96vw);
+  width: 100%;
+}
+
 .form-row {
   display: flex;
   justify-content: center;
@@ -175,6 +180,9 @@
   border-radius: 8px;
   background: #f8f8f8;
   text-align: left;
+  min-height: min(62vh, 720px);
+  display: flex;
+  flex-direction: column;
 }
 
 .scaling-section h3 {
@@ -186,6 +194,27 @@
   margin: 0 0 10px;
   color: #555;
   font-size: 13px;
+}
+
+.scaling-preview {
+  margin: 8px 0 14px;
+  padding: 10px;
+  border: 1px dashed #bbb;
+  border-radius: 6px;
+  background: #fff;
+  text-align: center;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scaling-preview img {
+  max-width: 100%;
+  max-height: min(56vh, 640px);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .cancel-btn {

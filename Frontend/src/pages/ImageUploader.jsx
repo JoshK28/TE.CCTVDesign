@@ -151,87 +151,101 @@ function ImageUploader({ onLogout }) {
       <main className="upload-main">
         <h1>Create Project</h1>
 
-        <div className="form-container">
-          {/* Project details */}
-          <div className="form-row">
-            <input
-              type="text"
-              placeholder="Project Name"
-              value={form.projectName}
-              onChange={(e) => setField("projectName", e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Client Name"
-              value={form.clientName}
-              onChange={(e) => setField("clientName", e.target.value)}
-            />
-          </div>
-
-          <textarea
-            placeholder="Address"
-            value={form.address}
-            onChange={(e) => setField("address", e.target.value)}
-          />
-
-          <div className="form-row">
-            <input
-              type="text"
-              placeholder="Description (optional)"
-              value={form.description}
-              onChange={(e) => setField("description", e.target.value)}
-            />
-          </div>
-
-          {/* Floor layers */}
-          {floorImages.map((layer, index) => (
-            <div key={index} className="layer-section">
-              <div className="layer-header">
-                <p>Layer {index + 1}</p>
+        <div className={`form-container ${showScalingStep ? "form-container--scaling" : ""}`}>
+          {!showScalingStep ? (
+            <>
+              {/* Project details */}
+              <div className="form-row">
                 <input
-                  type="file"
-                  accept="image/png, image/jpeg"
-                  id={`file-${index}`}
-                  onChange={(e) => handleImageChange(e, index)}
-                  style={{ display: "none" }}
+                  type="text"
+                  placeholder="Project Name"
+                  value={form.projectName}
+                  onChange={(e) => setField("projectName", e.target.value)}
                 />
-                <label htmlFor={`file-${index}`} className="upload-btn">
-                  Upload Floor Image
-                </label>
-                {floorImages.length > 1 && (
-                  <button
-                    onClick={() => handleRemoveLayer(index)}
-                    className="remove-layer-btn"
-                  >
-                    ✕
-                  </button>
-                )}
+                <input
+                  type="text"
+                  placeholder="Client Name"
+                  value={form.clientName}
+                  onChange={(e) => setField("clientName", e.target.value)}
+                />
               </div>
 
-              {layer.preview && (
-                <div className="image-preview">
-                  <p>Preview:</p>
-                  <img
-                    src={layer.preview}
-                    alt="Layer preview"
-                    style={{ width: `${layer.imageWidth}%` }}
-                    onWheel={(e) => handleWheel(e, index)}
-                  />
+              <textarea
+                placeholder="Address"
+                value={form.address}
+                onChange={(e) => setField("address", e.target.value)}
+              />
+
+              <div className="form-row">
+                <input
+                  type="text"
+                  placeholder="Description (optional)"
+                  value={form.description}
+                  onChange={(e) => setField("description", e.target.value)}
+                />
+              </div>
+
+              {/* Floor layers */}
+              {floorImages.map((layer, index) => (
+                <div key={index} className="layer-section">
+                  <div className="layer-header">
+                    <p>Layer {index + 1}</p>
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg"
+                      id={`file-${index}`}
+                      onChange={(e) => handleImageChange(e, index)}
+                      style={{ display: "none" }}
+                    />
+                    <label htmlFor={`file-${index}`} className="upload-btn">
+                      Upload Floor Image
+                    </label>
+                    {floorImages.length > 1 && (
+                      <button
+                        onClick={() => handleRemoveLayer(index)}
+                        className="remove-layer-btn"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {layer.preview && (
+                    <div className="image-preview">
+                      <p>Preview:</p>
+                      <img
+                        src={layer.preview}
+                        alt="Layer preview"
+                        style={{ width: `${layer.imageWidth}%` }}
+                        onWheel={(e) => handleWheel(e, index)}
+                      />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+              ))}
 
-          <button onClick={handleAddLayer} className="add-layer-btn">
-            ➕ Add New Layer
-          </button>
-
-          {showScalingStep && (
+              <button onClick={handleAddLayer} className="add-layer-btn">
+                ➕ Add New Layer
+              </button>
+            </>
+          ) : (
             <div className="scaling-section">
               <h3>Scaling</h3>
               <p className="scaling-help">
-                Set the project scale before creating the project.
+                Set scale using the first layer image, then create the project.
               </p>
+              {floorImages[0]?.preview ? (
+                <div className="scaling-preview">
+                  <img
+                    src={floorImages[0].preview}
+                    alt="First layer for scaling"
+                    style={{ width: `${floorImages[0].imageWidth}%` }}
+                    onWheel={(e) => handleWheel(e, 0)}
+                  />
+                </div>
+              ) : (
+                <p className="scaling-help">First layer image is missing. Go back and upload one.</p>
+              )}
               <input
                 type="text"
                 placeholder="Scale (e.g. 1:100)"
@@ -253,9 +267,14 @@ function ImageUploader({ onLogout }) {
                 Configure Scaling
               </button>
             ) : (
-              <button onClick={handleSubmit} disabled={loading} className="create-btn">
-                {loading ? "Creating..." : "Create Project"}
-              </button>
+              <>
+                <button onClick={() => setShowScalingStep(false)} className="cancel-btn">
+                  Back
+                </button>
+                <button onClick={handleSubmit} disabled={loading} className="create-btn">
+                  {loading ? "Creating..." : "Create Project"}
+                </button>
+              </>
             )}
           </div>
         </div>
