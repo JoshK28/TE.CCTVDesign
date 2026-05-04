@@ -14,6 +14,7 @@ function StorageNetworkCalculator({ onLogout }) {
   
   const [diskSpaceTB, setDiskSpaceTB] = useState(4);
   const [recordHours, setRecordHours] = useState(24);
+  const [retentionDays, setRetentionDays] = useState(30);
   const [result, setResult] = useState(null);
   const [mode, setMode] = useState("saving");
 
@@ -38,15 +39,58 @@ function StorageNetworkCalculator({ onLogout }) {
 
   // Main calculation logic
   const calculate = () => {
-    const totalBitrate = channels.reduce((acc, ch) => acc + Number(ch.bitrate), 0);
-    const totalStorageBytes = diskSpaceTB * 1024 ** 4; // convert TB → bytes
-    const bytesPerSecond = (totalBitrate * 1000) / 8;
-    const totalSeconds = totalStorageBytes / bytesPerSecond;
-    const totalDays = (totalSeconds / 3600 / recordHours).toFixed(1);
-    const totalWeeks = (totalDays / 7).toFixed(1);
-    const totalMonths = (totalDays / 30).toFixed(1);
+    const totalBitrateKbps = channels.reduce((acc, ch) => acc + Number(ch.bitrate), 0);
+    if (!totalBitrateKbps || totalBitrateKbps <= 0) {
+      setResult({ error: "Total bitrate must be greater than 0" });
+      return;
+    }
 
-    setResult({ days: totalDays, weeks: totalWeeks, months: totalMonths });
+    const hoursPerDay = Math.max(Number(recordHours) || 0, 0.1);
+    const bytesPerSecond = (totalBitrateKbps * 1000) / 8;
+
+    if (mode === "saving") {
+      const tb = Math.max(Number(diskSpaceTB) || 0, 0);
+      if (tb <= 0) {
+        setResult({ error: "Disk space must be greater than 0" });
+        return;
+      }
+      const totalStorageBytes = tb * 1024 ** 4;
+      const totalSeconds = totalStorageBytes / bytesPerSecond;
+      const totalDays = (totalSeconds / 3600 / hoursPerDay).toFixed(1);
+      const totalWeeks = (Number(totalDays) / 7).toFixed(1);
+      const totalMonths = (Number(totalDays) / 30).toFixed(1);
+      setResult({ mode, days: totalDays, weeks: totalWeeks, months: totalMonths });
+      return;
+    }
+
+    if (mode === "disk") {
+      const days = Math.max(Number(retentionDays) || 0, 0);
+      if (days <= 0) {
+        setResult({ error: "Retention days must be greater than 0" });
+        return;
+      }
+      const secondsRecorded = days * hoursPerDay * 3600;
+      const requiredBytes = bytesPerSecond * secondsRecorded;
+      const requiredTb = requiredBytes / 1024 ** 4;
+      const requiredGb = requiredBytes / 1024 ** 3;
+      setResult({
+        mode,
+        tb: requiredTb.toFixed(3),
+        gb: requiredGb.toFixed(1),
+      });
+      return;
+    }
+
+    // bandwidth
+    const mbps = totalBitrateKbps / 1000;
+    const gbps = mbps / 1000;
+    const mbPerSecond = mbps / 8;
+    setResult({
+      mode,
+      mbps: mbps.toFixed(2),
+      gbps: gbps.toFixed(3),
+      mbPerSecond: mbPerSecond.toFixed(2),
+    });
   };
 
   return (
@@ -174,24 +218,55 @@ function StorageNetworkCalculator({ onLogout }) {
             </div>
 
             <div className="inputs">
-              <label>
-                Set Disk Space:
-                <input type="number" value={diskSpaceTB} onChange={(e)=> setDiskSpaceTB(e.target.value)} /> TB
-              </label>
-              <label>
-                Recording Time per Day:
-                <input type="number" value={recordHours} onChange={(e)=> setRecordHours(e.target.value)} /> h
-              </label>
+              {(mode === "saving" || mode === "disk") && (
+                <label>
+                  Recording Time per Day:
+                  <input type="number" value={recordHours} onChange={(e)=> setRecordHours(e.target.value)} /> h
+                </label>
+              )}
+              {mode === "saving" && (
+                <label>
+                  Set Disk Space:
+                  <input type="number" value={diskSpaceTB} onChange={(e)=> setDiskSpaceTB(e.target.value)} /> TB
+                </label>
+              )}
+              {mode === "disk" && (
+                <label>
+                  Retention (days):
+                  <input type="number" value={retentionDays} onChange={(e)=> setRetentionDays(e.target.value)} /> days
+                </label>
+              )}
+              {mode === "bandwidth" && (
+                <p style={{ margin: 0, opacity: 0.85 }}>
+                  Bandwidth is calculated from the summed bitrate of all channels (Kbps → Mbps).
+                </p>
+              )}
             </div>
 
             <button className="calculate-btn" onClick={calculate}>Calculate</button>
           </div>
 
-          {result && (
+          {result?.error && (
+            <p style={{ color: "tomato", marginTop: "12px" }}>{result.error}</p>
+          )}
+          {result && !result.error && result.mode === "saving" && (
             <div className="results">
               <div className="result-box"><h3>{result.days}</h3><p>Days</p></div>
               <div className="result-box"><h3>{result.weeks}</h3><p>Weeks</p></div>
               <div className="result-box"><h3>{result.months}</h3><p>Months</p></div>
+            </div>
+          )}
+          {result && !result.error && result.mode === "disk" && (
+            <div className="results">
+              <div className="result-box"><h3>{result.tb}</h3><p>Required TB</p></div>
+              <div className="result-box"><h3>{result.gb}</h3><p>Required GB</p></div>
+            </div>
+          )}
+          {result && !result.error && result.mode === "bandwidth" && (
+            <div className="results">
+              <div className="result-box"><h3>{result.mbps}</h3><p>Total Mbps</p></div>
+              <div className="result-box"><h3>{result.gbps}</h3><p>Total Gbps</p></div>
+              <div className="result-box"><h3>{result.mbPerSecond}</h3><p>MB/s (payload)</p></div>
             </div>
           )}
         </section>

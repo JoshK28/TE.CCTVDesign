@@ -18,6 +18,16 @@ function Login() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  const formatApiError = (data) => {
+    if (!data) return "Login failed";
+    if (typeof data === "string") return data;
+    if (typeof data === "object") {
+      if (typeof data.message === "string") return data.message;
+      if (typeof data.title === "string") return data.title;
+    }
+    return "Login failed";
+  };
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -28,6 +38,10 @@ function Login() {
       setError("Email and password are required");
       return;
     }
+    if (!formData.email.includes("@")) {
+      setError("Please enter a valid email address (the backend logs in with Email + Password).");
+      return;
+    }
     try {
       const res = await api.post("/api/auth/login", formData);
       
@@ -36,7 +50,7 @@ function Login() {
 
       navigate("/app/dashboard");
     } catch (err) {
-      setError(err.response?.data || "Login failed");
+      setError(formatApiError(err.response?.data));
     }
   };
   return (
@@ -62,7 +76,7 @@ function Login() {
           />
           <button type="submit" className="login-button">LOGIN</button>
           <br/>
-          <a href="register" className="forgot"> Forgot Password?</a>
+          <a href="/register" className="forgot">Register</a>
         </form>
 
         {error && <p style={{ color: "red" }}>{error}</p>}

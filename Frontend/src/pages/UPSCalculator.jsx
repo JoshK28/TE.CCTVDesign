@@ -1,21 +1,39 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../page_styling/upsCalculator.css";
 import tePNGLogo from "../assets/logo.png";
+import api from "../services/api";
 
 function UPSCalculator({ onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const productLibrary = [
-    { name: "AXIS QD536 8MP Dome", power: 15 },
-    { name: "HikVision DS-2CD2142FWD", power: 12 },
-    { name: "NVR 16CH 4K", power: 40 },
-    { name: "Network Switch PoE 8-port", power: 60 },
+  const fallbackLibrary = [
+    { name: "AXIS QD536 8MP Dome", powerWatts: 15, defaultUnits: 1 },
+    { name: "HikVision DS-2CD2142FWD", powerWatts: 12, defaultUnits: 1 },
+    { name: "NVR 16CH 4K", powerWatts: 40, defaultUnits: 1 },
+    { name: "Network Switch PoE 8-port", powerWatts: 60, defaultUnits: 1 },
   ];
+
+  const [catalog, setCatalog] = useState([]);
+  const [catalogError, setCatalogError] = useState("");
 
   const [rows, setRows] = useState([{ id: 1, product: "", power: 0, units: 1 }]);
   const [batterySize, setBatterySize] = useState(100);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await api.get("/api/ups/devices");
+        setCatalog(res.data ?? []);
+        setCatalogError("");
+      } catch {
+        setCatalog(fallbackLibrary);
+        setCatalogError("Could not load UPS catalog from API; using offline defaults.");
+      }
+    };
+    load();
+  }, []);
 
   const addRow = () => setRows([...rows, { id: Date.now(), product: "", power: 0, units: 1 }]);
   const removeRow = () => { if (rows.length > 1) setRows(rows.slice(0, -1)); };
@@ -57,6 +75,7 @@ function UPSCalculator({ onLogout }) {
 
       <main className="ups-main">
         <h1>UPS Calculator</h1>
+        {catalogError && <p style={{ color: "tomato" }}>{catalogError}</p>}
 
         <div className="controls">
           <button className="add-btn" onClick={addRow}>+</button>
@@ -78,15 +97,16 @@ function UPSCalculator({ onLogout }) {
                   <select
                     value={r.product}
                     onChange={(e) => {
-                      const selected = productLibrary.find(p => p.name === e.target.value);
+                      const selected = catalog.find((p) => p.name === e.target.value);
                       const updated = [...rows];
                       updated[i].product = e.target.value;
-                      updated[i].power = selected ? selected.power : 0;
+                      updated[i].power = selected ? selected.powerWatts : 0;
+                      updated[i].units = selected?.defaultUnits ?? 1;
                       setRows(updated);
                     }}
                   >
                     <option value="">Select Device</option>
-                    {productLibrary.map((p) => (
+                    {catalog.map((p) => (
                       <option key={p.name} value={p.name}>
                         {p.name}
                       </option>

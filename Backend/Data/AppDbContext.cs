@@ -31,6 +31,8 @@ namespace Backend.Data
         // allows the app to read and write the camera location
         public DbSet<CameraPlacement> CameraPlacemens => Set<CameraPlacement>();
 
+        public DbSet<UpsDevice> UpsDevices => Set<UpsDevice>();
+
         // this method runs when the database is first being set up
         // it pre-fills the Cameras table with 21 HikVision cameras
         // so the data is automatically available without manual entry
@@ -60,6 +62,17 @@ namespace Backend.Data
                 new Camera { Id = 19, ModelNumber = "DS-2CD2955G0-ISU", Description = "Camera - 5MP Fixed Fisheye Network", Brand = "HikVision", Type = "Fisheye", Resolution = "5MP", Range = "10m", LensSize = "1.05mm", LensType = "Fisheye", FovHorizontal = "360°", FovVertical = "", FovDiagonal = "", IrRange = "10m", Aperture = "F2.0", OperatingTemp = "–30°C to 60°C", Price = "$250–$350" },
                 new Camera { Id = 20, ModelNumber = "HUD-PT20X-SE-GY-G3", Description = "Camera PTZOptics Auto Tracking 20X Opt Zoom 1080p", Brand = "PTZOptics", Type = "PTZ", Resolution = "1080p", Range = "100m", LensSize = "20x Optical Zoom", LensType = "PTZ", FovHorizontal = "59°–2.3°", FovVertical = "", FovDiagonal = "", IrRange = "100m", Aperture = "F1.6", OperatingTemp = "–30°C to 60°C", Price = "$1200–$1600" },
                 new Camera { Id = 21, ModelNumber = "DS-2DE7530IW-AE", Description = "Camera PTZ 5MP 30x Zoom 150m IR IP66 Pendant HikVision", Brand = "HikVision", Type = "PTZ", Resolution = "5MP", Range = "150m", LensSize = "30x Optical Zoom", LensType = "PTZ", FovHorizontal = "60°–2.3°", FovVertical = "", FovDiagonal = "", IrRange = "200m", Aperture = "F1.5", OperatingTemp = "–30°C to 60°C", Price = "$2500–$3200" }
+            );
+
+            modelBuilder.Entity<UpsDevice>().HasData(
+                new UpsDevice { Id = 1, Name = "AXIS QD536 8MP Dome", PowerWatts = 15, DefaultUnits = 1 },
+                new UpsDevice { Id = 2, Name = "HikVision DS-2CD2142FWD", PowerWatts = 12, DefaultUnits = 1 },
+                new UpsDevice { Id = 3, Name = "NVR 16CH 4K", PowerWatts = 40, DefaultUnits = 1 },
+                new UpsDevice { Id = 4, Name = "Network Switch PoE 8-port", PowerWatts = 60, DefaultUnits = 1 },
+                new UpsDevice { Id = 5, Name = "Access Control Panel (4-door)", PowerWatts = 25, DefaultUnits = 1 },
+                new UpsDevice { Id = 6, Name = "Electric Strike (per door)", PowerWatts = 10, DefaultUnits = 1 },
+                new UpsDevice { Id = 7, Name = "HID Card Reader", PowerWatts = 3, DefaultUnits = 1 },
+                new UpsDevice { Id = 8, Name = "Monitors / workstation load (allowance)", PowerWatts = 80, DefaultUnits = 1 }
             );
         }
     }
