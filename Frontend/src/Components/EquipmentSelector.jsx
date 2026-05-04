@@ -5,6 +5,7 @@ import { Chip } from 'primereact/chip';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import { Divider } from 'primereact/divider';
+import { TabView, TabPanel } from 'primereact/tabview';
 import api from '../services/api';
 import './EquipmentSelector.css';
 
@@ -18,10 +19,12 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
   const [searchResults, setSearchResults] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [mainTab, setMainTab] = useState(0);
 
   useEffect(() => {
     if (!visible) return;
 
+    setMainTab(0);
     setFilters(EMPTY_FILTERS);
     setSearchResults(null);
 
@@ -63,14 +66,6 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     }
   };
 
-  const renderBody = () => {
-    if (placementType === 'camera') return renderCameraPanel();
-    if (placementType === 'router' || placementType === 'sensor' || placementType === 'alarm') {
-      return renderObjectPanel();
-    }
-    return <p className="equipment-selector-muted">Unknown equipment type.</p>;
-  };
-
   const renderObjectPanel = () => (
     <div className="equipment-selector-stack">
       <Button
@@ -84,7 +79,26 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     </div>
   );
 
-  const renderCameraPanel = () => (
+  const renderBody = () => {
+    if (placementType === 'camera' || placementType === 'router' || placementType === 'sensor' || placementType === 'alarm') {
+      
+      return (
+        <TabView
+          className="equipment-selector-tabview"
+          activeIndex={mainTab}
+          onTabChange={(e) => setMainTab(e.index)}
+        >
+          <TabPanel header={`Search ${placementType}`}>
+            {placementType === 'camera' ? renderCameraSearchPanel() : renderObjectPanel()}
+          </TabPanel>
+          <TabPanel header="Add new device"> </TabPanel>
+        </TabView>
+      );
+    }
+    return <p className="equipment-selector-muted">Unknown equipment type.</p>;
+  };
+
+  const renderCameraSearchPanel = () => (
     <div className="equipment-selector-catalog-layout">
       <div className="equipment-selector-catalog-controls">
         <div>

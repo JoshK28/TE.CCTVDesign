@@ -168,3 +168,16 @@
   color: var(--text-color-secondary);
   text-align: center;
 }
+
+.equipment-selector-tabview.p-tabview {
+  margin-top: 0.15rem;
+}
+
+.equipment-selector-tabview .p-tabview-panels {
+  padding: 0.65rem 0 0;
+}
+
+.equipment-selector-tab-placeholder {
+  margin: 0;
+  text-align: left;
+}
