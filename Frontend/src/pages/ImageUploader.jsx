@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../services/api";
+import ScaleCalibrator from "../Components/ScaleCalibrator";
 import "../page_styling/imageUploader.css";
 import tePNGLogo from "../assets/logo.png";
 
@@ -229,30 +230,12 @@ function ImageUploader({ onLogout }) {
               </button>
             </>
           ) : (
-            <div className="scaling-section">
-              <h3>Scaling</h3>
-              <p className="scaling-help">
-                Set scale using the first layer image, then create the project.
-              </p>
-              {floorImages[0]?.preview ? (
-                <div className="scaling-preview">
-                  <img
-                    src={floorImages[0].preview}
-                    alt="First layer for scaling"
-                    style={{ width: `${floorImages[0].imageWidth}%` }}
-                    onWheel={(e) => handleWheel(e, 0)}
-                  />
-                </div>
-              ) : (
-                <p className="scaling-help">First layer image is missing. Go back and upload one.</p>
-              )}
-              <input
-                type="text"
-                placeholder="Scale (e.g. 1:100)"
-                value={form.scale}
-                onChange={(e) => setField("scale", e.target.value)}
-              />
-            </div>
+            <ScaleCalibrator
+              previewSrc={floorImages[0]?.preview ?? null}
+              imageWidth={floorImages[0]?.imageWidth ?? 80}
+              scale={form.scale}
+              onScaleChange={(nextScale) => setField("scale", nextScale)}
+            />
           )}
 
           {error && <p className="error">{error}</p>}
