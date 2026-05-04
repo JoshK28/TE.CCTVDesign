@@ -83,8 +83,9 @@ function ImageUploader({ onLogout }) {
 
       setSuccess("Project created successfully!");
       setTimeout(() => {
+        setShowScalingStep(false);
         navigate("/app/design", { state: { projectId: res.data.projectID } });
-      }, 1500);
+      }, 1000);
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -108,6 +109,114 @@ function ImageUploader({ onLogout }) {
     setError("");
     setShowScalingStep(true);
   };
+
+  const renderSetupSection = () => (
+    <>
+      {/* Project details */}
+      <div className="form-row">
+        <input
+          type="text"
+          placeholder="Project Name"
+          value={form.projectName}
+          onChange={(e) => setField("projectName", e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Client Name"
+          value={form.clientName}
+          onChange={(e) => setField("clientName", e.target.value)}
+        />
+      </div>
+
+      <textarea
+        placeholder="Address"
+        value={form.address}
+        onChange={(e) => setField("address", e.target.value)}
+      />
+
+      <div className="form-row">
+        <input
+          type="text"
+          placeholder="Description (optional)"
+          value={form.description}
+          onChange={(e) => setField("description", e.target.value)}
+        />
+      </div>
+
+      {/* Floor layers */}
+      {floorImages.map((layer, index) => (
+        <div key={index} className="layer-section">
+          <div className="layer-header">
+            <p>Layer {index + 1}</p>
+            <input
+              type="file"
+              accept="image/png, image/jpeg"
+              id={`file-${index}`}
+              onChange={(e) => handleImageChange(e, index)}
+              style={{ display: "none" }}
+            />
+            <label htmlFor={`file-${index}`} className="upload-btn">
+              Upload Floor Image
+            </label>
+            {floorImages.length > 1 && (
+              <button
+                onClick={() => handleRemoveLayer(index)}
+                className="remove-layer-btn"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {layer.preview && (
+            <div className="image-preview">
+              <p>Preview:</p>
+              <img
+                src={layer.preview}
+                alt="Layer preview"
+                style={{ width: `${layer.imageWidth}%` }}
+                onWheel={(e) => handleWheel(e, index)}
+              />
+            </div>
+          )}
+        </div>
+      ))}
+
+      <button onClick={handleAddLayer} className="add-layer-btn">
+        ➕ Add New Layer
+      </button>
+    </>
+  );
+
+  const renderScalingSection = () => (
+    <ScaleCalibrator
+      layer={floorImages[0]}
+      scale={form.scale}
+      onScaleChange={(nextScale) => setField("scale", nextScale)}
+    />
+  );
+
+  const renderStepActions = () => (
+    <div className="form-actions">
+      <button onClick={() => navigate("/app/dashboard")} className="cancel-btn">
+        Cancel
+      </button>
+      {!showScalingStep ? (
+        <button onClick={handleOpenScalingStep} className="create-btn">
+          Configure Scaling
+        </button>
+      ) : (
+        <>
+          <button onClick={() => setShowScalingStep(false)} className="cancel-btn">
+            Back
+          </button>
+          <button onClick={handleSubmit} disabled={loading} className="create-btn">
+            {loading ? "Creating..." : "Create Project"}
+          </button>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div className="upload-layout">
@@ -153,113 +262,12 @@ function ImageUploader({ onLogout }) {
         <h1>Create Project</h1>
 
         <div className={`form-container ${showScalingStep ? "form-container--scaling" : ""}`}>
-          {!showScalingStep ? (
-            <>
-              {/* Project details */}
-              <div className="form-row">
-                <input
-                  type="text"
-                  placeholder="Project Name"
-                  value={form.projectName}
-                  onChange={(e) => setField("projectName", e.target.value)}
-                />
-                <input
-                  type="text"
-                  placeholder="Client Name"
-                  value={form.clientName}
-                  onChange={(e) => setField("clientName", e.target.value)}
-                />
-              </div>
-
-              <textarea
-                placeholder="Address"
-                value={form.address}
-                onChange={(e) => setField("address", e.target.value)}
-              />
-
-              <div className="form-row">
-                <input
-                  type="text"
-                  placeholder="Description (optional)"
-                  value={form.description}
-                  onChange={(e) => setField("description", e.target.value)}
-                />
-              </div>
-
-              {/* Floor layers */}
-              {floorImages.map((layer, index) => (
-                <div key={index} className="layer-section">
-                  <div className="layer-header">
-                    <p>Layer {index + 1}</p>
-                    <input
-                      type="file"
-                      accept="image/png, image/jpeg"
-                      id={`file-${index}`}
-                      onChange={(e) => handleImageChange(e, index)}
-                      style={{ display: "none" }}
-                    />
-                    <label htmlFor={`file-${index}`} className="upload-btn">
-                      Upload Floor Image
-                    </label>
-                    {floorImages.length > 1 && (
-                      <button
-                        onClick={() => handleRemoveLayer(index)}
-                        className="remove-layer-btn"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-
-                  {layer.preview && (
-                    <div className="image-preview">
-                      <p>Preview:</p>
-                      <img
-                        src={layer.preview}
-                        alt="Layer preview"
-                        style={{ width: `${layer.imageWidth}%` }}
-                        onWheel={(e) => handleWheel(e, index)}
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              <button onClick={handleAddLayer} className="add-layer-btn">
-                ➕ Add New Layer
-              </button>
-            </>
-          ) : (
-            <ScaleCalibrator
-              previewSrc={floorImages[0]?.preview ?? null}
-              imageWidth={floorImages[0]?.imageWidth ?? 80}
-              scale={form.scale}
-              onScaleChange={(nextScale) => setField("scale", nextScale)}
-            />
-          )}
+          {showScalingStep ? renderScalingSection() : renderSetupSection()}
 
           {error && <p className="error">{error}</p>}
           {success && <p className="success">{success}</p>}
 
-          <div className="form-actions">
-            <button onClick={() => navigate("/app/dashboard")} className="cancel-btn">
-              Cancel
-            </button>
-            {!showScalingStep ? (
-              <button onClick={handleOpenScalingStep} className="create-btn">
-                Configure Scaling
-              </button>
-            ) : (
-              <>
-                <button onClick={() => setShowScalingStep(false)} className="cancel-btn">
-                  Back
-                </button>
-                <button onClick={handleSubmit} disabled={loading} className="create-btn">
-                  {loading ? "Creating..." : "Create Project"}
-                </button>
-              </>
-            )}
-          </div>
+          {renderStepActions()}
         </div>
       </main>
     </div>

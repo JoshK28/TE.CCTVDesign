@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 const INITIAL_LINE = { a: { x: 0.25, y: 0.5 }, b: { x: 0.75, y: 0.5 } };
 
-function ScaleCalibrator({ previewSrc, imageWidth, scale, onScaleChange }) {
+function ScaleCalibrator({ layer, scale, onScaleChange }) {
   const [line, setLine] = useState(INITIAL_LINE);
   const [dragPoint, setDragPoint] = useState(null);
   const [knownLength, setKnownLength] = useState("10");
@@ -44,9 +44,9 @@ function ScaleCalibrator({ previewSrc, imageWidth, scale, onScaleChange }) {
   return (
     <div className="scaling-section">
       <h3>Scaling</h3>
-      {previewSrc ? (
+      {layer?.preview ? (
         <div className="scaling-preview" ref={previewRef}>
-          <img src={previewSrc} alt="First layer for scaling" style={{ width: `${imageWidth}%` }} />
+          <img src={layer.preview} alt="First layer for scaling" style={{ width: `${layer.imageWidth ?? 80}%` }} />
           <svg className="scale-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
             <line x1={line.a.x * 100} y1={line.a.y * 100} x2={line.b.x * 100} y2={line.b.y * 100} className="scale-line" />
             <circle
@@ -68,14 +68,16 @@ function ScaleCalibrator({ previewSrc, imageWidth, scale, onScaleChange }) {
       ) : (
         <p className="scaling-help">First layer image is missing.</p>
       )}
-      <input
-        type="number"
-        min="0.01"
-        step="0.01"
-        placeholder="Known line length"
-        value={knownLength}
-        onChange={(e) => setKnownLength(e.target.value)}
-      />
+      <div className="scaling-known-length">
+        <input
+          type="number"
+          min="0.01"
+          step="0.1"
+          value={knownLength}
+          onChange={(e) => setKnownLength(e.target.value)}
+        />
+        <span>meters</span>
+      </div>
       <p className="scaling-help">
         Drag endpoints over a known distance. Scale: <strong>{scale}</strong>
       </p>

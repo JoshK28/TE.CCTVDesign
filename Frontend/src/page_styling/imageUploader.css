@@ -240,6 +240,22 @@
   cursor: grab;
 }
 
+.scaling-known-length {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.scaling-known-length input {
+  width: 170px !important;
+}
+
+.scaling-known-length span {
+  font-weight: 600;
+  color: #333;
+}
+
 .scaling-controls {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 180px;
