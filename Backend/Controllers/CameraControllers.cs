@@ -18,20 +18,30 @@ namespace Backend.Controllers
 
     [HttpGet]
     // 1. Add these parameters so C# knows to look for them in the URL
-    public async Task<IActionResult> GetCameras([FromQuery] string? search, [FromQuery] string? brand)
+    public async Task<IActionResult> GetCameras([FromQuery] string? search, [FromQuery] string? brand, [FromQuery] string? type)
     {
         // 2. Instead of getting the list immediately, create a "Queryable"
         var query = _context.Cameras.AsQueryable();
 
         // 3. Only apply the filter if the user actually typed something
-        if (!string.IsNullOrEmpty(search))
+        if (!string.IsNullOrWhiteSpace(search))
         {
-            query = query.Where(c => c.ModelNumber.Contains(search));
+            var term = search.Trim();
+            query = query.Where(c =>
+                c.ModelNumber.Contains(term) ||
+                c.Description.Contains(term));
         }
 
-        if (!string.IsNullOrEmpty(brand))
+        if (!string.IsNullOrWhiteSpace(brand))
         {
-            query = query.Where(c => c.Brand == brand);
+            var brandTerm = brand.Trim();
+            query = query.Where(c => c.Brand.ToLower() == brandTerm.ToLower());
+        }
+
+        if (!string.IsNullOrWhiteSpace(type))
+        {
+            var typeTerm = type.Trim();
+            query = query.Where(c => c.Type.ToLower() == typeTerm.ToLower());
         }
 
         // 4. NOW it executes the filtered SQL command

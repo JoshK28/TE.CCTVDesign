@@ -149,6 +149,36 @@ namespace Backend.Controllers
 
         // handles DELETE requests to /api/projects/{id}
         // deletes a project from the database
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateProject(int id, [FromBody] UpdateProjectDto dto)
+        {
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId == null)
+                return Unauthorized("User identity missing");
+
+            var project = await _context.Projects
+                .FirstOrDefaultAsync(p => p.ProjectID == id && p.UserID == currentUserId.Value);
+
+            if (project == null)
+                return NotFound("Project not found");
+
+            project.Title = string.IsNullOrWhiteSpace(dto.Title) ? project.Title : dto.Title.Trim();
+            project.Address = string.IsNullOrWhiteSpace(dto.Address) ? project.Address : dto.Address.Trim();
+            project.Description = dto.Description?.Trim() ?? string.Empty;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                project.ProjectID,
+                project.Title,
+                project.Address,
+                project.Description
+            });
+        }
+
+        // handles DELETE requests to /api/projects/{id}
+        // deletes a project from the database
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProject(int id)
         {

@@ -12,6 +12,7 @@ function ProjectList({ onLogout }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
   const [page, setPage] = useState(1);
 
   const PAGE_SIZE = 8;
@@ -54,6 +55,44 @@ function ProjectList({ onLogout }) {
       setError("Failed to delete project");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleEditProject = async (project) => {
+    const title = window.prompt("Project title", project.title ?? "");
+    if (title === null) return;
+
+    const address = window.prompt("Project address", project.address ?? "");
+    if (address === null) return;
+
+    const description = window.prompt("Project description", project.description ?? "");
+    if (description === null) return;
+
+    setEditingId(project.projectID);
+    setError("");
+    try {
+      const res = await api.put(`/api/projects/${project.projectID}`, {
+        title,
+        address,
+        description,
+      });
+
+      setProjects((prev) =>
+        prev.map((item) =>
+          item.projectID === project.projectID
+            ? {
+                ...item,
+                title: res.data.title,
+                address: res.data.address,
+                description: res.data.description,
+              }
+            : item
+        )
+      );
+    } catch (err) {
+      setError("Failed to update project");
+    } finally {
+      setEditingId(null);
     }
   };
 
@@ -122,6 +161,14 @@ function ProjectList({ onLogout }) {
                       }
                     >
                       Open
+                    </button>
+                    <button
+                      className="table-btn"
+                      onClick={() => handleEditProject(project)}
+                      disabled={editingId === project.projectID}
+                      style={{ marginLeft: "8px" }}
+                    >
+                      {editingId === project.projectID ? "Saving..." : "Edit"}
                     </button>
                     <button
                       className="table-btn"

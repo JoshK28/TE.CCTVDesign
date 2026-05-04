@@ -7,14 +7,16 @@ import api from '../services/api';
 
 export default function EquipmentSelector({ visible, onHide, onSelectCamera }) {
     const [cameras, setCameras  ] = useState([]); // 2. State camera DB data
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [searching, setSearch] = useState(false);
     const [filters, setFilters] = useState({
         searchQuery: '',
-        manufacturer: null
+        manufacturer: null,
+        cameraType: null,
     });
 
-    const manufacturerOptions = [...new Set(cameras.map(c => c.brand))];
+    const manufacturerOptions = ['HikVision', 'PTZOptics'];
+    const cameraTypeOptions = ['Bullet', 'Dome', 'PTZ', 'Fisheye'];
 
 
     const fetchCameras = useCallback(async (overrideFilters = null) => {
@@ -25,7 +27,8 @@ export default function EquipmentSelector({ visible, onHide, onSelectCamera }) {
             const res = await api.get("/api/cameras", {
                 params: { 
                     search: activeFilters.searchQuery,
-                    brand: activeFilters.manufacturer
+                    brand: activeFilters.manufacturer,
+                    type: activeFilters.cameraType,
                 }
             });
             console.log("Fetched cameras:", res);
@@ -39,7 +42,7 @@ export default function EquipmentSelector({ visible, onHide, onSelectCamera }) {
 
     const resetParams = async () => {
 
-        const emptyFilters = { searchQuery: '', manufacturer: null };
+        const emptyFilters = { searchQuery: '', manufacturer: null, cameraType: null };
 
         setFilters(emptyFilters);
         setSearch(false);
@@ -55,8 +58,13 @@ export default function EquipmentSelector({ visible, onHide, onSelectCamera }) {
 
 
     useEffect(() => {
-    fetchCameras(); 
-    }, [fetchCameras]);
+        if (!visible) return;
+        setSearch(true);
+        fetchCameras();
+        // Intentionally only re-run when the selector opens/closes.
+        // Filter changes are applied when the user clicks "Fetch Equipment".
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [visible]);
 
     return (
         <Sidebar 
@@ -90,6 +98,17 @@ export default function EquipmentSelector({ visible, onHide, onSelectCamera }) {
                     options={manufacturerOptions} 
                     onChange={(e) => setFilters({ ...filters, manufacturer: e.value })} 
                     placeholder="Select Brand" 
+                    showClear 
+                    className="w-full"
+                />
+                <br /><br />
+
+                <label className="font-bold text-sm">Camera type : </label>
+                <Dropdown 
+                    value={filters.cameraType} 
+                    options={cameraTypeOptions} 
+                    onChange={(e) => setFilters({ ...filters, cameraType: e.value })} 
+                    placeholder="Select type" 
                     showClear 
                     className="w-full"
                 />
