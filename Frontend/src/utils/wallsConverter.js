@@ -48,8 +48,9 @@ export const removeWallLink = (graph, linkId) => {
 export const segmentsToWallGraph = (segments = []) => {
   const posts = [];
   const postIdByKey = new Map();
+  const norm = (n) => Math.round(n * 1000) / 1000;
   const vertexId = (x, y) => {
-    const key = `${x}:${y}`;
+    const key = `${norm(x)}:${norm(y)}`;
     let id = postIdByKey.get(key);
     if (id) return id;
     id = `post-${posts.length}`;
