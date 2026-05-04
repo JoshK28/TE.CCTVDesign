@@ -95,6 +95,11 @@ export default function WallDrawingLayer({ activeTool, wallGraph, onWallGraphCha
 
   const startPost = draft ? postById.get(draft.startPostId) : null;
 
+  const wallHint =
+    mode === 'draw'
+      ? 'Draw walls on the canvas. Wall drawing mode — exit by pressing Enter.'
+      : 'Wall editing mode — exit by pressing Enter or Esc.';
+
   return (
     <>
       <svg className="wall-overlay">
@@ -116,8 +121,20 @@ export default function WallDrawingLayer({ activeTool, wallGraph, onWallGraphCha
           />
         )}
       </svg>
+      {wallModeActive ? (
+        <p className="wall-mode-hint" role="status">
+          {wallHint}
+        </p>
+      ) : null}
       <div
-        className={`wall-draw-capture ${wallModeActive ? 'is-active' : ''}`}
+        className={[
+          'wall-draw-capture',
+          wallModeActive ? 'is-active' : '',
+          wallModeActive && mode === 'draw' ? 'is-draw-phase' : '',
+          wallModeActive && mode === 'edit' ? 'is-edit-phase' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={() => setDragPostId(null)}
