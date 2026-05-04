@@ -1,18 +1,25 @@
 import { useState, useEffect } from 'react';
 import securityCameraIcon from '../assets/Icons/security-camera.png';
+import routerIcon from '../assets/Icons/router.png';
+import sensorIcon from '../assets/Icons/sensor.png';
+import alarmIcon from '../assets/Icons/alarm.png';
 
 const getIcon = (equipmentType) => {
   switch (equipmentType) {
     case 'camera':
-      return { icon: <img src={securityCameraIcon} alt="" draggable={false} /> };
+      return { icon: <img src={securityCameraIcon} alt="" draggable={false} className="equipment-icon" /> };
+
     case 'router':
-      return { icon: '🖥️' };
+      return { icon: <img src={routerIcon} alt="" draggable={false} className="equipment-icon" /> };
+
     case 'sensor':
-      return { icon: '📡' };
+      return { icon: <img src={sensorIcon} alt="" draggable={false} className="equipment-icon" /> };
+
     case 'alarm':
-      return { icon: '🔔' };
+      return { icon: <img src={alarmIcon} alt="" draggable={false} className="equipment-icon" /> };
+
     default:
-      return { icon: '❓' };
+      return { icon: <span className="equipment-icon">❓</span> };
   }
 };
 

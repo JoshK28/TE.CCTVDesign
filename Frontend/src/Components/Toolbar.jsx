@@ -2,15 +2,15 @@ import { MegaMenu } from 'primereact/megamenu';
 import 'primeicons/primeicons.css';
 import securityCameraIcon from '../assets/Icons/security-camera.png';
 
-export default function Toolbar({ onSelectTool }) {
+export default function Toolbar({ onSelectTool, onUndo, onRedo, canUndo, canRedo }) {
 
     const draggableItem = (item) => {
         const isCamera = item.label === 'camera';
         return (
             <div 
                 draggable 
-                onDragStart={(e) => {e.dataTransfer.setData('tool', item.label);}}
-                onClick={()=> onSelectTool(item.label)}
+                onDragStart={(e) => { e.dataTransfer.setData('tool', item.label); }}
+                onClick={() => onSelectTool(item.label)}
                 style={{ padding: '0.75rem 1.25rem', cursor: 'grab' }}
             >
                 {isCamera ? (
@@ -28,17 +28,43 @@ export default function Toolbar({ onSelectTool }) {
             label: 'New',
             icon: 'pi pi-plus',
             items: [[
-                {items: [{label: 'camera', template: draggableItem},
-                    {label: 'router', template: draggableItem},
-                     {label: 'sensor', template: draggableItem},
-                      {label: 'alarm', template: draggableItem}]}
-                ]]
+                {
+                    items: [
+                        { label: 'camera', template: draggableItem },
+                        { label: 'router', template: draggableItem },
+                        { label: 'sensor', template: draggableItem },
+                        { label: 'alarm', template: draggableItem }
+                    ]
+                }
+            ]]
         },
         {
             label: 'Draw',
             icon: 'pi pi-pencil',
             items: [[
                 { items: [{ label: 'wall', template: draggableItem }] }
+            ]]
+        },
+        {
+            label: 'Actions',
+            icon: 'pi pi-history',
+            items: [[
+                {
+                    items: [
+                        {
+                            label: 'Undo',
+                            icon: 'pi pi-undo',
+                            disabled: !canUndo,
+                            command: onUndo
+                        },
+                        {
+                            label: 'Redo',
+                            icon: 'pi pi-refresh',
+                            disabled: !canRedo,
+                            command: onRedo
+                        }
+                    ]
+                }
             ]]
         }
     ];
@@ -47,5 +73,5 @@ export default function Toolbar({ onSelectTool }) {
         <div className="card">
             <MegaMenu model={items} orientation="vertical" breakpoint="960px" />
         </div>
-    )
+    );
 }
