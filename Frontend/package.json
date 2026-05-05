@@ -11,7 +11,13 @@
   },
   "dependencies": {
     "@dnd-kit/react": "^0.3.2",
+<<<<<<< Updated upstream
     "axios": "^1.15.2",
+=======
+    "axios": "^1.16.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
+>>>>>>> Stashed changes
     "konva": "^10.2.5",
     "primeicons": "^7.0.0",
     "primereact": "^10.9.7",
