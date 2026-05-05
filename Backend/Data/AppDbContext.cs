@@ -31,6 +31,12 @@ namespace Backend.Data
         // allows the app to read and write the camera location
         public DbSet<CameraPlacement> CameraPlacemens => Set<CameraPlacement>();
 
+        // represents the NetworkingDevices table
+        public DbSet<NetworkingDevice> NetworkingDevices => Set<NetworkingDevice>();
+
+        // represents the AccessControlDevices table
+        public DbSet<AccessControlDevice> AccessControlDevices => Set<AccessControlDevice>();
+
         // represents the Wall Placements table in the database
         // allows the app to read and write the Wall location
         public DbSet<Wall> Walls => Set<Wall>();
