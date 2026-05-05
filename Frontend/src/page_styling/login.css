@@ -10,6 +10,7 @@ body {
 
 h2 {
   text-align: center;
+  color: black;
 }
 
 .register-form {
@@ -42,6 +43,8 @@ h2 {
 
 .login-form input {
   height: 40px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Unique class name — avoids clashing with PrimeReact/toolbar `.card`. */
@@ -77,6 +80,8 @@ h2 {
   border: none;
   cursor: pointer;
   height: 40px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .back-to-home-button:hover {
