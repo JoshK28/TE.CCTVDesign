@@ -169,7 +169,8 @@ namespace Backend.Controllers
 
             project.Title = dto.Title;
             project.Address = dto.Address;
-            project.Description = dto.Description ?? string.Empty;
+            project.Description = dto.Description;
+            // note: floor images are not updated here - too complex for edit
 
             await _context.SaveChangesAsync();
 
