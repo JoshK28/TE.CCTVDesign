@@ -42,7 +42,7 @@ namespace Backend.Controllers
             {
                 Title = dto.Title,
                 Address = dto.Address,
-                Description = dto.Description,
+                Description = dto.Description ?? string.Empty,
                 UserID = userId // use actual logged in user id
             };
 
@@ -169,7 +169,7 @@ namespace Backend.Controllers
 
             project.Title = dto.Title;
             project.Address = dto.Address;
-            project.Description = dto.Description;
+            project.Description = dto.Description ?? string.Empty;
 
             await _context.SaveChangesAsync();
 

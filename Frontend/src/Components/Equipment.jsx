@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
+import securityCameraIcon from '../assets/Icons/security-camera.png';
 
-const getIcon = (kind) => {
-  switch (kind) {
+const getIcon = (equipmentType) => {
+  switch (equipmentType) {
     case 'camera':
-      return { icon: '📷' };
+      return { icon: <img src={securityCameraIcon} alt="" draggable={false} /> };
     case 'router':
       return { icon: '🖥️' };
     case 'sensor':
@@ -16,7 +17,7 @@ const getIcon = (kind) => {
 };
 
 function Equipment({ deviceInstance, onSelect, onUpdatePlacement }) {
-  const { id, kind, x, y, rotation = 0 } = deviceInstance;
+  const { id, type, x, y, rotation = 0 } = deviceInstance;
   const [livePos, setLivePos] = useState({ x, y });
 
   useEffect(() => {
@@ -74,7 +75,7 @@ function Equipment({ deviceInstance, onSelect, onUpdatePlacement }) {
         cursor: 'grab'
       }}
     >
-      {getIcon(kind).icon}
+      {getIcon(type).icon}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { Sidebar } from 'primereact/sidebar';
+import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
 import { Slider } from 'primereact/slider';
 import { InputNumber } from 'primereact/inputnumber';
@@ -6,8 +7,14 @@ import { InputText } from 'primereact/inputtext';
 import { ColorPicker } from 'primereact/colorpicker';
 import './AttributesBar.css';
 
-function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings }) {
-  const selectedItem = equipment.find(e => e.id === selectedItemId);
+
+function AttributesBar({
+  selectedItem,
+  onClose,
+  onUpdateSettings,
+  onChangeCameraModel,
+  onDeleteEquipment,
+}) {
   if (!selectedItem) return null;
 
   const resolutions = [
@@ -44,6 +51,11 @@ function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings })
   }
 
   const currentOpacity = selectedItem.fovOpacity ?? 0.3;
+  const attrs = selectedItem.attributes ?? {};
+  const brandName = attrs.brand ?? '';
+  const modelName = attrs.cameraModel ?? selectedItem.name ?? '';
+
+  const propertiesTitle = `${selectedItem.type ?? ''} properties`;
 
   return (
     <Sidebar
@@ -52,13 +64,53 @@ function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings })
       onHide={onClose}
       modal={false}
       showCloseIcon={true}
-      dismissable={false}   // ⭐ Prevents sidebar from closing when using colour picker
+      dismissable={false}
       style={{ width: '380px' }}
     >
       <div className="sidebar-content">
+        <h2 className="section-title">{propertiesTitle}</h2>
 
-        {/* HEADER */}
-        <h2 className="section-title">Camera Properties</h2>
+        <h3 className="section-subtitle">Equipment details</h3>
+        <div className="section-box">
+          <div className="field">
+            <label>Brand name</label>
+            <div className="readonly-value">{brandName || '—'}</div>
+          </div>
+          <div className="field">
+            <label>Model name</label>
+            <div className="readonly-value">{modelName || '—'}</div>
+          </div>
+        </div>
+
+        {selectedItem.type === 'camera' && typeof onChangeCameraModel === 'function' && (
+          <div className="attributes-change-model-section">
+            <Button
+              type="button"
+              label="Change camera model"
+              icon="pi pi-sync"
+              outlined
+              onClick={() => onChangeCameraModel(selectedItem)}
+            />
+          </div>
+        )}
+
+        {onDeleteEquipment && (
+          <div className="attributes-delete-section">
+            <Button
+              type="button"
+              label="Delete equipment"
+              icon="pi pi-trash"
+              severity="danger"
+              outlined
+              onClick={() => {
+                if (window.confirm('Remove this equipment from the layout?')) {
+                  onDeleteEquipment(selectedItem.id);
+                }
+              }}
+            />
+          </div>
+        )}
+
 
         {/* GENERAL */}
         <h3 className="section-subtitle">General</h3>
@@ -78,7 +130,6 @@ function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings })
               value={selectedItem.resolution || "1080p"}
               options={resolutions}
               onChange={(e) => onUpdateSettings(selectedItem.id, "resolution", e.value)}
-              className="w-full"
             />
           </div>
 
@@ -95,13 +146,12 @@ function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings })
               onValueChange={(e) => onUpdateSettings(selectedItem.id, "focalLength", e.value)}
               min={1}
               max={50}
-              className="w-full"
             />
           </div>
 
         </div>
 
-        {/* ⭐ FOV APPEARANCE */}
+        
         <h3 className="section-subtitle">FOV Appearance</h3>
         <div className="section-box">
 
@@ -150,7 +200,6 @@ function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings })
               onValueChange={(e) => onUpdateSettings(selectedItem.id, "height", e.value)}
               min={1}
               max={20}
-              className="w-full"
             />
           </div>
 
@@ -189,26 +238,10 @@ function AttributesBar({ selectedItemId, equipment, onClose, onUpdateSettings })
               onValueChange={(e) => onUpdateSettings(selectedItem.id, "irRange", e.value)}
               min={0}
               max={200}
-              className="w-full"
             />
           </div>
 
         </div>
-
-        {/* NOTES */}
-        <h3 className="section-subtitle">Notes</h3>
-        <div className="section-box">
-
-          <div className="field">
-            <InputText
-              value={selectedItem.notes || ""}
-              onChange={(e) => onUpdateSettings(selectedItem.id, "notes", e.target.value)}
-              className="w-full"
-            />
-          </div>
-
-        </div>
-
       </div>
     </Sidebar>
   );
