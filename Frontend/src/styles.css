@@ -1,20 +1,3 @@
-.nav-button {
-  margin-top: 25px;
-  padding: 14px 25px;
-  font-size: 18px;
-  font-weight: bold;
-  color: white;
-  background-color: #28a745; /* Green for "Go" */
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.nav-button:hover {
-  background-color: #218838;
-}
-
 /* ------------------
    DesignPage.jsx Styles
 ------------------ */
@@ -86,28 +69,6 @@
   pointer-events: none;
 }
 
-/* Style for the actual camera icon */
-.camera-icon {
-  position: absolute; 
-  transform: translate(-50%, -50%); /* Centers the icon exactly on the click point */
-  font-size: 24px; 
-  cursor: pointer;
-  z-index: 1003; /* Ensures it sits above the image */
-  color: red; /* Make the icon stand out */
-  text-shadow: 0 0 5px black;
-}
-
-.camera-count {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    color: white;
-    background: rgba(0, 0, 0, 0.6);
-    padding: 5px 10px;
-    border-radius: 5px;
-    z-index: 1004;
-}
-
 .item-count {
   position: absolute;
   bottom: 10px;
@@ -139,6 +100,17 @@
   stroke-dasharray: 10 6;
 }
 
+.wall-line--selected {
+  stroke: #c45c26;
+  stroke-width: 8;
+}
+
+.wall-post-handle {
+  fill: #ffffff;
+  stroke: #30343f;
+  stroke-width: 2;
+}
+
 .wall-draw-capture {
   position: absolute;
   inset: 0;
@@ -146,10 +118,34 @@
   pointer-events: none;
 }
 
-.wall-draw-capture.is-active {
+.wall-draw-capture.is-active.is-draw-phase {
   pointer-events: auto;
   cursor: crosshair;
   background: rgba(90, 90, 90, 0.28);
+}
+
+.wall-draw-capture.is-active.is-edit-phase {
+  pointer-events: auto;
+  cursor: default;
+  background: rgba(90, 90, 90, 0.28);
+}
+
+.wall-mode-hint {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 44px;
+  max-width: min(560px, 90vw);
+  margin: 0;
+  text-align: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.65);
+  padding: 8px 14px;
+  border-radius: 6px;
+  z-index: 1003;
+  pointer-events: none;
+  font-size: 0.95rem;
+  line-height: 1.35;
 }
 
 html, body, #root {

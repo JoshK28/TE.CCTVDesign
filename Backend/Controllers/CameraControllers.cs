@@ -17,33 +17,64 @@ namespace Backend.Controllers
         }
 
     [HttpGet]
-    // 1. Add these parameters so C# knows to look for them in the URL
-    public async Task<IActionResult> GetCameras([FromQuery] string? search, [FromQuery] string? brand)
+    public async Task<IActionResult> GetCameras(
+        [FromQuery] string? search,
+        [FromQuery] List<string>? brand,
+        [FromQuery] List<string>? type,
+        [FromQuery] List<string>? resolution,
+        [FromQuery] int limit = 500)
     {
-        // 2. Instead of getting the list immediately, create a "Queryable"
-        var query = _context.Cameras.AsQueryable();
+        var query = _context.Cameras.AsNoTracking().AsQueryable();
 
-        // 3. Only apply the filter if the user actually typed something
         if (!string.IsNullOrEmpty(search))
         {
             query = query.Where(c => c.ModelNumber.Contains(search));
         }
 
-        if (!string.IsNullOrEmpty(brand))
+        if (brand is { Count: > 0 })
         {
-            query = query.Where(c => c.Brand == brand);
+            query = query.Where(c => brand.Contains(c.Brand));
         }
 
-        // 4. NOW it executes the filtered SQL command
-        var cameras = await query.ToListAsync(); 
-        
+        if (type is { Count: > 0 })
+        {
+            query = query.Where(c => type.Contains(c.Type));
+        }
+
+        if (resolution is { Count: > 0 })
+        {
+            query = query.Where(c => resolution.Contains(c.Resolution));
+        }
+
+        var take = Math.Clamp(limit, 1, 1000);
+        var cameras = await query
+            .OrderBy(c => c.Brand)
+            .ThenBy(c => c.ModelNumber)
+            .Take(take)
+            .ToListAsync();
+
         return Ok(cameras);
+    }
+
+    /// <summary>Distinct manufacturer names for filter dropdowns (small payload).</summary>
+    [HttpGet("brands")]
+    public async Task<IActionResult> GetBrands()
+    {
+        var brands = await _context.Cameras
+            .AsNoTracking()
+            .Where(c => c.Brand != null && c.Brand != string.Empty)
+            .Select(c => c.Brand)
+            .Distinct()
+            .OrderBy(b => b)
+            .ToListAsync();
+
+        return Ok(brands);
     }
 
         // handles GET requests to /api/cameras/{id}
         // returns a single camera based on the id provided
         // example: /api/cameras/1 returns the camera with id 1
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetCamera(int id)
         {
             // look for a camera with the provided id in the database

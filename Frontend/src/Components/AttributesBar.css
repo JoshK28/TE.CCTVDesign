@@ -30,6 +30,10 @@
   margin-bottom: -10px;
 }
 
+.sidebar-content > .section-subtitle:first-of-type {
+  margin-top: 0;
+}
+
 .readonly-value {
   padding: 8px 10px;
   background: #f4f4f4;
@@ -50,4 +54,16 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.attributes-change-model-section {
+  margin-top: 4px;
+}
+
+.attributes-change-model-section .p-button {
+  width: 100%;
+}
+
+.attributes-delete-section {
+  margin-top: 4px;
 }

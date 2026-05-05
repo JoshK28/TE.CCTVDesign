@@ -1,8 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Toast } from 'primereact/toast';
+import { Button } from 'primereact/button';
 import { Toolbar, Equipment, EquipmentSelector, AttributesBar, WallDrawingLayer } from '../Components/index';
 import api from '../services/api';
 import { calculateFovPolygon } from '../utils/fov';
+import { getLocalPoint } from '../utils/points';
+import { empty_Walls, segmentsToWallGraph, wallToSegments } from '../utils/wallsConverter';
 
 const DEFAULT_CAMERA_SETTINGS = {
   name: '',
@@ -18,19 +22,8 @@ const DEFAULT_CAMERA_SETTINGS = {
   attributes: {},
 };
 
-const updateItemById = (items, id, patch) =>
-  items.map((item) => (item.id === id ? { ...item, ...patch } : item));
-
-const updateItemAttributesById = (items, id, attributesPatch) =>
-  items.map((item) =>
-    item.id === id
-      ? { ...item, attributes: { ...(item.attributes ?? {}), ...attributesPatch } }
-      : item
-  );
-
 const createDevice = (tool, x, y, id = Date.now(), rotation = 0) => ({
   id,
-  kind: tool,
   type: tool,
   x,
   y,
@@ -40,15 +33,17 @@ const createDevice = (tool, x, y, id = Date.now(), rotation = 0) => ({
 
 function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedChanges = false }) {
   const [activeTool, setActiveTool] = useState(null);
-  const [equipment, setEquipment] = useState([]);
-  const [wallsByFloor, setWallsByFloor] = useState({});
   const [selectedItemId, setSelectedItemId] = useState(null);
-  const [displaySelector, setDisplaySelector] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState('');
+  const [pendingPlacement, setPendingPlacement] = useState(null);
 
-  // get walls for current floor only
-  const walls = wallsByFloor[floorId] ?? [];
+  const [equipment, setEquipment] = useState([]);
+  const [wallGraphs, setWallGraphs] = useState({});
+
+  const [saving, setSaving] = useState(false);
+  const toastRef = useRef(null);
+
+  const currentWallGraph = floorId ? (wallGraphs[floorId] ?? empty_Walls) : empty_Walls;
+  const currentWalls = wallToSegments(currentWallGraph);
 
   useEffect(() => {
     if (!floorId) return;
@@ -61,7 +56,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
       try {
         const res = await api.get(`/api/camerplacements/${floorId}`);
         const loaded = (res.data ?? []).map((p) =>
-          createDevice(p.type || 'camera', p.x, p.y, p.placementID ?? Date.now(), p.rotation ?? 0)
+          createDevice(p.type || p.kind || 'camera', p.x, p.y, p.placementID ?? Date.now(), p.rotation ?? 0)
         );
         setEquipment(loaded);
       } catch (err) {
@@ -83,7 +78,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
           realWorldLength: w.realWorldLength,
           realWorldHeight: w.realWorldHeight
         }));
-        setWallsByFloor(prev => ({ ...prev, [floorId]: loadedWalls }));
+        setWallGraphs((prev) => ({ ...prev, [floorId]: segmentsToWallGraph(loadedWalls) }));
       } catch (err) {
         console.error('Failed to load walls', err);
       }
@@ -96,6 +91,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (!activeTool) return;
+      if (activeTool === 'wall') return;
       if (event.key === 'Escape' || event.key === 'Enter') {
         setActiveTool(null);
       }
@@ -105,26 +101,16 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeTool]);
 
-  const updatePlacement = (id, patch) => {
-    setEquipment((prev) => updateItemById(prev, id, patch));
+  const updatePlacement = (id, patchOrBuilder) => {
+    setEquipment((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const patch = typeof patchOrBuilder === 'function' ? patchOrBuilder(item) : patchOrBuilder;
+        return { ...item, ...patch };
+      })
+    );
     onUnsavedChanges(true);
   };
-
-  const updatePlacementAttributes = (id, attributesPatch) => {
-    setEquipment((prev) => updateItemAttributesById(prev, id, attributesPatch));
-    onUnsavedChanges(true);
-  };
-
-  // add wall to current floor only
-  const handleAddWall = (wall) => {
-    setWallsByFloor(prev => ({
-      ...prev,
-      [floorId]: [...(prev[floorId] ?? []), wall]
-    }));
-    onUnsavedChanges(true);
-  };
-
-  const selectedItem = equipment.find((item) => item.id === selectedItemId);
 
   const handleNewItem = (event) => {
     event.preventDefault();
@@ -136,48 +122,95 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
       return;
     }
 
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const { x, y } = getLocalPoint(event, event.currentTarget);
 
-    const newDevice = createDevice(toolToPlace, x, y);
-    setEquipment((prev) => [...prev, newDevice]);
-    setSelectedItemId(newDevice.id);
+    setPendingPlacement({ x, y, type: toolToPlace });
+    setSelectedItemId(null);
     setActiveTool(null);
-    setDisplaySelector(true);
+  };
+
+  const closeSelector = () => setPendingPlacement(null);
+
+  const handleConfirmPlacement = ({ camera, displayName } = {}) => {
+    if (!pendingPlacement) return;
+    const { x, y, type, replaceItemId } = pendingPlacement;
+
+    if (replaceItemId != null) {
+      if (type === 'camera' && camera) {
+        updatePlacement(replaceItemId, (item) => ({
+          ...item,
+          name: camera.modelNumber ?? item.name,
+          resolution: camera.resolution ?? item.resolution,
+          attributes: {
+            ...(item.attributes ?? {}),
+            cameraId: camera.id,
+            cameraModel: camera.modelNumber,
+            brand: camera.brand,
+            resolution: camera.resolution,
+            cameraType: camera.type,
+          },
+        }));
+        setSelectedItemId(replaceItemId);
+      }
+      return;
+    }
+
+    const base = createDevice(type, x, y);
+    let newObject = displayName ? { ...base, name: displayName } : base;
+
+    if (type === 'camera' && camera) {
+      newObject = {
+        ...newObject,
+        name: camera.modelNumber ?? newObject.name,
+        resolution: camera.resolution ?? newObject.resolution,
+        attributes: {
+          ...(newObject.attributes ?? {}),
+          cameraId: camera.id,
+          cameraModel: camera.modelNumber,
+          brand: camera.brand,
+          resolution: camera.resolution,
+          cameraType: camera.type,
+        },
+      };
+    }
+
+    setEquipment((prev) => [...prev, newObject]);
+    setSelectedItemId(newObject.id);
     onUnsavedChanges(true);
   };
 
-  const handleSelectCamera = (camera) => {
-    const targetId = selectedItemId ?? equipment[equipment.length - 1]?.id;
-    if (!targetId) return;
-
-    updatePlacement(targetId, {
-      name: camera.modelNumber ?? '',
-      resolution: camera.resolution ?? '1080p',
-    });
-
-    updatePlacementAttributes(targetId, {
-      cameraId: camera.id,
-      cameraModel: camera.modelNumber,
-      brand: camera.brand,
-      resolution: camera.resolution,
-      cameraType: camera.type,
-    });
+  const handleChangeCameraModel = (item) => {
+    if (!item || item.type !== 'camera') return;
+    setPendingPlacement({ x: item.x, y: item.y, type: 'camera', replaceItemId: item.id });
+    setSelectedItemId(null);
   };
 
-  const handleUpdateSettings = (id, field, value) => {
-    updatePlacement(id, { [field]: value });
+  const handleDeleteEquipment = (id) => {
+    setEquipment((prev) => prev.filter((item) => item.id !== id));
+    setSelectedItemId(null);
+    onUnsavedChanges(true);
+  };
+
+  const handleWallGraphChange = (updater) => {
+    if (!floorId || typeof updater !== 'function') return;
+    setWallGraphs((prev) => ({
+      ...prev,
+      [floorId]: updater(prev[floorId] ?? empty_Walls),
+    }));
+    onUnsavedChanges(true);
   };
 
   const handleSave = async () => {
     if (!floorId) {
-      setSaveMessage('No floor layout selected');
+      toastRef.current?.show({
+        severity: 'warn',
+        summary: 'Cannot save',
+        detail: 'No floor layout selected',
+      });
       return;
     }
 
     setSaving(true);
-    setSaveMessage('');
 
     try {
       // save camera placements
@@ -187,13 +220,13 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
         x: item.x,
         y: item.y,
         rotation: item.rotation || 0,
-        type: item.type || item.kind || 'camera',
+        type: item.type || 'camera',
       }));
 
       await api.post(`/api/camerplacements/save/${floorId}`, placements);
 
       // save walls for current floor
-      const wallsToSave = walls.map((wall) => ({
+      const wallsToSave = currentWalls.map((wall) => ({
         floorID: floorId,
         x1: wall.x1,
         y1: wall.y1,
@@ -205,17 +238,22 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
       }));
 
       await api.post(`/api/walls/save/${floorId}`, wallsToSave);
-
-      setSaveMessage('Saved successfully!');
+      toastRef.current?.show({
+        severity: 'success',
+        detail: 'Placements and walls saved successfully.',
+      });
       onUnsavedChanges(false);
-      setTimeout(() => setSaveMessage(''), 3000);
     } catch (err) {
       const apiMessage = err?.response?.data;
       const errorText =
         typeof apiMessage === 'string'
           ? apiMessage
           : apiMessage?.message || err?.message || 'Failed to save';
-      setSaveMessage(errorText);
+      toastRef.current?.show({
+        severity: 'error',
+        summary: 'Save failed',
+        detail: errorText,
+      });
       console.error('Failed to save', err);
     } finally {
       setSaving(false);
@@ -224,13 +262,17 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
 
   return (
     <div className="design-workspace">
+      <Toast ref={toastRef} position="top-right" />
       <div className="toolbar-sidebar">
         <Toolbar onSelectTool={setActiveTool} />
       </div>
 
       <div
         className="image-fullscreen-wrapper"
-        onClick={() => setSelectedItemId(null)}
+        onClick={() => {
+          setSelectedItemId(null);
+          closeSelector();
+        }}
         onDrop={handleNewItem}
         onDragOver={(e) => e.preventDefault()}
       >
@@ -242,11 +284,11 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
         />
         <svg className="fov-overlay">
           {equipment
-            .filter((item) => (item.kind ?? item.type) === 'camera')
+            .filter((item) => item.type === 'camera')
             .map((item) => (
               <polygon
                 key={item.id}
-                points={calculateFovPolygon(item, walls)}
+                points={calculateFovPolygon(item, currentWalls)}
                 fill={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
                 stroke={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
                 strokeWidth="2"
@@ -263,8 +305,12 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
           />
         ))}
 
-        {/* walls filtered to current floor only */}
-        <WallDrawingLayer activeTool={activeTool} walls={walls} onAddWall={handleAddWall} />
+        <WallDrawingLayer
+          activeTool={activeTool}
+          wallGraph={currentWallGraph}
+          onWallGraphChange={handleWallGraphChange}
+          onExitWallMode={() => setActiveTool(null)}
+        />
         <p className="item-count">Items Placed: {equipment.length}</p>
 
         <div
@@ -272,61 +318,39 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
             position: 'absolute',
             top: '10px',
             right: '10px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-end',
-            gap: '5px',
             zIndex: 1005,
           }}
         >
-          <button
+          <Button
+            type="button"
+            label="Save"
+            icon="pi pi-save"
+            severity="success"
+            loading={saving}
+            disabled={saving}
             onClick={(e) => {
               e.stopPropagation();
               handleSave();
             }}
-            disabled={saving}
-            style={{
-              padding: '8px 20px',
-              backgroundColor: saving ? '#6c757d' : hasUnsavedChanges ? '#dc3545' : '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: saving ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-            }}
-          >
-            {saving ? 'Saving...' : hasUnsavedChanges ? 'Unsaved Changes' : 'Saved'}
-          </button>
-          {saveMessage && (
-            <p
-              style={{
-                backgroundColor: saveMessage.includes('Failed')
-                  ? 'rgba(255,0,0,0.7)'
-                  : 'rgba(0,0,0,0.6)',
-                color: 'white',
-                padding: '5px 10px',
-                borderRadius: '5px',
-                fontSize: '13px',
-                margin: 0,
-              }}
-            >
-              {saveMessage}
-            </p>
-          )}
+          />
         </div>
       </div>
 
       <EquipmentSelector
-        visible={displaySelector}
-        onHide={() => setDisplaySelector(false)}
-        onSelectCamera={handleSelectCamera}
+        visible={pendingPlacement != null}
+        placementType={pendingPlacement?.type ?? null}
+        onHide={closeSelector}
+        onConfirmSelection={handleConfirmPlacement}
       />
 
       <AttributesBar
-        selectedItemId={selectedItem?.id}
-        equipment={equipment}
+        selectedItem={
+          selectedItemId == null ? null : equipment.find((e) => e.id === selectedItemId) ?? null
+        }
         onClose={() => setSelectedItemId(null)}
-        onUpdateSettings={handleUpdateSettings}
+        onUpdateSettings={(id, field, value) => updatePlacement(id, () => ({ [field]: value }))}
+        onChangeCameraModel={handleChangeCameraModel}
+        onDeleteEquipment={handleDeleteEquipment}
       />
     </div>
   );
@@ -380,7 +404,6 @@ function DesignPage() {
   if (!currentImageSrc) return <p>No floor layouts found for this project.</p>;
 
   const currentFloorId = floorLayouts.length > 0 ? floorLayouts[selectedLayer]?.floorID : null;
-
   const handleBackButton = () => {
     if (hasUnsavedChanges) {
       const confirm = window.confirm('You have unsaved changes. Do you want to leave without saving?');
@@ -393,9 +416,12 @@ function DesignPage() {
   return (
     <div className="design-page-container">
       <div className="design-topbar">
-        <button onClick={handleBackButton} className="back-button">
-          &larr; Back to Project List
-        </button>
+        <Button
+          type="button"
+          className="back-button"
+          label="← Back to Project List"
+          onClick={handleBackButton}
+        />
       </div>
 
       <Workspace
@@ -421,21 +447,20 @@ function DesignPage() {
           }}
         >
           {floorLayouts.map((layout, index) => (
-            <button
+            <Button
               key={layout.floorID}
+              type="button"
+              label={`Layer ${layout.layer}`}
               onClick={() => setSelectedLayer(index)}
               style={{
                 padding: '8px 16px',
                 borderRadius: '20px',
-                border: 'none',
-                cursor: 'pointer',
                 backgroundColor: selectedLayer === index ? '#007bff' : '#fff',
                 color: selectedLayer === index ? '#fff' : '#000',
                 fontWeight: selectedLayer === index ? 'bold' : 'normal',
+                border: 'none',
               }}
-            >
-              Layer {layout.layer}
-            </button>
+            />
           ))}
         </div>
       )}
