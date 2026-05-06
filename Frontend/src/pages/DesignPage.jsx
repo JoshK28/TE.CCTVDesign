@@ -131,7 +131,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
 
   const closeSelector = () => setPendingPlacement(null);
 
-  const handleConfirmPlacement = ({ camera, displayName } = {}) => {
+  const handleConfirmPlacement = ({ camera, displayName, equipmentType } = {}) => {
     const { x, y, type, replaceItemId } = pendingPlacement;
 
     if (replaceItemId != null) {
@@ -154,7 +154,8 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
       return;
     }
 
-    const base = createDevice(type, x, y);
+    const resolvedType = type === 'device' && equipmentType ? equipmentType : type;
+    const base = createDevice(resolvedType, x, y);
     let newObject = displayName ? { ...base, name: displayName } : base;
 
     if (type === 'camera' && camera) {

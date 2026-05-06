@@ -103,7 +103,7 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
         label="Place on layout"
         disabled={!selectedDeviceType}
         onClick={() => {
-          onConfirmSelection?.({ displayName: selectedDeviceType });
+          onConfirmSelection?.({ equipmentType: selectedDeviceType.toLowerCase() });
           onHide();
         }}
       />
