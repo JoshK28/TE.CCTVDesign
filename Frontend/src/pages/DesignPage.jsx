@@ -132,7 +132,6 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
   const closeSelector = () => setPendingPlacement(null);
 
   const handleConfirmPlacement = ({ camera, displayName } = {}) => {
-    if (!pendingPlacement) return;
     const { x, y, type, replaceItemId } = pendingPlacement;
 
     if (replaceItemId != null) {

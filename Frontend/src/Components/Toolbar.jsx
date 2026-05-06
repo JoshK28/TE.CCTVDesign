@@ -6,6 +6,7 @@ export default function Toolbar({ onSelectTool }) {
 
     const draggableItem = (item) => {
         const isCamera = item.label === 'camera';
+        const isDevice = item.label === 'device';
         return (
             <div 
                 draggable 
@@ -15,6 +16,8 @@ export default function Toolbar({ onSelectTool }) {
             >
                 {isCamera ? (
                     <img src={securityCameraIcon} alt="" style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                ) : isDevice ? (
+                    <span className="pi pi-box" style={{ marginRight: '0.5rem' }}></span>
                 ) : (
                     <span className="pi pi-camera" style={{ marginRight: '0.5rem' }}></span>
                 )}
@@ -29,6 +32,7 @@ export default function Toolbar({ onSelectTool }) {
             icon: 'pi pi-plus',
             items: [[
                 {items: [{label: 'camera', template: draggableItem},
+                    {label: 'device', template: draggableItem},
                     {label: 'router', template: draggableItem},
                      {label: 'sensor', template: draggableItem},
                       {label: 'alarm', template: draggableItem}]}

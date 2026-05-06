@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Sidebar } from 'primereact/sidebar';
 import { MultiSelect } from 'primereact/multiselect';
+import { Dropdown } from 'primereact/dropdown';
 import { Chip } from 'primereact/chip';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
@@ -13,12 +14,14 @@ const EMPTY_FILTERS = { manufacturers: [], cameraTypes: [], resolutions: [], mod
 
 const CAMERA_TYPE_OPTIONS = ['Bullet', 'Dome', 'PTZ', 'Box'];
 const CAMERA_RESOLUTION_OPTIONS = Array.from({ length: 16 }, (_, i) => `${i + 1}MP`);
+const DEVICE_TYPE_OPTIONS = ['Router', 'Sensor', 'Alarm', 'NVR', 'Switch', 'Access Point'];
 
 export default function EquipmentSelector({ visible, placementType, onHide, onConfirmSelection }) {
   const [brands, setBrands] = useState([]);
   const [searchResults, setSearchResults] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [selectedDeviceType, setSelectedDeviceType] = useState('');
   const [mainTab, setMainTab] = useState(0);
 
   useEffect(() => {
@@ -27,6 +30,7 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     setMainTab(0);
     setFilters(EMPTY_FILTERS);
     setSearchResults(null);
+    setSelectedDeviceType('');
 
     if (placementType !== 'camera') return;
 
@@ -79,8 +83,35 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     </div>
   );
 
+  const renderDeviceSearchPanel = () => (
+    <div className="equipment-selector-stack">
+      <div>
+        <label htmlFor="eq-device-type" style={{ display: 'block', marginBottom: '0.35rem' }}>
+          Device type
+        </label>
+        <Dropdown
+          id="eq-device-type"
+          value={selectedDeviceType}
+          options={DEVICE_TYPE_OPTIONS}
+          placeholder="Select a device type"
+          onChange={(e) => setSelectedDeviceType(e.value ?? '')}
+          showClear
+        />
+      </div>
+      <Button
+        type="button"
+        label="Place on layout"
+        disabled={!selectedDeviceType}
+        onClick={() => {
+          onConfirmSelection?.({ displayName: selectedDeviceType });
+          onHide();
+        }}
+      />
+    </div>
+  );
+
   const renderBody = () => {
-    if (placementType === 'camera' || placementType === 'router' || placementType === 'sensor' || placementType === 'alarm') {
+    if (placementType === 'camera' || placementType === 'device' || placementType === 'router' || placementType === 'sensor' || placementType === 'alarm') {
       
       return (
         <TabView
@@ -89,7 +120,11 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
           onTabChange={(e) => setMainTab(e.index)}
         >
           <TabPanel header={`Search ${placementType}`}>
-            {placementType === 'camera' ? renderCameraSearchPanel() : renderObjectPanel()}
+            {placementType === 'camera'
+              ? renderCameraSearchPanel()
+              : placementType === 'device'
+                ? renderDeviceSearchPanel()
+                : renderObjectPanel()}
           </TabPanel>
           <TabPanel header="Add new device"> </TabPanel>
         </TabView>
