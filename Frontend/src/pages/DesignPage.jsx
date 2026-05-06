@@ -416,12 +416,23 @@ function DesignPage() {
   return (
     <div className="design-page-container">
       <div className="design-topbar">
-        <Button
-          type="button"
-          className="back-button"
-          label="← Back to Project List"
-          onClick={handleBackButton}
-        />
+        <button onClick={handleBackButton} className="back-button">
+          &larr; Back to Project List
+        </button>
+        <button
+          onClick={() => navigate('/app/bom', { state: { projectId } })}
+          style={{
+            padding: '8px 20px',
+            backgroundColor: '#245d91',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          📦 Bill of Materials
+        </button>
       </div>
 
       <Workspace
