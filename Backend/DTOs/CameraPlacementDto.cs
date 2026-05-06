@@ -4,6 +4,8 @@ namespace Backend.DTOs
     {
         public int FloorID { get; set; }
         public int? CameraId { get; set; }
+        public int? NetworkingId { get; set; }
+        public int? AccessControlId { get; set; }
         public double X { get; set; }
         public double Y { get; set; }
         public double Rotation { get; set; } = 0;
