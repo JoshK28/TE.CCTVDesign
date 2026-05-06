@@ -53,7 +53,8 @@ function AttributesBar({
   const currentOpacity = selectedItem.fovOpacity ?? 0.3;
   const attrs = selectedItem.attributes ?? {};
   const brandName = attrs.brand ?? '';
-  const modelName = attrs.cameraModel ?? selectedItem.name ?? '';
+  const modelName = attrs.cameraModel ?? attrs.modelName ?? selectedItem.name ?? '';
+  const costPerUnit = attrs.costPerUnit;
 
   const propertiesTitle = `${selectedItem.type ?? ''} properties`;
 
@@ -80,6 +81,12 @@ function AttributesBar({
             <label>Model name</label>
             <div className="readonly-value">{modelName || '—'}</div>
           </div>
+          {costPerUnit != null && (
+            <div className="field">
+              <label>Cost per unit</label>
+              <div className="readonly-value">${costPerUnit}</div>
+            </div>
+          )}
         </div>
 
         {selectedItem.type === 'camera' && typeof onChangeCameraModel === 'function' && (

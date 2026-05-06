@@ -131,7 +131,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
 
   const closeSelector = () => setPendingPlacement(null);
 
-  const handleConfirmPlacement = ({ camera, displayName, equipmentType } = {}) => {
+  const handleConfirmPlacement = ({ camera, displayName, equipmentType, manufacturer, modelName, costPerUnit } = {}) => {
     const { x, y, type, replaceItemId } = pendingPlacement;
 
     if (replaceItemId != null) {
@@ -157,6 +157,22 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     const resolvedType = type === 'device' && equipmentType ? equipmentType : type;
     const base = createDevice(resolvedType, x, y);
     let newObject = displayName ? { ...base, name: displayName } : base;
+
+    if (type === 'device') {
+      const normalizedManufacturer = manufacturer?.trim();
+      const normalizedModelName = modelName?.trim();
+
+      newObject = {
+        ...newObject,
+        name: normalizedModelName || newObject.name,
+        attributes: {
+          ...(newObject.attributes ?? {}),
+          ...(normalizedManufacturer ? { brand: normalizedManufacturer } : {}),
+          ...(normalizedModelName ? { modelName: normalizedModelName } : {}),
+          ...(typeof costPerUnit === 'number' ? { costPerUnit } : {}),
+        },
+      };
+    }
 
     if (type === 'camera' && camera) {
       newObject = {

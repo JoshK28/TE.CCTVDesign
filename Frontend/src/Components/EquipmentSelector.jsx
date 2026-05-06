@@ -22,6 +22,9 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
   const [searchLoading, setSearchLoading] = useState(false);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [selectedDeviceType, setSelectedDeviceType] = useState('');
+  const [deviceManufacturer, setDeviceManufacturer] = useState('');
+  const [deviceModelName, setDeviceModelName] = useState('');
+  const [deviceCostPerUnit, setDeviceCostPerUnit] = useState('');
   const [mainTab, setMainTab] = useState(0);
 
   useEffect(() => {
@@ -31,6 +34,9 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     setFilters(EMPTY_FILTERS);
     setSearchResults(null);
     setSelectedDeviceType('');
+    setDeviceManufacturer('');
+    setDeviceModelName('');
+    setDeviceCostPerUnit('');
 
     if (placementType !== 'camera') return;
 
@@ -84,6 +90,12 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
   );
 
   const renderDeviceSearchPanel = () => (
+    <p className="equipment-selector-muted equipment-selector-tab-placeholder">
+      Device search will use the camera-style catalog flow. Use "Add new device" for now.
+    </p>
+  );
+
+  const renderAddDevicePanel = () => (
     <div className="equipment-selector-stack">
       <div>
         <label htmlFor="eq-device-type" style={{ display: 'block', marginBottom: '0.35rem' }}>
@@ -98,12 +110,51 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
           showClear
         />
       </div>
+      <div>
+        <label htmlFor="eq-device-manufacturer" style={{ display: 'block', marginBottom: '0.35rem' }}>
+          Manufacturer
+        </label>
+        <InputText
+          id="eq-device-manufacturer"
+          value={deviceManufacturer}
+          onChange={(e) => setDeviceManufacturer(e.target.value)}
+        />
+      </div>
+      <div>
+        <label htmlFor="eq-device-model-name" style={{ display: 'block', marginBottom: '0.35rem' }}>
+          Model name
+        </label>
+        <InputText
+          id="eq-device-model-name"
+          value={deviceModelName}
+          onChange={(e) => setDeviceModelName(e.target.value)}
+        />
+      </div>
+      <div>
+        <label htmlFor="eq-device-cost-per-unit" style={{ display: 'block', marginBottom: '0.35rem' }}>
+          Cost per unit
+        </label>
+        <InputText
+          id="eq-device-cost-per-unit"
+          value={deviceCostPerUnit}
+          onChange={(e) => setDeviceCostPerUnit(e.target.value)}
+        />
+      </div>
       <Button
         type="button"
         label="Place on layout"
         disabled={!selectedDeviceType}
         onClick={() => {
-          onConfirmSelection?.({ equipmentType: selectedDeviceType.toLowerCase() });
+          const normalizedManufacturer = deviceManufacturer.trim();
+          const normalizedModelName = deviceModelName.trim();
+          const parsedCost = Number.parseFloat(deviceCostPerUnit.trim());
+
+          onConfirmSelection?.({
+            equipmentType: selectedDeviceType.toLowerCase(),
+            manufacturer: normalizedManufacturer || undefined,
+            modelName: normalizedModelName || undefined,
+            costPerUnit: Number.isFinite(parsedCost) ? parsedCost : undefined,
+          });
           onHide();
         }}
       />
@@ -126,7 +177,9 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
                 ? renderDeviceSearchPanel()
                 : renderObjectPanel()}
           </TabPanel>
-          <TabPanel header="Add new device"> </TabPanel>
+          <TabPanel header="Add new device">
+            {placementType === 'device' ? renderAddDevicePanel() : null}
+          </TabPanel>
         </TabView>
       );
     }
