@@ -77,6 +77,24 @@ namespace Backend.Data
                 .WithMany()
                 .HasForeignKey(w => w.FloorID)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CameraPlacement>()
+                .HasOne(c => c.Camera)
+                .WithMany()
+                .HasForeignKey(c => c.CameraId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<CameraPlacement>()
+                .HasOne(c => c.NetworkingDevice)
+                .WithMany()
+                .HasForeignKey(c => c.NetworkingId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<CameraPlacement>()
+                .HasOne(c => c.AccessControlDevice)
+                .WithMany()
+                .HasForeignKey(c => c.AccessControlId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }
