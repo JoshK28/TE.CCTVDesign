@@ -37,7 +37,11 @@ function App() {
         {/* protected routes - require login */}
         <Route path="/app/calculator" element={isLoggedIn ? <StorageCalculator onLogout={handleLogout} />: <Navigate to="/login" replace />} />
         <Route path="/app/ups" element={isLoggedIn ? <UPSCalculator onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
-        <Route path="/app/bom" element={isLoggedIn ? <BillOfMaterials onLogout={handleLogout} />: <Navigate to="/login" replace />} />
+        
+        <Route
+          path="/app/bom"
+          element={isLoggedIn ? <BillOfMaterials onLogout={handleLogout} /> : <Navigate to="/" replace />}
+        />
 
 
         <Route
