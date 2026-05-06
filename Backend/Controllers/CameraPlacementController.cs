@@ -33,14 +33,16 @@ namespace Backend.Controllers
                 _context.CameraPlacemens.Add(new CameraPlacement
                 {
                     FloorID = floorId,
-                    // set to null if 0 since 0 doesnt exist as a camera id
                     CameraId = placement.CameraId == 0 ? null : placement.CameraId,
                     NetworkingId = placement.NetworkingId == 0 ? null : placement.NetworkingId,
                     AccessControlId = placement.AccessControlId == 0 ? null : placement.AccessControlId,
                     X = placement.X,
                     Y = placement.Y,
                     Rotation = placement.Rotation,
-                    Type = placement.Type
+                    Type = placement.Type,
+                    CameraModel = placement.CameraModel,
+                    Brand = placement.Brand,
+                    Resolution = placement.Resolution
                 });
             }
 
