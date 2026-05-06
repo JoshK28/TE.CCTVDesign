@@ -1,22 +1,53 @@
 import { MegaMenu } from 'primereact/megamenu';
 import 'primeicons/primeicons.css';
+
 import securityCameraIcon from '../assets/Icons/security-camera.png';
+import routerIcon from '../assets/Icons/router.png';
+import sensorIcon from '../assets/Icons/sensor.png';
+import alarmIcon from '../assets/Icons/alarm.png';
 
 export default function Toolbar({ onSelectTool, onUndo, onRedo, canUndo, canRedo }) {
 
+    const getIconFor = (label) => {
+        switch (label) {
+            case 'camera':
+                return securityCameraIcon;
+            case 'router':
+                return routerIcon;
+            case 'sensor':
+                return sensorIcon;
+            case 'alarm':
+                return alarmIcon;
+            default:
+                return null;
+        }
+    };
+
     const draggableItem = (item) => {
-        const isCamera = item.label === 'camera';
+        const iconSrc = getIconFor(item.label);
+
         return (
-            <div 
-                draggable 
+            <div
+                draggable
                 onDragStart={(e) => { e.dataTransfer.setData('tool', item.label); }}
                 onClick={() => onSelectTool(item.label)}
-                style={{ padding: '0.75rem 1.25rem', cursor: 'grab' }}
+                style={{ padding: '0.75rem 1.25rem', cursor: 'grab', display: 'flex', alignItems: 'center' }}
             >
-                {isCamera ? (
-                    <img src={securityCameraIcon} alt="" style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                {iconSrc ? (
+                    <img
+                        src={iconSrc}
+                        alt=""
+                        draggable={false}
+                        style={{
+                            width: '22px',
+                            height: '22px',
+                            marginRight: '0.5rem',
+                            verticalAlign: 'middle',
+                            pointerEvents: 'none'
+                        }}
+                    />
                 ) : (
-                    <span className="pi pi-camera" style={{ marginRight: '0.5rem' }}></span>
+                    <span className="pi pi-question-circle" style={{ marginRight: '0.5rem' }}></span>
                 )}
                 {item.label}
             </div>

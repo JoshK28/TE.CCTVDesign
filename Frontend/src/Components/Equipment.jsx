@@ -23,6 +23,7 @@ const getIcon = (equipmentType) => {
   }
 };
 
+
 function Equipment({ deviceInstance, onSelect, onUpdatePlacement }) {
   const { id, type, x, y, rotation = 0 } = deviceInstance;
   const [livePos, setLivePos] = useState({ x, y });
