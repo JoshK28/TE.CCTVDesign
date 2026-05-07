@@ -1,8 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Toast } from 'primereact/toast';
 import { Button } from 'primereact/button';
-import { Toolbar, Equipment, EquipmentSelector, AttributesBar, WallDrawingLayer } from '../Components/index';
+
+import {
+  Toolbar,
+  Equipment,
+  EquipmentSelector,
+  AttributesBar,
+  WallDrawingLayer
+} from '../Components/index';
+
 import api from '../services/api';
 import { calculateFovPolygon } from '../utils/fov';
 import { getLocalPoint } from '../utils/points';
@@ -31,32 +39,84 @@ const createDevice = (tool, x, y, id = Date.now(), rotation = 0) => ({
   rotation,
 });
 
-function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedChanges = false }) {
+function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
   const [activeTool, setActiveTool] = useState(null);
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [pendingPlacement, setPendingPlacement] = useState(null);
-
   const [equipment, setEquipment] = useState([]);
   const [wallGraphs, setWallGraphs] = useState({});
-
   const [saving, setSaving] = useState(false);
+
   const toastRef = useRef(null);
 
+  // -----------------------------
+  // UNDO / REDO STACKS
+  // -----------------------------
+  const [history, setHistory] = useState([]);
+  const [future, setFuture] = useState([]);
+
+  const snapshot = useCallback(() => ({
+    equipment: JSON.parse(JSON.stringify(equipment)),
+    wallGraphs: JSON.parse(JSON.stringify(wallGraphs)),
+  }), [equipment, wallGraphs]);
+
+  const undo = useCallback(() => {
+    if (history.length === 0) return;
+    const prev = history[history.length - 1];
+
+    setHistory(history.slice(0, -1));
+    setFuture(f => [snapshot(), ...f]);
+
+    setEquipment(prev.equipment);
+    setWallGraphs(prev.wallGraphs);
+  }, [history, snapshot]);
+
+  const redo = useCallback(() => {
+    if (future.length === 0) return;
+    const next = future[0];
+
+    setFuture(future.slice(1));
+    setHistory(h => [...h, snapshot()]);
+
+    setEquipment(next.equipment);
+    setWallGraphs(next.wallGraphs);
+  }, [future, snapshot]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeys = (e) => {
+      if (e.ctrlKey && e.key === 'z') undo();
+      if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) redo();
+    };
+    window.addEventListener('keydown', handleKeys);
+    return () => window.removeEventListener('keydown', handleKeys);
+  }, [undo, redo]);
+
+  // -----------------------------
+  // WALL GRAPH
+  // -----------------------------
   const currentWallGraph = floorId ? (wallGraphs[floorId] ?? empty_Walls) : empty_Walls;
   const currentWalls = wallToSegments(currentWallGraph);
 
+  // -----------------------------
+  // LOAD FLOOR DATA
+  // -----------------------------
   useEffect(() => {
     if (!floorId) return;
 
-    // clear equipment when switching floors
     setEquipment([]);
 
-    // fetch camera placements for this floor
     const fetchPlacements = async () => {
       try {
         const res = await api.get(`/api/camerplacements/${floorId}`);
         const loaded = (res.data ?? []).map((p) =>
-          createDevice(p.type || p.kind || 'camera', p.x, p.y, p.placementID ?? Date.now(), p.rotation ?? 0)
+          createDevice(
+            p.type || p.kind || 'camera',
+            p.x,
+            p.y,
+            p.placementID ?? Date.now(),
+            p.rotation ?? 0
+          )
         );
         setEquipment(loaded);
       } catch (err) {
@@ -64,7 +124,6 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
       }
     };
 
-    // fetch walls for this floor
     const fetchWalls = async () => {
       try {
         const res = await api.get(`/api/walls/${floorId}`);
@@ -78,7 +137,10 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
           realWorldLength: w.realWorldLength,
           realWorldHeight: w.realWorldHeight
         }));
-        setWallGraphs((prev) => ({ ...prev, [floorId]: segmentsToWallGraph(loadedWalls) }));
+        setWallGraphs((prev) => ({
+          ...prev,
+          [floorId]: segmentsToWallGraph(loadedWalls)
+        }));
       } catch (err) {
         console.error('Failed to load walls', err);
       }
@@ -88,10 +150,14 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     fetchWalls();
   }, [floorId]);
 
+  // -----------------------------
+  // ESC / ENTER CANCEL TOOL
+  // -----------------------------
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (!activeTool) return;
       if (activeTool === 'wall') return;
+
       if (event.key === 'Escape' || event.key === 'Enter') {
         setActiveTool(null);
       }
@@ -101,21 +167,37 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeTool]);
 
+  // -----------------------------
+  // UPDATE PLACEMENT (with history)
+  // -----------------------------
   const updatePlacement = (id, patchOrBuilder) => {
+    setHistory(prev => [...prev, snapshot()]);
+    setFuture([]);
+
     setEquipment((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
-        const patch = typeof patchOrBuilder === 'function' ? patchOrBuilder(item) : patchOrBuilder;
+        const patch =
+          typeof patchOrBuilder === 'function'
+            ? patchOrBuilder(item)
+            : patchOrBuilder;
         return { ...item, ...patch };
       })
     );
+
     onUnsavedChanges(true);
   };
 
+  // -----------------------------
+  // NEW ITEM PLACEMENT
+  // -----------------------------
   const handleNewItem = (event) => {
     event.preventDefault();
 
-    const toolToPlace = event.dataTransfer ? event.dataTransfer.getData('tool') : activeTool;
+    const toolToPlace = event.dataTransfer
+      ? event.dataTransfer.getData('tool')
+      : activeTool;
+
     if (toolToPlace === 'wall') return;
     if (!toolToPlace) {
       setSelectedItemId(null);
@@ -123,7 +205,6 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     }
 
     const { x, y } = getLocalPoint(event, event.currentTarget);
-
     setPendingPlacement({ x, y, type: toolToPlace });
     setSelectedItemId(null);
     setActiveTool(null);
@@ -132,6 +213,10 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
   const closeSelector = () => setPendingPlacement(null);
 
   const handleConfirmPlacement = ({ camera, displayName, equipmentType, manufacturer, modelName, costPerUnit } = {}) => {
+    if (!pendingPlacement) return;
+
+    setHistory(prev => [...prev, snapshot()]);
+    setFuture([]);
     const { x, y, type, replaceItemId } = pendingPlacement;
 
     if (replaceItemId != null) {
@@ -195,27 +280,47 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     onUnsavedChanges(true);
   };
 
+  // -----------------------------
+  // CHANGE CAMERA MODEL
+  // -----------------------------
   const handleChangeCameraModel = (item) => {
     if (!item || item.type !== 'camera') return;
     setPendingPlacement({ x: item.x, y: item.y, type: 'camera', replaceItemId: item.id });
     setSelectedItemId(null);
   };
 
+  // -----------------------------
+  // DELETE EQUIPMENT
+  // -----------------------------
   const handleDeleteEquipment = (id) => {
+    setHistory(prev => [...prev, snapshot()]);
+    setFuture([]);
+
     setEquipment((prev) => prev.filter((item) => item.id !== id));
     setSelectedItemId(null);
     onUnsavedChanges(true);
   };
 
+  // -----------------------------
+  // WALL GRAPH CHANGE
+  // -----------------------------
   const handleWallGraphChange = (updater) => {
     if (!floorId || typeof updater !== 'function') return;
+
+    setHistory(prev => [...prev, snapshot()]);
+    setFuture([]);
+
     setWallGraphs((prev) => ({
       ...prev,
       [floorId]: updater(prev[floorId] ?? empty_Walls),
     }));
+
     onUnsavedChanges(true);
   };
 
+  // -----------------------------
+  // SAVE
+  // -----------------------------
   const handleSave = async () => {
     if (!floorId) {
       toastRef.current?.show({
@@ -229,7 +334,6 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     setSaving(true);
 
     try {
-      // save camera placements
       const placements = equipment.map((item) => ({
         floorID: floorId,
         cameraId: item.attributes?.cameraId ?? 0,
@@ -241,23 +345,25 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
 
       await api.post(`/api/camerplacements/save/${floorId}`, placements);
 
-      // save walls for current floor
       const wallsToSave = currentWalls.map((wall) => ({
         floorID: floorId,
         x1: wall.x1,
         y1: wall.y1,
         x2: wall.x2,
         y2: wall.y2,
-        length: wall.length ?? Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1),
+        length:
+          wall.length ?? Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1),
         realWorldLength: wall.realWorldLength ?? 0,
-        realWorldHeight: wall.realWorldHeight ?? 0
+        realWorldHeight: wall.realWorldHeight ?? 0,
       }));
 
       await api.post(`/api/walls/save/${floorId}`, wallsToSave);
+
       toastRef.current?.show({
         severity: 'success',
         detail: 'Placements and walls saved successfully.',
       });
+
       onUnsavedChanges(false);
     } catch (err) {
       const apiMessage = err?.response?.data;
@@ -265,22 +371,34 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
         typeof apiMessage === 'string'
           ? apiMessage
           : apiMessage?.message || err?.message || 'Failed to save';
+
       toastRef.current?.show({
         severity: 'error',
         summary: 'Save failed',
         detail: errorText,
       });
+
       console.error('Failed to save', err);
     } finally {
       setSaving(false);
     }
   };
 
+  // -----------------------------
+  // RENDER
+  // -----------------------------
   return (
     <div className="design-workspace">
       <Toast ref={toastRef} position="top-right" />
+
       <div className="toolbar-sidebar">
-        <Toolbar onSelectTool={setActiveTool} />
+        <Toolbar
+          onSelectTool={setActiveTool}
+          onUndo={undo}
+          onRedo={redo}
+          canUndo={history.length > 0}
+          canRedo={future.length > 0}
+        />
       </div>
 
       <div
@@ -298,6 +416,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
           className="fullscreen-image"
           draggable="false"
         />
+
         <svg className="fov-overlay">
           {equipment
             .filter((item) => item.type === 'camera')
@@ -327,6 +446,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
           onWallGraphChange={handleWallGraphChange}
           onExitWallMode={() => setActiveTool(null)}
         />
+
         <p className="item-count">Items Placed: {equipment.length}</p>
 
         <div
@@ -361,10 +481,14 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
 
       <AttributesBar
         selectedItem={
-          selectedItemId == null ? null : equipment.find((e) => e.id === selectedItemId) ?? null
+          selectedItemId == null
+            ? null
+            : equipment.find((e) => e.id === selectedItemId) ?? null
         }
         onClose={() => setSelectedItemId(null)}
-        onUpdateSettings={(id, field, value) => updatePlacement(id, () => ({ [field]: value }))}
+        onUpdateSettings={(id, field, value) =>
+          updatePlacement(id, () => ({ [field]: value }))
+        }
         onChangeCameraModel={handleChangeCameraModel}
         onDeleteEquipment={handleDeleteEquipment}
       />
@@ -414,16 +538,20 @@ function DesignPage() {
   const currentImageSrc = imageSrcFromState
     ? imageSrcFromState
     : floorLayouts.length > 0
-      ? `http://localhost:5113/api/floorlayouts/image/${floorLayouts[selectedLayer]?.floorID}`
-      : null;
+    ? `http://localhost:5113/api/floorlayouts/image/${floorLayouts[selectedLayer]?.floorID}`
+    : null;
 
   if (!currentImageSrc) return <p>No floor layouts found for this project.</p>;
 
-  const currentFloorId = floorLayouts.length > 0 ? floorLayouts[selectedLayer]?.floorID : null;
+  const currentFloorId =
+    floorLayouts.length > 0 ? floorLayouts[selectedLayer]?.floorID : null;
+
   const handleBackButton = () => {
     if (hasUnsavedChanges) {
-      const confirm = window.confirm('You have unsaved changes. Do you want to leave without saving?');
-      if (confirm) navigate('/app/projects');
+      const confirmLeave = window.confirm(
+        'You have unsaved changes. Do you want to leave without saving?'
+      );
+      if (confirmLeave) navigate('/app/projects');
     } else {
       navigate('/app/projects');
     }
@@ -440,11 +568,10 @@ function DesignPage() {
         />
       </div>
 
-      <Workspace
+            <Workspace
         imageSrc={currentImageSrc}
         floorId={currentFloorId}
         onUnsavedChanges={setHasUnsavedChanges}
-        hasUnsavedChanges={hasUnsavedChanges}
       />
 
       {floorLayouts.length > 1 && (
