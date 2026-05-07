@@ -1,6 +1,5 @@
 import { Sidebar } from 'primereact/sidebar';
 import { Button } from 'primereact/button';
-import { Dropdown } from 'primereact/dropdown';
 import { Slider } from 'primereact/slider';
 import { InputNumber } from 'primereact/inputnumber';
 import { InputText } from 'primereact/inputtext';
@@ -46,13 +45,6 @@ function AttributesBar({
   // -----------------------------
   // STATIC DATA
   // -----------------------------
-  const resolutions = [
-    { label: "720p (HD)", value: "720p" },
-    { label: "1080p (Full HD)", value: "1080p" },
-    { label: "1440p (2K)", value: "1440p" },
-    { label: "2160p (4K)", value: "2160p" }
-  ];
-
   const presetColors = [
     "rgba(0, 150, 255, 0.3)",
     "rgba(255, 0, 0, 0.3)",
@@ -178,10 +170,14 @@ function AttributesBar({
           {isCamera && (
             <div className="field">
               <label>Resolution</label>
-              <Dropdown
-                value={selectedItem.resolution || "1080p"}
-                options={resolutions}
-                onChange={(e) => onUpdateSettings(selectedItem.id, "resolution", e.value)}
+              <InputText
+                value={attrs.resolution ?? ''}
+                onChange={(e) =>
+                  onUpdateSettings(selectedItem.id, 'attributes', {
+                    ...attrs,
+                    resolution: e.target.value,
+                  })
+                }
               />
             </div>
           )}
