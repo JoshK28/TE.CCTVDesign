@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { getLocalPoint } from '../utils/points';
-import { closestLinkIdAt, removeWallLink, wallToSegments } from '../utils/wallsConverter';
+import {
+  closestLinkIdAt,
+  parsePixelsPerMeter,
+  removeWallLink,
+  segmentLengthText,
+  wallToSegments,
+} from '../utils/wallsConverter';
 
 const MIN_LEN = 6;
 const HIT_R = 10;
@@ -8,12 +14,20 @@ const WALL_PICK = 14;
 const newId = () => `post-${Date.now()}`;
 const newLinkId = () => `link-${Date.now()}`;
 
-export default function WallDrawingLayer({ activeTool, wallGraph, onWallGraphChange, onExitWallMode }) {
+export default function WallDrawingLayer({
+  activeTool,
+  wallGraph,
+  scale,
+  onWallGraphChange,
+  onExitWallMode,
+}) {
   const [draft, setDraft] = useState(null);
   const [dragPostId, setDragPostId] = useState(null);
   const [selectedLinkId, setSelectedLinkId] = useState(null);
   const [mode, setMode] = useState('draw');
   const posts = wallGraph?.posts ?? [];
+  const segments = wallToSegments(wallGraph);
+  const pixelsPerMeter = parsePixelsPerMeter(scale);
   const byId = new Map(posts.map((p) => [p.id, p]));
   const postAt = (pt) => posts.find((p) => Math.hypot(p.x - pt.x, p.y - pt.y) <= HIT_R) ?? null;
 
@@ -60,26 +74,54 @@ export default function WallDrawingLayer({ activeTool, wallGraph, onWallGraphCha
   return (
     <>
       <svg className="wall-overlay">
-        {wallToSegments(wallGraph).map((w) => (
-          <line
-            key={w.id}
-            x1={w.x1}
-            y1={w.y1}
-            x2={w.x2}
-            y2={w.y2}
-            className={w.id === selectedLinkId ? 'wall-line wall-line--selected' : 'wall-line'}
-          />
-        ))}
+        {segments.map((w) => {
+          const midX = (w.x1 + w.x2) / 2;
+          const midY = (w.y1 + w.y2) / 2;
+          const label = segmentLengthText(w.x1, w.y1, w.x2, w.y2, pixelsPerMeter);
+          return (
+            <g key={w.id}>
+              <line
+                x1={w.x1}
+                y1={w.y1}
+                x2={w.x2}
+                y2={w.y2}
+                className={w.id === selectedLinkId ? 'wall-line wall-line--selected' : 'wall-line'}
+              />
+              {label ? (
+                <text x={midX} y={midY} className="wall-length-label">
+                  {label}
+                </text>
+              ) : null}
+            </g>
+          );
+        })}
         {mode === 'edit' &&
           posts.map((p) => <circle key={p.id} cx={p.x} cy={p.y} r="5" className="wall-post-handle" />)}
         {mode === 'draw' && chainStart && draft?.previewPoint && (
-          <line
-            x1={chainStart.x}
-            y1={chainStart.y}
-            x2={draft.previewPoint.x}
-            y2={draft.previewPoint.y}
-            className="wall-line wall-line--draft"
-          />
+          <g>
+            <line
+              x1={chainStart.x}
+              y1={chainStart.y}
+              x2={draft.previewPoint.x}
+              y2={draft.previewPoint.y}
+              className="wall-line wall-line--draft"
+            />
+            {pixelsPerMeter ? (
+              <text
+                x={(chainStart.x + draft.previewPoint.x) / 2}
+                y={(chainStart.y + draft.previewPoint.y) / 2}
+                className="wall-length-label wall-length-label--draft"
+              >
+                {segmentLengthText(
+                  chainStart.x,
+                  chainStart.y,
+                  draft.previewPoint.x,
+                  draft.previewPoint.y,
+                  pixelsPerMeter
+                )}
+              </text>
+            ) : null}
+          </g>
         )}
       </svg>
       {activeTool === 'wall' ? (

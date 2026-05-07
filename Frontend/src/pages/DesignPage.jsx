@@ -44,7 +44,7 @@ const createDevice = (tool, x, y, id = Date.now(), rotation = 0) => ({
   rotation,
 });
 
-function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
+function Workspace({ imageSrc, floorId, scale, onUnsavedChanges = () => {} }) {
   const [activeTool, setActiveTool] = useState(null);
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [pendingPlacement, setPendingPlacement] = useState(null);
@@ -464,6 +464,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
         <WallDrawingLayer
           activeTool={activeTool}
           wallGraph={currentWallGraph}
+          scale={scale}
           onWallGraphChange={handleWallGraphChange}
           onExitWallMode={() => setActiveTool(null)}
         />
@@ -566,6 +567,8 @@ function DesignPage() {
 
   const currentFloorId =
     floorLayouts.length > 0 ? floorLayouts[selectedLayer]?.floorID : null;
+  const currentScale =
+    floorLayouts.length > 0 ? floorLayouts[selectedLayer]?.scale ?? '' : '';
 
   const handleBackButton = () => {
     if (hasUnsavedChanges) {
@@ -607,6 +610,7 @@ function DesignPage() {
             <Workspace
         imageSrc={currentImageSrc}
         floorId={currentFloorId}
+        scale={currentScale}
         onUnsavedChanges={setHasUnsavedChanges}
       />
 

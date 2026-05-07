@@ -1,5 +1,20 @@
 export const empty_Walls = { posts: [], links: [] };
 
+export const parsePixelsPerMeter = (scaleText) => {
+  if (typeof scaleText !== 'string') return null;
+  const match = scaleText.trim().match(/^1\s*:\s*([\d.]+)$/);
+  if (!match) return null;
+  const value = Number.parseFloat(match[1]);
+  return Number.isFinite(value) && value > 0 ? value : null;
+};
+
+export const segmentLengthText = (x1, y1, x2, y2, pixelsPerMeter) => {
+  if (!pixelsPerMeter) return null;
+  const pixels = Math.hypot(x2 - x1, y2 - y1);
+  const meters = pixels / pixelsPerMeter;
+  return `${meters.toFixed(2)} m`;
+};
+
 export const wallToSegments = (wallGraph) => {
   const posts = wallGraph?.posts ?? [];
   const links = wallGraph?.links ?? [];

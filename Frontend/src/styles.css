@@ -111,6 +111,22 @@
   stroke-width: 2;
 }
 
+.wall-length-label {
+  fill: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.7);
+  stroke-width: 3px;
+  pointer-events: none;
+}
+
+.wall-length-label--draft {
+  fill: #8ec7ff;
+}
+
 .wall-draw-capture {
   position: absolute;
   inset: 0;
