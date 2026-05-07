@@ -1,23 +1,52 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../page_styling/StorageCalculator.css";
 import tePNGLogo from "../assets/logo.png";
+import api from "../services/api";
 
 function StorageNetworkCalculator({ onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Channel data
+  // get projectId if coming from design page
+  const projectId = location.state?.projectId;
+
   const [channels, setChannels] = useState([
     { id: 1, name: "Channel 1", standard: "PAL", encoding: "H.264", resolution: "12MP (4000x3000)", fps: 25, bitrate: 20480 }
   ]);
-  
+
   const [diskSpaceTB, setDiskSpaceTB] = useState(4);
   const [recordHours, setRecordHours] = useState(24);
   const [result, setResult] = useState(null);
   const [mode, setMode] = useState("saving");
+  const [loading, setLoading] = useState(false);
+  const [projectName, setProjectName] = useState("");
 
-  // Add new channel
+  // auto populate channels if projectId is provided
+  useEffect(() => {
+    if (!projectId) return;
+
+    const fetchProjectDevices = async () => {
+      setLoading(true);
+      try {
+        const res = await api.get(`/api/camerplacements/project/${projectId}/devices`);
+        if (res.data.storageChannels.length > 0) {
+          setChannels(res.data.storageChannels);
+        }
+
+        // get project name
+        const projectRes = await api.get(`/api/projects/${projectId}`);
+        setProjectName(projectRes.data.title);
+      } catch (err) {
+        console.error("Failed to load project devices", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjectDevices();
+  }, [projectId]);
+
   const addChannel = () => {
     const newChannel = {
       id: Date.now(),
@@ -31,15 +60,13 @@ function StorageNetworkCalculator({ onLogout }) {
     setChannels([...channels, newChannel]);
   };
 
-  // Delete channel
   const deleteChannel = (id) => {
     setChannels(channels.filter((ch) => ch.id !== id));
   };
 
-  // Main calculation logic
   const calculate = () => {
     const totalBitrate = channels.reduce((acc, ch) => acc + Number(ch.bitrate), 0);
-    const totalStorageBytes = diskSpaceTB * 1024 ** 4; // convert TB → bytes
+    const totalStorageBytes = diskSpaceTB * 1024 ** 4;
     const bytesPerSecond = (totalBitrate * 1000) / 8;
     const totalSeconds = totalStorageBytes / bytesPerSecond;
     const totalDays = (totalSeconds / 3600 / recordHours).toFixed(1);
@@ -51,41 +78,36 @@ function StorageNetworkCalculator({ onLogout }) {
 
   return (
     <div className="calc-layout">
-      {/* Sidebar */}
       <aside className="calc-sidebar">
         <img src={tePNGLogo} alt="Logo" className="calc-logo" />
-
         <nav className="sidebar-nav">
-          
-          <button
-            onClick={() => navigate("/app/dashboard")}
-            className="sidebar-btn"
-          >
+          <button onClick={() => navigate("/app/dashboard")} className="sidebar-btn">
             ⬅ Back to Dashboard
           </button>
-
           <button
             onClick={() => navigate("/app/projects")}
             className={`sidebar-btn ${location.pathname === "/app/projects" ? "active" : ""}`}
           >
             📂 View Projects
           </button>
-
           <button
             onClick={() => navigate("/app/calculator")}
             className={`sidebar-btn ${location.pathname === "/app/calculator" ? "active" : ""}`}
           >
             📊 Storage Calculator
           </button>
-
         </nav>
-
         <button onClick={onLogout} className="logout-button">Logout</button>
       </aside>
 
-      {/* Main Content */}
       <main className="calc-main">
         <h1>Storage and Network Calculator</h1>
+        {projectId && projectName && (
+          <p style={{ color: '#245d91', fontWeight: 'bold' }}>
+            Project: {projectName}
+          </p>
+        )}
+        {loading && <p>Loading project devices...</p>}
 
         <section className="device-section">
           <h2>Add Device</h2>
@@ -176,11 +198,11 @@ function StorageNetworkCalculator({ onLogout }) {
             <div className="inputs">
               <label>
                 Set Disk Space:
-                <input type="number" value={diskSpaceTB} onChange={(e)=> setDiskSpaceTB(e.target.value)} /> TB
+                <input type="number" value={diskSpaceTB} onChange={(e) => setDiskSpaceTB(e.target.value)} /> TB
               </label>
               <label>
                 Recording Time per Day:
-                <input type="number" value={recordHours} onChange={(e)=> setRecordHours(e.target.value)} /> h
+                <input type="number" value={recordHours} onChange={(e) => setRecordHours(e.target.value)} /> h
               </label>
             </div>
 
