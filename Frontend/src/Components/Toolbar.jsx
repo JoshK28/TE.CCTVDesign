@@ -26,23 +26,30 @@ export default function Toolbar({ onSelectTool }) {
         );
     };
 
+    const selectableItem = (item) => (
+        <div
+            onClick={() => onSelectTool(item.label)}
+            style={{ padding: '0.75rem 1.25rem', cursor: 'pointer' }}
+        >
+            <span className="pi pi-bars" style={{ marginRight: '0.5rem' }}></span>
+            {item.label}
+        </div>
+    );
+
     const items = [
         {
             label: 'New',
             icon: 'pi pi-plus',
             items: [[
                 {items: [{label: 'camera', template: draggableItem},
-                    {label: 'device', template: draggableItem},
-                    {label: 'router', template: draggableItem},
-                     {label: 'sensor', template: draggableItem},
-                      {label: 'alarm', template: draggableItem}]}
+                    {label: 'device', template: draggableItem}]}
                 ]]
         },
         {
             label: 'Draw',
             icon: 'pi pi-pencil',
             items: [[
-                { items: [{ label: 'wall', template: draggableItem }] }
+                { items: [{ label: 'wall', template: selectableItem }] }
             ]]
         }
     ];
