@@ -31,6 +31,12 @@ namespace Backend.Data
         // allows the app to read and write the camera location
         public DbSet<CameraPlacement> CameraPlacemens => Set<CameraPlacement>();
 
+        // represents the NetworkingDevices table
+        public DbSet<NetworkingDevice> NetworkingDevices => Set<NetworkingDevice>();
+
+        // represents the AccessControlDevices table
+        public DbSet<AccessControlDevice> AccessControlDevices => Set<AccessControlDevice>();
+
         // represents the Wall Placements table in the database
         // allows the app to read and write the Wall location
         public DbSet<Wall> Walls => Set<Wall>();
@@ -71,6 +77,24 @@ namespace Backend.Data
                 .WithMany()
                 .HasForeignKey(w => w.FloorID)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CameraPlacement>()
+                .HasOne(c => c.Camera)
+                .WithMany()
+                .HasForeignKey(c => c.CameraId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<CameraPlacement>()
+                .HasOne(c => c.NetworkingDevice)
+                .WithMany()
+                .HasForeignKey(c => c.NetworkingId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<CameraPlacement>()
+                .HasOne(c => c.AccessControlDevice)
+                .WithMany()
+                .HasForeignKey(c => c.AccessControlId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

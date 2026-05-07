@@ -3,6 +3,7 @@ using Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260505123152_AddNetworkingAndAccessControlTables")]
+    partial class AddNetworkingAndAccessControlTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -536,19 +539,14 @@ namespace Backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PlacementID"));
 
+                    b.Property<int?>("AccessControlDeviceAccessControlID")
+                        .HasColumnType("int");
+
                     b.Property<int?>("AccessControlId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Brand")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int?>("CameraId")
                         .HasColumnType("int");
-
-                    b.Property<string>("CameraModel")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("FloorID")
                         .HasColumnType("int");
@@ -556,12 +554,11 @@ namespace Backend.Migrations
                     b.Property<int?>("FloorLayoutFloorID")
                         .HasColumnType("int");
 
-                    b.Property<int?>("NetworkingId")
+                    b.Property<int?>("NetworkingDeviceNetworkingID")
                         .HasColumnType("int");
 
-                    b.Property<string>("Resolution")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("NetworkingId")
+                        .HasColumnType("int");
 
                     b.Property<double>("Rotation")
                         .HasColumnType("float");
@@ -578,13 +575,13 @@ namespace Backend.Migrations
 
                     b.HasKey("PlacementID");
 
-                    b.HasIndex("AccessControlId");
+                    b.HasIndex("AccessControlDeviceAccessControlID");
 
                     b.HasIndex("CameraId");
 
                     b.HasIndex("FloorLayoutFloorID");
 
-                    b.HasIndex("NetworkingId");
+                    b.HasIndex("NetworkingDeviceNetworkingID");
 
                     b.ToTable("CameraPlacemens");
                 });
@@ -766,13 +763,11 @@ namespace Backend.Migrations
                 {
                     b.HasOne("Backend.Models.AccessControlDevice", "AccessControlDevice")
                         .WithMany()
-                        .HasForeignKey("AccessControlId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("AccessControlDeviceAccessControlID");
 
                     b.HasOne("Backend.Models.Camera", "Camera")
                         .WithMany()
-                        .HasForeignKey("CameraId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("CameraId");
 
                     b.HasOne("Backend.Models.FloorLayout", "FloorLayout")
                         .WithMany()
@@ -780,8 +775,7 @@ namespace Backend.Migrations
 
                     b.HasOne("Backend.Models.NetworkingDevice", "NetworkingDevice")
                         .WithMany()
-                        .HasForeignKey("NetworkingId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("NetworkingDeviceNetworkingID");
 
                     b.Navigation("AccessControlDevice");
 

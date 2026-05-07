@@ -109,15 +109,26 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
     const fetchPlacements = async () => {
       try {
         const res = await api.get(`/api/camerplacements/${floorId}`);
-        const loaded = (res.data ?? []).map((p) =>
-          createDevice(
+        const loaded = (res.data ?? []).map((p) => {
+          const device = createDevice(
             p.type || p.kind || 'camera',
             p.x,
             p.y,
             p.placementID ?? Date.now(),
             p.rotation ?? 0
-          )
-        );
+          );
+          // restore device attributes from database
+          return {
+            ...device,
+            name: p.cameraModel ?? '',
+            attributes: {
+              cameraId: p.cameraId ?? 0,
+              cameraModel: p.cameraModel ?? '',
+              brand: p.brand ?? '',
+              resolution: p.resolution ?? ''
+            }
+          };
+        });
         setEquipment(loaded);
       } catch (err) {
         console.error('Failed to load placements', err);
@@ -336,11 +347,16 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {} }) {
     try {
       const placements = equipment.map((item) => ({
         floorID: floorId,
-        cameraId: item.attributes?.cameraId ?? 0,
+        cameraId: item.attributes?.cameraId ?? null,
+        networkingId: item.attributes?.networkingId ?? null,
+        accessControlId: item.attributes?.accessControlId ?? null,
         x: item.x,
         y: item.y,
         rotation: item.rotation || 0,
-        type: item.type || 'camera',
+        type: item.type || item.kind || 'camera',
+        cameraModel: item.attributes?.cameraModel ?? '',
+        brand: item.attributes?.brand ?? '',
+        resolution: item.attributes?.resolution ?? ''
       }));
 
       await api.post(`/api/camerplacements/save/${floorId}`, placements);
@@ -560,12 +576,27 @@ function DesignPage() {
   return (
     <div className="design-page-container">
       <div className="design-topbar">
-        <Button
-          type="button"
-          className="back-button"
-          label="← Back to Project List"
-          onClick={handleBackButton}
-        />
+        <button onClick={handleBackButton} className="back-button">
+          &larr; Back to Project List
+        </button>
+        <button
+          onClick={() => {
+            if (hasUnsavedChanges) {
+              const confirm = window.confirm('You have unsaved changes. Please save before viewing the Bill of Materials.');
+              if (!confirm) return;
+            }
+            navigate('/app/bom', { state: { projectId } });
+          }}
+          style={{padding: '8px 20px',
+            backgroundColor: '#245d91',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '14px'}}
+        >
+          📦 Bill of Materials
+        </button>
       </div>
 
             <Workspace

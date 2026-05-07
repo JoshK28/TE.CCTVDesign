@@ -3,6 +3,7 @@ using Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260506001157_UpdateCameraPlacementRelationships")]
+    partial class UpdateCameraPlacementRelationships
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -539,16 +542,8 @@ namespace Backend.Migrations
                     b.Property<int?>("AccessControlId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Brand")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int?>("CameraId")
                         .HasColumnType("int");
-
-                    b.Property<string>("CameraModel")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("FloorID")
                         .HasColumnType("int");
@@ -558,10 +553,6 @@ namespace Backend.Migrations
 
                     b.Property<int?>("NetworkingId")
                         .HasColumnType("int");
-
-                    b.Property<string>("Resolution")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<double>("Rotation")
                         .HasColumnType("float");

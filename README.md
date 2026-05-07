@@ -29,6 +29,10 @@ Open SQL Server - if that doesnt work check do this
 
 If you are unable to see the the SQL server in SQL server Mangemnet Studio you might have the wrong SQL server installed. Make sure its SQL Server Express
 
+
+BIG CHANGE THAT I HAVEN'T UPDATED IN THE PREVIOUS. BUT IF YOU ARE RUNNING THE MOST RECENT IN MAIN THE FRONT END WILL RUN ONCE YOUR DO DOTNET RUN 
+
+
 ### Step 3: Set Up the Backend
 1. Open a terminal and navigate to the Backend folder:
 ```
