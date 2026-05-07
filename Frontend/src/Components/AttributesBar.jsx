@@ -96,6 +96,7 @@ function AttributesBar({
   );
 
   const attrs = selectedItem.attributes ?? {};
+  const isCamera = selectedItem.type === 'camera';
   const brandName = attrs.brand ?? '';
   const modelName = attrs.cameraModel ?? attrs.modelName ?? selectedItem.name ?? '';
   const costPerUnit = attrs.costPerUnit;
@@ -167,124 +168,28 @@ function AttributesBar({
         <h3 className="section-subtitle">General</h3>
         <div className="section-box">
           <div className="field">
-            <label>Camera Name</label>
+            <label>Name</label>
             <InputText
               value={selectedItem.name || ""}
               onChange={(e) => onUpdateSettings(selectedItem.id, "name", e.target.value)}
             />
           </div>
 
-          <div className="field">
-            <label>Resolution</label>
-            <Dropdown
-              value={selectedItem.resolution || "1080p"}
-              options={resolutions}
-              onChange={(e) => onUpdateSettings(selectedItem.id, "resolution", e.value)}
-            />
-          </div>
-        </div>
-
-        {/* LENS */}
-        <h3 className="section-subtitle">Lens & Optics</h3>
-        <div className="section-box">
-          <div className="field">
-            <label>Focal Length (mm)</label>
-            <InputNumber
-              value={selectedItem.focalLength || 2.8}
-              onValueChange={(e) => onUpdateSettings(selectedItem.id, "focalLength", e.value)}
-              min={1}
-              max={50}
-            />
-          </div>
-        </div>
-
-        {/* FOV APPEARANCE */}
-        <h3 className="section-subtitle">FOV Appearance</h3>
-        <div className="section-box">
-
-          {/* PRESET COLOURS */}
-          <div className="field">
-            <label>Preset Colours</label>
-            <div className="fov-swatches">
-              {presetColors.map((color, index) => (
-                <div
-                  key={index}
-                  className={`fov-swatch ${
-                    stripOpacity(color) === stripOpacity(selectedItem.fovColor) ? "selected" : ""
-                  }`}
-                  style={{ backgroundColor: color }}
-                  onClick={() => {
-                    setShowPicker(false);
-                    onUpdateSettings(selectedItem.id, "fovColor", color);
-                  }}
-                />
-              ))}
-
-              {/* CUSTOM COLOUR SWATCH */}
-              <div
-                ref={swatchRef}
-                className={`fov-swatch custom ${!isPreset ? "selected" : ""}`}
-                style={{ backgroundColor: selectedItem.fovColor }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowPicker(prev => !prev);
-                }}
-              >
-                <span className="edit-indicator">✎</span>
-              </div>
+          {isCamera && (
+            <div className="field">
+              <label>Resolution</label>
+              <Dropdown
+                value={selectedItem.resolution || "1080p"}
+                options={resolutions}
+                onChange={(e) => onUpdateSettings(selectedItem.id, "resolution", e.value)}
+              />
             </div>
-
-            {/* INLINE PICKER */}
-            {showPicker && (
-              <div ref={pickerRef} className="picker-inline">
-                <ColorPicker
-                  value={rgbaToHex(selectedItem.fovColor)}
-                  format="hex"
-                  inline
-                  onChange={(e) => {
-                    const rgba = hexToRgba(e.value, currentOpacity);
-                    onUpdateSettings(selectedItem.id, "fovColor", rgba);
-                  }}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* OPACITY */}
-          <div className="field slider-field">
-            <label>Opacity</label>
-            <Slider
-              value={currentOpacity}
-              min={0.05}
-              max={1}
-              step={0.05}
-              onChange={(e) => {
-                const newOpacity = e.value;
-                onUpdateSettings(selectedItem.id, "fovOpacity", newOpacity);
-
-                const hex = rgbaToHex(selectedItem.fovColor);
-                const rgba = hexToRgba(hex, newOpacity);
-                onUpdateSettings(selectedItem.id, "fovColor", rgba);
-              }}
-            />
-            <span className="slider-value">{currentOpacity.toFixed(2)}</span>
-          </div>
-
+          )}
         </div>
 
-        {/* PHYSICAL */}
-        <h3 className="section-subtitle">Physical</h3>
+        {/* PLACEMENT */}
+        <h3 className="section-subtitle">Placement</h3>
         <div className="section-box">
-          <div className="field">
-            <label>Camera Height (m)</label>
-            <InputNumber
-              value={selectedItem.height || 3}
-              onValueChange={(e) => onUpdateSettings(selectedItem.id, "height", e.value)}
-              min={1}
-              max={20}
-            />
-          </div>
-
           <div className="field slider-field">
             <label>Rotation (°)</label>
             <Slider
@@ -295,32 +200,137 @@ function AttributesBar({
             />
             <span className="slider-value">{selectedItem.rotation || 0}°</span>
           </div>
-
-          <div className="field slider-field">
-            <label>Tilt (°)</label>
-            <Slider
-              value={selectedItem.tilt || 0}
-              onChange={(e) => onUpdateSettings(selectedItem.id, "tilt", e.value)}
-              min={-90}
-              max={90}
-            />
-            <span className="slider-value">{selectedItem.tilt || 0}°</span>
-          </div>
         </div>
 
-        {/* IR */}
-        <h3 className="section-subtitle">Infrared</h3>
-        <div className="section-box">
-          <div className="field">
-            <label>IR Range (m)</label>
-            <InputNumber
-              value={selectedItem.irRange || 30}
-              onValueChange={(e) => onUpdateSettings(selectedItem.id, "irRange", e.value)}
-              min={0}
-              max={200}
-            />
-          </div>
-        </div>
+        {isCamera && (
+          <>
+            {/* LENS */}
+            <h3 className="section-subtitle">Lens & Optics</h3>
+            <div className="section-box">
+              <div className="field">
+                <label>Focal Length (mm)</label>
+                <InputNumber
+                  value={selectedItem.focalLength || 2.8}
+                  onValueChange={(e) => onUpdateSettings(selectedItem.id, "focalLength", e.value)}
+                  min={1}
+                  max={50}
+                />
+              </div>
+            </div>
+
+            {/* FOV APPEARANCE */}
+            <h3 className="section-subtitle">FOV Appearance</h3>
+            <div className="section-box">
+
+              {/* PRESET COLOURS */}
+              <div className="field">
+                <label>Preset Colours</label>
+                <div className="fov-swatches">
+                  {presetColors.map((color, index) => (
+                    <div
+                      key={index}
+                      className={`fov-swatch ${
+                        stripOpacity(color) === stripOpacity(selectedItem.fovColor) ? "selected" : ""
+                      }`}
+                      style={{ backgroundColor: color }}
+                      onClick={() => {
+                        setShowPicker(false);
+                        onUpdateSettings(selectedItem.id, "fovColor", color);
+                      }}
+                    />
+                  ))}
+
+                  {/* CUSTOM COLOUR SWATCH */}
+                  <div
+                    ref={swatchRef}
+                    className={`fov-swatch custom ${!isPreset ? "selected" : ""}`}
+                    style={{ backgroundColor: selectedItem.fovColor }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowPicker(prev => !prev);
+                    }}
+                  >
+                    <span className="edit-indicator">✎</span>
+                  </div>
+                </div>
+
+                {/* INLINE PICKER */}
+                {showPicker && (
+                  <div ref={pickerRef} className="picker-inline">
+                    <ColorPicker
+                      value={rgbaToHex(selectedItem.fovColor)}
+                      format="hex"
+                      inline
+                      onChange={(e) => {
+                        const rgba = hexToRgba(e.value, currentOpacity);
+                        onUpdateSettings(selectedItem.id, "fovColor", rgba);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* OPACITY */}
+              <div className="field slider-field">
+                <label>Opacity</label>
+                <Slider
+                  value={currentOpacity}
+                  min={0.05}
+                  max={1}
+                  step={0.05}
+                  onChange={(e) => {
+                    const newOpacity = e.value;
+                    onUpdateSettings(selectedItem.id, "fovOpacity", newOpacity);
+
+                    const hex = rgbaToHex(selectedItem.fovColor);
+                    const rgba = hexToRgba(hex, newOpacity);
+                    onUpdateSettings(selectedItem.id, "fovColor", rgba);
+                  }}
+                />
+                <span className="slider-value">{currentOpacity.toFixed(2)}</span>
+              </div>
+            </div>
+
+            {/* PHYSICAL */}
+            <h3 className="section-subtitle">Physical</h3>
+            <div className="section-box">
+              <div className="field">
+                <label>Camera Height (m)</label>
+                <InputNumber
+                  value={selectedItem.height || 3}
+                  onValueChange={(e) => onUpdateSettings(selectedItem.id, "height", e.value)}
+                  min={1}
+                  max={20}
+                />
+              </div>
+
+              <div className="field slider-field">
+                <label>Tilt (°)</label>
+                <Slider
+                  value={selectedItem.tilt || 0}
+                  onChange={(e) => onUpdateSettings(selectedItem.id, "tilt", e.value)}
+                  min={-90}
+                  max={90}
+                />
+                <span className="slider-value">{selectedItem.tilt || 0}°</span>
+              </div>
+            </div>
+
+            {/* IR */}
+            <h3 className="section-subtitle">Infrared</h3>
+            <div className="section-box">
+              <div className="field">
+                <label>IR Range (m)</label>
+                <InputNumber
+                  value={selectedItem.irRange || 30}
+                  onValueChange={(e) => onUpdateSettings(selectedItem.id, "irRange", e.value)}
+                  min={0}
+                  max={200}
+                />
+              </div>
+            </div>
+          </>
+        )}
 
       </div>
     </Sidebar>

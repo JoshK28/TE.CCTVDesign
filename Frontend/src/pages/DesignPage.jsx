@@ -16,18 +16,23 @@ import { calculateFovPolygon } from '../utils/fov';
 import { getLocalPoint } from '../utils/points';
 import { empty_Walls, segmentsToWallGraph, wallToSegments } from '../utils/wallsConverter';
 
+const DEFAULT_EQUIPMENT_SETTINGS = {
+  name: '',
+  rotation: 0,
+  attributes: {},
+};
+
 const DEFAULT_CAMERA_SETTINGS = {
+  ...DEFAULT_EQUIPMENT_SETTINGS,
   name: '',
   focalLength: 2.8,
   height: 3,
   tilt: 0,
-  rotation: 0,
   resolution: '1080p',
   irRange: 30,
   notes: '',
   fovOpacity: 0.3,
   fovColor: 'rgba(0, 150, 255, 0.3)',
-  attributes: {},
 };
 
 const createDevice = (tool, x, y, id = Date.now(), rotation = 0) => ({
@@ -35,7 +40,7 @@ const createDevice = (tool, x, y, id = Date.now(), rotation = 0) => ({
   type: tool,
   x,
   y,
-  ...DEFAULT_CAMERA_SETTINGS,
+  ...(tool === 'camera' ? DEFAULT_CAMERA_SETTINGS : DEFAULT_EQUIPMENT_SETTINGS),
   rotation,
 });
 
