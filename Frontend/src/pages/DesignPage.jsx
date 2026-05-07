@@ -453,6 +453,35 @@ function DesignPage() {
         >
           📦 Bill of Materials
         </button>
+        <button
+          onClick={() => navigate('/app/calculator', { state: { projectId } })}
+          style={{
+            padding: '8px 20px',
+            backgroundColor: '#245d91',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          💾 Storage
+        </button>
+
+        <button
+          onClick={() => navigate('/app/ups', { state: { projectId } })}
+          style={{
+            padding: '8px 20px',
+            backgroundColor: '#245d91',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          🔋 UPS
+        </button>
       </div>
 
       <Workspace
