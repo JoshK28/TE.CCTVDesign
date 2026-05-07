@@ -1,24 +1,65 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../page_styling/upsCalculator.css";
 import tePNGLogo from "../assets/logo.png";
+import api from "../services/api";
 
 function UPSCalculator({ onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const productLibrary = [
-    { name: "AXIS QD536 8MP Dome", power: 15 },
-    { name: "HikVision DS-2CD2142FWD", power: 12 },
-    { name: "NVR 16CH 4K", power: 40 },
-    { name: "Network Switch PoE 8-port", power: 60 },
-  ];
+  const projectId = location.state?.projectId;
 
   const [rows, setRows] = useState([{ id: 1, product: "", power: 0, units: 1 }]);
   const [batterySize, setBatterySize] = useState(100);
+  const [loading, setLoading] = useState(false);
+  const [projectName, setProjectName] = useState("");
+
+  // auto populate rows if projectId is provided
+  useEffect(() => {
+    if (!projectId) return;
+
+    const fetchProjectDevices = async () => {
+      setLoading(true);
+      try {
+        const res = await api.get(`/api/camerplacements/project/${projectId}/devices`);
+
+        if (res.data.upsDevices.length > 0) {
+          // group devices by name and count units
+          const grouped = res.data.upsDevices.reduce((acc, device) => {
+            const existing = acc.find(d => d.product === device.name);
+            if (existing) {
+              existing.units += 1;
+            } else {
+              acc.push({
+                id: Date.now() + Math.random(),
+                product: device.name,
+                power: device.power,
+                units: 1,
+                category: device.category
+              });
+            }
+            return acc;
+          }, []);
+
+          setRows(grouped);
+        }
+
+        // get project name
+        const projectRes = await api.get(`/api/projects/${projectId}`);
+        setProjectName(projectRes.data.title);
+      } catch (err) {
+        console.error("Failed to load project devices", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjectDevices();
+  }, [projectId]);
 
   const addRow = () => setRows([...rows, { id: Date.now(), product: "", power: 0, units: 1 }]);
-  const removeRow = () => { if (rows.length > 1) setRows(rows.slice(0, -1)); };
+  const removeRow = (id) => setRows(rows.filter(r => r.id !== id));
 
   const totalPower = rows.reduce((sum, r) => sum + r.power * r.units, 0);
   const predictedUptime = ((batterySize * 12 * 0.8) / (totalPower || 1)).toFixed(2);
@@ -27,64 +68,75 @@ function UPSCalculator({ onLogout }) {
     <div className="ups-layout">
       <aside className="ups-sidebar">
         <img src={tePNGLogo} alt="Logo" className="ups-logo" />
-
         <nav className="sidebar-nav">
+          <button onClick={() => navigate("/app/dashboard")} className="sidebar-btn">
+            ⬅ Back to Dashboard
+          </button>
           <button
-            onClick={() => navigate("/app/storage")}
-            className={`sidebar-btn ${location.pathname === "/app/storage" ? "active" : ""}`}
+            onClick={() => navigate("/app/calculator")}
+            className={`sidebar-btn ${location.pathname.includes("calculator") ? "active" : ""}`}
           >
-            💾 Storage Calculator
+            📊 Storage Calculator
           </button>
           <button
             onClick={() => navigate("/app/ups")}
-            className={`sidebar-btn ${location.pathname === "/app/ups" ? "active" : ""}`}
+            className={`sidebar-btn ${location.pathname.includes("ups") ? "active" : ""}`}
           >
             🔋 UPS Calculator
           </button>
         </nav>
-
-        <button onClick={onLogout} className="logout-button">
-          Logout
-        </button>
+        <button onClick={onLogout} className="logout-button">Logout</button>
       </aside>
 
       <main className="ups-main">
         <h1>UPS Calculator</h1>
+        {projectId && projectName && (
+          <p style={{ color: '#245d91', fontWeight: 'bold' }}>
+            Project: {projectName}
+          </p>
+        )}
+        {loading && <p>Loading project devices...</p>}
 
         <div className="controls">
-          <button className="add-btn" onClick={addRow}>+</button>
-          <button className="remove-btn" onClick={removeRow}>−</button>
+          <button className="add-btn" onClick={addRow}>+ Add Device</button>
         </div>
 
         <table className="ups-table">
           <thead>
             <tr>
               <th>Product</th>
+              <th>Category</th>
               <th>Power (W)</th>
               <th>Units</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r, i) => (
               <tr key={r.id}>
                 <td>
-                  <select
+                  <input
+                    type="text"
                     value={r.product}
                     onChange={(e) => {
-                      const selected = productLibrary.find(p => p.name === e.target.value);
                       const updated = [...rows];
                       updated[i].product = e.target.value;
-                      updated[i].power = selected ? selected.power : 0;
                       setRows(updated);
                     }}
-                  >
-                    <option value="">Select Device</option>
-                    {productLibrary.map((p) => (
-                      <option key={p.name} value={p.name}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Device name"
+                  />
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    value={r.category ?? ""}
+                    onChange={(e) => {
+                      const updated = [...rows];
+                      updated[i].category = e.target.value;
+                      setRows(updated);
+                    }}
+                    placeholder="Category"
+                  />
                 </td>
                 <td>
                   <input
@@ -107,6 +159,9 @@ function UPSCalculator({ onLogout }) {
                       setRows(updated);
                     }}
                   />
+                </td>
+                <td>
+                  <button className="delete-btn" onClick={() => removeRow(r.id)}>🗑</button>
                 </td>
               </tr>
             ))}
