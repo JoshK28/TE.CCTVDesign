@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260507021804_AddPowerAndBitrateFields")]
-    partial class AddPowerAndBitrateFields
+    [Migration("20260508004500_FixRelationships")]
+    partial class FixRelationships
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
