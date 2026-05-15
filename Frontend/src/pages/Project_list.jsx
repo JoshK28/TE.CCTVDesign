@@ -14,14 +14,19 @@ function ProjectList({ onLogout }) {
 
   // edit popup state
   const [editProject, setEditProject] = useState(null);
-  const [editForm, setEditForm] = useState({ title: "", address: "", description: "" });
+  const [editForm, setEditForm] = useState({
+    title: "",
+    clientName: "",
+    address: "",
+    description: "",
+    scale: "1:100"
+  });
   const [editError, setEditError] = useState("");
   const [editSuccess, setEditSuccess] = useState("");
 
   // delete confirmation state
   const [deleteProjectId, setDeleteProjectId] = useState(null);
 
-  // fetch all projects when the page loads
   useEffect(() => {
     void fetchProjects();
   }, []);
@@ -37,13 +42,14 @@ function ProjectList({ onLogout }) {
     }
   };
 
-  // open edit popup with current project details
   const handleEditClick = (project) => {
     setEditProject(project);
     setEditForm({
       title: project.title,
+      clientName: project.clientName ?? "",
       address: project.address,
       description: project.description,
+      scale: project.scale ?? "1:100"
     });
     setEditError("");
     setEditSuccess("");
@@ -55,21 +61,21 @@ function ProjectList({ onLogout }) {
     setEditSuccess("");
   };
 
-  // save edited project
   const handleEditSave = async () => {
-    if (!editForm.title.trim()) return setEditError("Project name is required");
-    if (!editForm.address.trim()) return setEditError("Address is required");
-    setEditError("");
+    if (!editForm.title) return setEditError("Project name is required");
+    if (!editForm.clientName) return setEditError("Client name is required");
+    if (!editForm.address) return setEditError("Address is required");
 
     try {
       await api.put(`/api/projects/${editProject.projectID}`, editForm);
       setEditSuccess("Project updated successfully!");
 
-      setProjects((prev) =>
-        prev.map((p) => (p.projectID === editProject.projectID ? { ...p, ...editForm } : p))
-      );
+      setProjects(prev => prev.map(p =>
+        p.projectID === editProject.projectID
+          ? { ...p, ...editForm }
+          : p
+      ));
 
-      // close popup after 1.5 seconds
       setTimeout(() => {
         closeEditModal();
       }, 1500);
@@ -78,7 +84,6 @@ function ProjectList({ onLogout }) {
     }
   };
 
-  // delete project
   const handleDeleteConfirm = async () => {
     try {
       await api.delete(`/api/projects/${deleteProjectId}`);
@@ -140,7 +145,7 @@ function ProjectList({ onLogout }) {
                   <td>{project.title}</td>
                   <td>{project.address}</td>
                   <td>{project.description}</td>
-                  <td style={overlayStyles.actionCell}>
+                  <td style={{ display: "flex", gap: "8px" }}>
                     <button
                       className="table-btn"
                       onClick={() =>
@@ -177,6 +182,7 @@ function ProjectList({ onLogout }) {
           <div style={overlayStyles.popup}>
             <h2>Edit Project</h2>
 
+            <label style={overlayStyles.label}>Project Name *</label>
             <input
               type="text"
               placeholder="Project Name"
@@ -184,18 +190,39 @@ function ProjectList({ onLogout }) {
               onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
               style={overlayStyles.input}
             />
+
+            <label style={overlayStyles.label}>Client Name *</label>
             <input
               type="text"
+              placeholder="Client Name"
+              value={editForm.clientName}
+              onChange={(e) => setEditForm({ ...editForm, clientName: e.target.value })}
+              style={overlayStyles.input}
+            />
+
+            <label style={overlayStyles.label}>Address *</label>
+            <textarea
               placeholder="Address"
               value={editForm.address}
               onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-              style={overlayStyles.input}
+              style={{ ...overlayStyles.input, height: "80px", resize: "vertical" }}
             />
+
+            <label style={overlayStyles.label}>Description</label>
             <input
               type="text"
-              placeholder="Description"
+              placeholder="Description (optional)"
               value={editForm.description}
               onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              style={overlayStyles.input}
+            />
+
+            <label style={overlayStyles.label}>Scale</label>
+            <input
+              type="text"
+              placeholder="Scale e.g. 1:100"
+              value={editForm.scale}
+              onChange={(e) => setEditForm({ ...editForm, scale: e.target.value })}
               style={overlayStyles.input}
             />
 
@@ -206,7 +233,11 @@ function ProjectList({ onLogout }) {
               <button className="table-btn" onClick={handleEditSave}>
                 Save
               </button>
-              <button className="table-btn delete-btn" onClick={closeEditModal}>
+              <button
+                className="table-btn delete-btn"
+                onClick={closeEditModal}
+                style={{ color: "black" }}
+              >
                 Cancel
               </button>
             </div>
@@ -222,10 +253,18 @@ function ProjectList({ onLogout }) {
             <p>Are you sure you want to delete this project? This cannot be undone.</p>
 
             <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
-              <button className="table-btn delete-btn" onClick={handleDeleteConfirm}>
+              <button
+                className="table-btn delete-btn"
+                onClick={handleDeleteConfirm}
+                style={{ color: "black" }}
+              >
                 Yes, Delete
               </button>
-              <button className="table-btn" onClick={() => setDeleteProjectId(null)}>
+              <button
+                className="table-btn"
+                onClick={() => setDeleteProjectId(null)}
+                style={{ color: "black" }}
+              >
                 Cancel
               </button>
             </div>
@@ -254,10 +293,12 @@ const overlayStyles = {
     color: "black",
     padding: "30px",
     borderRadius: "10px",
-    width: "400px",
+    width: "500px",
     display: "flex",
     flexDirection: "column",
-    gap: "10px"
+    gap: "8px",
+    maxHeight: "80vh",
+    overflowY: "auto"
   },
   input: {
     width: "100%",
@@ -266,11 +307,13 @@ const overlayStyles = {
     border: "1px solid #ccc",
     fontSize: "14px",
     boxSizing: "border-box",
+    color: "black"
   },
-  actionCell: {
-    display: "flex",
-    gap: "8px",
-  },
+  label: {
+    fontSize: "13px",
+    fontWeight: "bold",
+    color: "#333"
+  }
 };
 
 export default ProjectList;
