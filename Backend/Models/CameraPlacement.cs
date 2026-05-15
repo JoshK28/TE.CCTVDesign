@@ -6,24 +6,23 @@ namespace Backend.Models
     {
         [Key]
         public int PlacementID { get; set; }
-
-        // links to the floor layout
         public int FloorID { get; set; }
-
-        // links to the camera type from the cameras table
-        public int CameraId { get; set; }
-
-        // exact position on the floor layout
+        public int? CameraId { get; set; }
+        public int? NetworkingId { get; set; }
+        public int? AccessControlId { get; set; }
         public double X { get; set; }
         public double Y { get; set; }
-
-        // rotation in degrees - defaults to 0 until implemented
         public double Rotation { get; set; } = 0;
-
-        // the type of equipment e.g. camera, router, alarm
         public string Type { get; set; } = string.Empty;
 
-        // navigation properties
+        // store device details so they persist
+        public string CameraModel { get; set; } = string.Empty;
+        public string Brand { get; set; } = string.Empty;
+        public string Resolution { get; set; } = string.Empty;
+
         public FloorLayout? FloorLayout { get; set; }
+        public Camera? Camera { get; set; }
+        public NetworkingDevice? NetworkingDevice { get; set; }
+        public AccessControlDevice? AccessControlDevice { get; set; }
     }
 }
