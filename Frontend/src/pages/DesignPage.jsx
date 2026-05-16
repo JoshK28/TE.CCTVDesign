@@ -113,12 +113,17 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     fetchWalls();
   }, [floorId]);
 
+  const armTool = (tool) => {
+    setPendingPlacement(null);
+    setActiveTool(tool);
+  };
+
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (!activeTool) return;
       if (activeTool === 'wall') return;
       if (event.key === 'Escape' || event.key === 'Enter') {
-        setActiveTool(null);
+        armTool(null);
       }
     };
 
@@ -137,21 +142,28 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     onUnsavedChanges(true);
   };
 
-  const handleNewItem = (event) => {
-    event.preventDefault();
-
-    const toolToPlace = event.dataTransfer ? event.dataTransfer.getData('tool') : activeTool;
-    if (toolToPlace === 'wall') return;
-    if (!toolToPlace) {
-      setSelectedItemId(null);
-      return;
-    }
+  const placeArmedToolAt = (event) => {
+    const toolToPlace = activeTool;
+    if (!toolToPlace || toolToPlace === 'wall') return false;
 
     const { x, y } = getLocalPoint(event, event.currentTarget);
-
     setPendingPlacement({ x, y, type: toolToPlace });
     setSelectedItemId(null);
     setActiveTool(null);
+    return true;
+  };
+
+  const handleNewItem = (event) => {
+    event.preventDefault();
+    if (!placeArmedToolAt(event)) {
+      setSelectedItemId(null);
+    }
+  };
+
+  const handleCanvasClick = (event) => {
+    if (placeArmedToolAt(event)) return;
+    setSelectedItemId(null);
+    closeSelector();
   };
 
   const closeSelector = () => setPendingPlacement(null);
@@ -286,15 +298,12 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     <div className="design-workspace">
       <Toast ref={toastRef} position="top-right" />
       <div className="toolbar-sidebar">
-        <Toolbar onSelectTool={setActiveTool} />
+        <Toolbar onArmTool={armTool} />
       </div>
 
       <div
         className="image-fullscreen-wrapper"
-        onClick={() => {
-          setSelectedItemId(null);
-          closeSelector();
-        }}
+        onClick={handleCanvasClick}
         onDrop={handleNewItem}
         onDragOver={(e) => e.preventDefault()}
       >
@@ -331,7 +340,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
           activeTool={activeTool}
           wallGraph={currentWallGraph}
           onWallGraphChange={handleWallGraphChange}
-          onExitWallMode={() => setActiveTool(null)}
+          onExitWallMode={() => armTool(null)}
         />
         <p className="item-count">Items Placed: {equipment.length}</p>
 
