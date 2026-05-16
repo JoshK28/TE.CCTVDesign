@@ -17,14 +17,17 @@ const CAMERA_RESOLUTION_OPTIONS = Array.from({ length: 16 }, (_, i) => `${i + 1}
 const DEVICE_TYPE_OPTIONS = ['Router', 'Sensor', 'Alarm', 'NVR', 'Switch', 'Access Point'];
 
 export default function EquipmentSelector({ visible, placementType, onHide, onConfirmSelection }) {
+  const isCamera = placementType === 'camera';
+  const isDevice = placementType === 'device';
+
   const [brands, setBrands] = useState([]);
   const [searchResults, setSearchResults] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const [selectedDeviceType, setSelectedDeviceType] = useState('');
-  const [deviceManufacturer, setDeviceManufacturer] = useState('');
-  const [deviceModelName, setDeviceModelName] = useState('');
-  const [deviceCostPerUnit, setDeviceCostPerUnit] = useState('');
+  const [selectedType, setSelectedType] = useState('');
+  const [manufacturer, setManufacturer] = useState('');
+  const [modelName, setModelName] = useState('');
+  const [costPerUnit, setCostPerUnit] = useState('');
   const [mainTab, setMainTab] = useState(0);
 
   useEffect(() => {
@@ -33,12 +36,15 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     setMainTab(0);
     setFilters(EMPTY_FILTERS);
     setSearchResults(null);
-    setSelectedDeviceType('');
-    setDeviceManufacturer('');
-    setDeviceModelName('');
-    setDeviceCostPerUnit('');
+    setSelectedType('');
+    setManufacturer('');
+    setModelName('');
+    setCostPerUnit('');
 
-    if (placementType !== 'camera') return;
+    if (!isCamera) {
+      setBrands([]);
+      return;
+    }
 
     let cancelled = false;
 
@@ -54,9 +60,11 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     return () => {
       cancelled = true;
     };
-  }, [visible, placementType]);
+  }, [visible, placementType, isCamera]);
 
   const runSearch = async () => {
+    if (!isCamera) return;
+
     const modelQ = filters.modelContains.trim();
     setSearchLoading(true);
 
@@ -76,68 +84,92 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     }
   };
 
-  const renderDeviceSearchPanel = () => (
-    <p className="equipment-selector-muted equipment-selector-tab-placeholder">
-      Device search will use the camera-style catalog flow. Use "Add new device" for now.
-    </p>
+  const renderFilterGroup = ({ icon, title, value, options, onChange }) => (
+    <div className="equipment-selector-filter-group">
+      <div className="equipment-selector-filter-heading">
+        <i className={`${icon} equipment-selector-filter-icon`} aria-hidden />
+        <span className="equipment-selector-filter-title">{title}</span>
+        {value.length > 0 ? <span className="equipment-selector-filter-count">{value.length}</span> : null}
+      </div>
+      <MultiSelect
+        value={value}
+        options={options}
+        onChange={(e) => onChange(e.value ?? [])}
+        placeholder={title}
+        filter={false}
+        showClear
+        showSelectAll={false}
+        maxSelectedLabels={0}
+        selectedItemsLabel="{0} selected"
+        panelClassName="equipment-selector-multiselect-panel"
+      />
+      {value.length > 0 ? (
+        <div className="equipment-selector-selected-chips">
+          {value.map((item) => (
+            <Chip
+              key={item}
+              label={item}
+              removable
+              onRemove={() => onChange(value.filter((x) => x !== item))}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 
-  const renderAddDevicePanel = () => (
+  const renderAddNewPanel = () => (
     <div className="equipment-selector-stack">
       <div>
-        <label htmlFor="eq-device-type" style={{ display: 'block', marginBottom: '0.35rem' }}>
-          Device type
+        <label htmlFor="eq-type" style={{ display: 'block', marginBottom: '0.35rem' }}>
+          {isCamera ? 'Camera type' : 'Device type'}
         </label>
         <Dropdown
-          id="eq-device-type"
-          value={selectedDeviceType}
-          options={DEVICE_TYPE_OPTIONS}
-          placeholder="Select a device type"
-          onChange={(e) => setSelectedDeviceType(e.value ?? '')}
+          id="eq-type"
+          value={selectedType}
+          options={isCamera ? CAMERA_TYPE_OPTIONS : DEVICE_TYPE_OPTIONS}
+          placeholder={isCamera ? 'Select a camera type' : 'Select a device type'}
+          onChange={(e) => setSelectedType(e.value ?? '')}
           showClear
         />
       </div>
       <div>
-        <label htmlFor="eq-device-manufacturer" style={{ display: 'block', marginBottom: '0.35rem' }}>
+        <label htmlFor="eq-manufacturer" style={{ display: 'block', marginBottom: '0.35rem' }}>
           Manufacturer
         </label>
         <InputText
-          id="eq-device-manufacturer"
-          value={deviceManufacturer}
-          onChange={(e) => setDeviceManufacturer(e.target.value)}
+          id="eq-manufacturer"
+          value={manufacturer}
+          onChange={(e) => setManufacturer(e.target.value)}
         />
       </div>
       <div>
-        <label htmlFor="eq-device-model-name" style={{ display: 'block', marginBottom: '0.35rem' }}>
+        <label htmlFor="eq-model-name" style={{ display: 'block', marginBottom: '0.35rem' }}>
           Model name
         </label>
-        <InputText
-          id="eq-device-model-name"
-          value={deviceModelName}
-          onChange={(e) => setDeviceModelName(e.target.value)}
-        />
+        <InputText id="eq-model-name" value={modelName} onChange={(e) => setModelName(e.target.value)} />
       </div>
       <div>
-        <label htmlFor="eq-device-cost-per-unit" style={{ display: 'block', marginBottom: '0.35rem' }}>
+        <label htmlFor="eq-cost-per-unit" style={{ display: 'block', marginBottom: '0.35rem' }}>
           Cost per unit
         </label>
         <InputText
-          id="eq-device-cost-per-unit"
-          value={deviceCostPerUnit}
-          onChange={(e) => setDeviceCostPerUnit(e.target.value)}
+          id="eq-cost-per-unit"
+          value={costPerUnit}
+          onChange={(e) => setCostPerUnit(e.target.value)}
         />
       </div>
       <Button
         type="button"
         label="Place on layout"
-        disabled={!selectedDeviceType}
+        disabled={!selectedType}
         onClick={() => {
-          const normalizedManufacturer = deviceManufacturer.trim();
-          const normalizedModelName = deviceModelName.trim();
-          const parsedCost = Number.parseFloat(deviceCostPerUnit.trim());
+          const normalizedManufacturer = manufacturer.trim();
+          const normalizedModelName = modelName.trim();
+          const parsedCost = Number.parseFloat(costPerUnit.trim());
 
           onConfirmSelection?.({
-            equipmentType: selectedDeviceType.toLowerCase(),
+            subtype: selectedType,
             manufacturer: normalizedManufacturer || undefined,
             modelName: normalizedModelName || undefined,
             costPerUnit: Number.isFinite(parsedCost) ? parsedCost : undefined,
@@ -148,220 +180,135 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     </div>
   );
 
-  const renderBody = () => {
-    if (placementType === 'camera') return renderCameraSearchPanel();
-
-    if (placementType === 'device') {
+  const renderSearchPanel = () => {
+    if (isDevice) {
       return (
-        <TabView
-          className="equipment-selector-tabview"
-          activeIndex={mainTab}
-          onTabChange={(e) => setMainTab(e.index)}
-        >
-          <TabPanel header="Search device">{renderDeviceSearchPanel()}</TabPanel>
-          <TabPanel header="Add new device">{renderAddDevicePanel()}</TabPanel>
-        </TabView>
+        <p className="equipment-selector-muted equipment-selector-tab-placeholder">
+          Device catalog search is not available yet. Use &quot;Add new device&quot; to place equipment manually.
+        </p>
       );
     }
 
-    return <p className="equipment-selector-muted">Unknown equipment type.</p>;
+    return (
+      <div className="equipment-selector-catalog-layout">
+        <div className="equipment-selector-catalog-controls">
+          <div>
+            <label htmlFor="eq-model-contains" style={{ display: 'block', marginBottom: '0.35rem' }}>
+              Model Number contains
+            </label>
+            <InputText
+              id="eq-model-contains"
+              className="equipment-selector-model-input"
+              value={filters.modelContains}
+              onChange={(e) => setFilters({ ...filters, modelContains: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void runSearch();
+                }
+              }}
+            />
+          </div>
+
+          {renderFilterGroup({
+            icon: 'pi pi-building',
+            title: 'Manufacturer',
+            value: filters.manufacturers,
+            options: brands,
+            onChange: (manufacturers) => setFilters({ ...filters, manufacturers }),
+          })}
+
+          {renderFilterGroup({
+            icon: 'pi pi-video',
+            title: 'Camera type',
+            value: filters.cameraTypes,
+            options: CAMERA_TYPE_OPTIONS,
+            onChange: (cameraTypes) => setFilters({ ...filters, cameraTypes }),
+          })}
+
+          {renderFilterGroup({
+            icon: 'pi pi-chart-bar',
+            title: 'Resolution',
+            value: filters.resolutions,
+            options: CAMERA_RESOLUTION_OPTIONS,
+            onChange: (resolutions) => setFilters({ ...filters, resolutions }),
+          })}
+
+          <div className="equipment-selector-actions">
+            <Button
+              type="button"
+              label="Clear filters"
+              outlined
+              onClick={() => {
+                setFilters(EMPTY_FILTERS);
+                setSearchResults(null);
+              }}
+            />
+            <Button type="button" label="Search" icon="pi pi-search" onClick={() => void runSearch()} />
+          </div>
+        </div>
+
+        <Divider layout="vertical" className="equipment-selector-catalog-divider" />
+
+        <div className="equipment-selector-catalog-results">
+          {searchLoading ? (
+            <p className="equipment-selector-muted equipment-selector-catalog-results-msg">Searching...</p>
+          ) : searchResults === null ? null : searchResults.length === 0 ? (
+            <p className="equipment-selector-muted equipment-selector-catalog-results-msg">
+              No cameras match these filters.
+            </p>
+          ) : (
+            <div className="equipment-selector-cam-list">
+              {searchResults.map((camera) => (
+                <Button
+                  key={camera.id}
+                  type="button"
+                  text
+                  className="equipment-selector-cam-row"
+                  onClick={() => {
+                    onConfirmSelection?.({ camera });
+                    onHide();
+                  }}
+                >
+                  <span className="equipment-selector-cam-row-body">
+                    <span className="equipment-selector-cam-line">
+                      <strong>Model:</strong> {camera.modelNumber}
+                    </span>
+                    <span className="equipment-selector-cam-line">
+                      <strong>Brand:</strong> {camera.brand}
+                    </span>
+                    <span className="equipment-selector-cam-line">
+                      <strong>Type:</strong> {camera.type || 'N/A'}
+                    </span>
+                    <span className="equipment-selector-cam-line">
+                      <strong>Price:</strong> {camera.price || 'N/A'}
+                    </span>
+                  </span>
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
-  const renderCameraSearchPanel = () => (
-    <div className="equipment-selector-catalog-layout">
-      <div className="equipment-selector-catalog-controls">
-        <div>
-          <label htmlFor="eq-model-contains" style={{ display: 'block', marginBottom: '0.35rem' }}>
-            Model Number contains
-          </label>
-          <InputText
-            id="eq-model-contains"
-            className="equipment-selector-model-input"
-            value={filters.modelContains}
-            onChange={(e) => setFilters({ ...filters, modelContains: e.target.value })}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                void runSearch();
-              }
-            }}
-          />
-        </div>
+  const renderBody = () => {
+    if (!isCamera && !isDevice) {
+      return <p className="equipment-selector-muted">Unknown equipment type.</p>;
+    }
 
-        <div className="equipment-selector-filter-group">
-          <div className="equipment-selector-filter-heading">
-            <i className="pi pi-building equipment-selector-filter-icon" aria-hidden />
-            <span className="equipment-selector-filter-title">Manufacturer</span>
-            {filters.manufacturers.length > 0 ? (
-              <span className="equipment-selector-filter-count">{filters.manufacturers.length}</span>
-            ) : null}
-          </div>
-          <MultiSelect
-            value={filters.manufacturers}
-            options={brands}
-            onChange={(e) => setFilters({ ...filters, manufacturers: e.value ?? [] })}
-            placeholder="Manufacturer"
-            filter={false}
-            showClear
-            showSelectAll={false}
-            maxSelectedLabels={0}
-            selectedItemsLabel="{0} selected"
-            panelClassName="equipment-selector-multiselect-panel"
-          />
-          {filters.manufacturers.length > 0 ? (
-            <div className="equipment-selector-selected-chips">
-              {filters.manufacturers.map((m) => (
-                <Chip
-                  key={m}
-                  label={m}
-                  removable
-                  onRemove={() =>
-                    setFilters({
-                      ...filters,
-                      manufacturers: filters.manufacturers.filter((x) => x !== m),
-                    })
-                  }
-                />
-              ))}
-            </div>
-          ) : null}
-        </div>
-
-        <div className="equipment-selector-filter-group">
-          <div className="equipment-selector-filter-heading">
-            <i className="pi pi-video equipment-selector-filter-icon" aria-hidden />
-            <span className="equipment-selector-filter-title">Camera type</span>
-            {filters.cameraTypes.length > 0 ? (
-              <span className="equipment-selector-filter-count">{filters.cameraTypes.length}</span>
-            ) : null}
-          </div>
-          <MultiSelect
-            value={filters.cameraTypes}
-            options={CAMERA_TYPE_OPTIONS}
-            onChange={(e) => setFilters({ ...filters, cameraTypes: e.value ?? [] })}
-            placeholder="Camera type"
-            filter={false}
-            showClear
-            showSelectAll={false}
-            maxSelectedLabels={0}
-            selectedItemsLabel="{0} selected"
-            panelClassName="equipment-selector-multiselect-panel"
-          />
-          {filters.cameraTypes.length > 0 ? (
-            <div className="equipment-selector-selected-chips">
-              {filters.cameraTypes.map((t) => (
-                <Chip
-                  key={t}
-                  label={t}
-                  removable
-                  onRemove={() =>
-                    setFilters({
-                      ...filters,
-                      cameraTypes: filters.cameraTypes.filter((x) => x !== t),
-                    })
-                  }
-                />
-              ))}
-            </div>
-          ) : null}
-        </div>
-
-        <div className="equipment-selector-filter-group">
-          <div className="equipment-selector-filter-heading">
-            <i className="pi pi-chart-bar equipment-selector-filter-icon" aria-hidden />
-            <span className="equipment-selector-filter-title">Resolution</span>
-            {filters.resolutions.length > 0 ? (
-              <span className="equipment-selector-filter-count">{filters.resolutions.length}</span>
-            ) : null}
-          </div>
-          <MultiSelect
-            value={filters.resolutions}
-            options={CAMERA_RESOLUTION_OPTIONS}
-            onChange={(e) => setFilters({ ...filters, resolutions: e.value ?? [] })}
-            placeholder="Resolution"
-            filter={false}
-            showClear
-            showSelectAll={false}
-            maxSelectedLabels={0}
-            selectedItemsLabel="{0} selected"
-            panelClassName="equipment-selector-multiselect-panel"
-          />
-          {filters.resolutions.length > 0 ? (
-            <div className="equipment-selector-selected-chips">
-              {filters.resolutions.map((res) => (
-                <Chip
-                  key={res}
-                  label={res}
-                  removable
-                  onRemove={() =>
-                    setFilters({
-                      ...filters,
-                      resolutions: filters.resolutions.filter((x) => x !== res),
-                    })
-                  }
-                />
-              ))}
-            </div>
-          ) : null}
-        </div>
-
-        <div className="equipment-selector-actions">
-          <Button
-            type="button"
-            label="Clear filters"
-            outlined
-            onClick={() => {
-              setFilters(EMPTY_FILTERS);
-              setSearchResults(null);
-            }}
-          />
-          <Button type="button" label="Search" icon="pi pi-search" onClick={() => void runSearch()} />
-        </div>
-      </div>
-
-      <Divider layout="vertical" className="equipment-selector-catalog-divider" />
-
-      <div className="equipment-selector-catalog-results">
-        {searchLoading ? (
-          <p className="equipment-selector-muted equipment-selector-catalog-results-msg">Searching...</p>
-        ) : searchResults === null ? null : searchResults.length === 0 ? (
-          <p className="equipment-selector-muted equipment-selector-catalog-results-msg">
-            No cameras match these filters.
-          </p>
-        ) : (
-          <div className="equipment-selector-cam-list">
-            {searchResults.map((camera) => (
-              <Button
-                key={camera.id}
-                type="button"
-                text
-                className="equipment-selector-cam-row"
-                onClick={() => {
-                  onConfirmSelection?.({ camera });
-                  onHide();
-                }}
-              >
-                <span className="equipment-selector-cam-row-body">
-                  <span className="equipment-selector-cam-line">
-                    <strong>Model:</strong> {camera.modelNumber}
-                  </span>
-                  <span className="equipment-selector-cam-line">
-                    <strong>Brand:</strong> {camera.brand}
-                  </span>
-                  <span className="equipment-selector-cam-line">
-                    <strong>Type:</strong> {camera.type || 'N/A'}
-                  </span>
-                  <span className="equipment-selector-cam-line">
-                    <strong>Price:</strong> {camera.price || 'N/A'}
-                  </span>
-                </span>
-              </Button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    return (
+      <TabView
+        className="equipment-selector-tabview"
+        activeIndex={mainTab}
+        onTabChange={(e) => setMainTab(e.index)}
+      >
+        <TabPanel header={isCamera ? 'Search camera' : 'Search device'}>{renderSearchPanel()}</TabPanel>
+        <TabPanel header="Add new device">{renderAddNewPanel()}</TabPanel>
+      </TabView>
+    );
+  };
 
   return (
     <Sidebar

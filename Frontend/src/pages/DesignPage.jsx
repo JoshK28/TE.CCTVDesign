@@ -162,7 +162,15 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     closeEquipmentSelector();
   };
 
-  const handleConfirmPlacement = ({ camera, displayName, equipmentType, manufacturer, modelName, costPerUnit } = {}) => {
+  const handleConfirmPlacement = ({
+    camera,
+    displayName,
+    equipmentType,
+    subtype,
+    manufacturer,
+    modelName,
+    costPerUnit,
+  } = {}) => {
     if (!pendingEquipment) return;
     const { x, y, type, replaceItemId } = pendingEquipment;
 
@@ -174,14 +182,16 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
       return;
     }
 
-    const resolvedType = type === 'device' && equipmentType ? equipmentType : type;
+    const manualSubtype = subtype ?? equipmentType;
+    const resolvedType = type === 'device' && manualSubtype ? manualSubtype.toLowerCase() : type;
     const base = createDevice(resolvedType, x, y);
     let newObject = displayName ? { ...base, name: displayName } : base;
 
-    if (type === 'device') {
-      const normalizedManufacturer = manufacturer?.trim();
-      const normalizedModelName = modelName?.trim();
+    const normalizedManufacturer = manufacturer?.trim();
+    const normalizedModelName = modelName?.trim();
+    const normalizedSubtype = manualSubtype?.trim();
 
+    if (type === 'device' || (type === 'camera' && !camera)) {
       newObject = {
         ...newObject,
         name: normalizedModelName || newObject.name,
@@ -189,6 +199,11 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
           ...(newObject.attributes ?? {}),
           ...(normalizedManufacturer ? { brand: normalizedManufacturer } : {}),
           ...(normalizedModelName ? { modelName: normalizedModelName } : {}),
+          ...(normalizedSubtype
+            ? type === 'camera'
+              ? { cameraType: normalizedSubtype }
+              : {}
+            : {}),
           ...(typeof costPerUnit === 'number' ? { costPerUnit } : {}),
         },
       };
