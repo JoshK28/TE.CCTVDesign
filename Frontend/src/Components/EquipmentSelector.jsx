@@ -76,19 +76,6 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     }
   };
 
-  const renderObjectPanel = () => (
-    <div className="equipment-selector-stack">
-      <Button
-        type="button"
-        label="Place on layout"
-        onClick={() => {
-          onConfirmSelection?.({});
-          onHide();
-        }}
-      />
-    </div>
-  );
-
   const renderDeviceSearchPanel = () => (
     <p className="equipment-selector-muted equipment-selector-tab-placeholder">
       Device search will use the camera-style catalog flow. Use "Add new device" for now.
@@ -162,27 +149,21 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
   );
 
   const renderBody = () => {
-    if (placementType === 'camera' || placementType === 'device' || placementType === 'router' || placementType === 'sensor' || placementType === 'alarm') {
-      
+    if (placementType === 'camera') return renderCameraSearchPanel();
+
+    if (placementType === 'device') {
       return (
         <TabView
           className="equipment-selector-tabview"
           activeIndex={mainTab}
           onTabChange={(e) => setMainTab(e.index)}
         >
-          <TabPanel header={`Search ${placementType}`}>
-            {placementType === 'camera'
-              ? renderCameraSearchPanel()
-              : placementType === 'device'
-                ? renderDeviceSearchPanel()
-                : renderObjectPanel()}
-          </TabPanel>
-          <TabPanel header="Add new device">
-            {placementType === 'device' ? renderAddDevicePanel() : null}
-          </TabPanel>
+          <TabPanel header="Search device">{renderDeviceSearchPanel()}</TabPanel>
+          <TabPanel header="Add new device">{renderAddDevicePanel()}</TabPanel>
         </TabView>
       );
     }
+
     return <p className="equipment-selector-muted">Unknown equipment type.</p>;
   };
 
@@ -225,7 +206,6 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
             showSelectAll={false}
             maxSelectedLabels={0}
             selectedItemsLabel="{0} selected"
-            className="equipment-selector-multiselect"
             panelClassName="equipment-selector-multiselect-panel"
           />
           {filters.manufacturers.length > 0 ? (
@@ -265,7 +245,6 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
             showSelectAll={false}
             maxSelectedLabels={0}
             selectedItemsLabel="{0} selected"
-            className="equipment-selector-multiselect"
             panelClassName="equipment-selector-multiselect-panel"
           />
           {filters.cameraTypes.length > 0 ? (
@@ -305,7 +284,6 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
             showSelectAll={false}
             maxSelectedLabels={0}
             selectedItemsLabel="{0} selected"
-            className="equipment-selector-multiselect"
             panelClassName="equipment-selector-multiselect-panel"
           />
           {filters.resolutions.length > 0 ? (

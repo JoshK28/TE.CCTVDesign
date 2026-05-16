@@ -31,6 +31,20 @@ const createDevice = (tool, x, y, id = Date.now(), rotation = 0) => ({
   rotation,
 });
 
+const applyCameraCatalog = (device, camera) => ({
+  ...device,
+  name: camera.modelNumber ?? device.name,
+  resolution: camera.resolution ?? device.resolution,
+  attributes: {
+    ...(device.attributes ?? {}),
+    cameraId: camera.id,
+    cameraModel: camera.modelNumber,
+    brand: camera.brand,
+    resolution: camera.resolution,
+    cameraType: camera.type,
+  },
+});
+
 function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedChanges = false }) {
   const [activeTool, setActiveTool] = useState(null);
   const [selectedItemId, setSelectedItemId] = useState(null);
@@ -147,19 +161,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
 
     if (replaceItemId != null) {
       if (type === 'camera' && camera) {
-        updatePlacement(replaceItemId, (item) => ({
-          ...item,
-          name: camera.modelNumber ?? item.name,
-          resolution: camera.resolution ?? item.resolution,
-          attributes: {
-            ...(item.attributes ?? {}),
-            cameraId: camera.id,
-            cameraModel: camera.modelNumber,
-            brand: camera.brand,
-            resolution: camera.resolution,
-            cameraType: camera.type,
-          },
-        }));
+        updatePlacement(replaceItemId, (item) => applyCameraCatalog(item, camera));
         setSelectedItemId(replaceItemId);
       }
       return;
@@ -186,19 +188,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     }
 
     if (type === 'camera' && camera) {
-      newObject = {
-        ...newObject,
-        name: camera.modelNumber ?? newObject.name,
-        resolution: camera.resolution ?? newObject.resolution,
-        attributes: {
-          ...(newObject.attributes ?? {}),
-          cameraId: camera.id,
-          cameraModel: camera.modelNumber,
-          brand: camera.brand,
-          resolution: camera.resolution,
-          cameraType: camera.type,
-        },
-      };
+      newObject = applyCameraCatalog(newObject, camera);
     }
 
     setEquipment((prev) => [...prev, newObject]);
