@@ -48,7 +48,7 @@ const applyCameraCatalog = (device, camera) => ({
 function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedChanges = false }) {
   const [activeTool, setActiveTool] = useState(null);
   const [selectedItemId, setSelectedItemId] = useState(null);
-  const [pendingPlacement, setPendingPlacement] = useState(null);
+  const [pendingEquipment, setPendingEquipment] = useState(null);
 
   const [equipment, setEquipment] = useState([]);
   const [wallGraphs, setWallGraphs] = useState({});
@@ -113,8 +113,18 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     fetchWalls();
   }, [floorId]);
 
+  const closeEquipmentSelector = () => setPendingEquipment(null);
+
+  const openEquipmentSelector = ({ x, y, type, replaceItemId }) => {
+    setPendingEquipment(
+      replaceItemId != null ? { x, y, type, replaceItemId } : { x, y, type }
+    );
+    setSelectedItemId(null);
+    setActiveTool(null);
+  };
+
   const armTool = (tool) => {
-    setPendingPlacement(null);
+    closeEquipmentSelector();
     setActiveTool(tool);
   };
 
@@ -142,34 +152,19 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     onUnsavedChanges(true);
   };
 
-  const placeArmedToolAt = (event) => {
-    const toolToPlace = activeTool;
-    if (!toolToPlace || toolToPlace === 'wall') return false;
-
-    const { x, y } = getLocalPoint(event, event.currentTarget);
-    setPendingPlacement({ x, y, type: toolToPlace });
-    setSelectedItemId(null);
-    setActiveTool(null);
-    return true;
-  };
-
-  const handleNewItem = (event) => {
-    event.preventDefault();
-    if (!placeArmedToolAt(event)) {
-      setSelectedItemId(null);
+  const handleCanvasInteraction = (event) => {
+    if (activeTool && activeTool !== 'wall') {
+      const { x, y } = getLocalPoint(event, event.currentTarget);
+      openEquipmentSelector({ x, y, type: activeTool });
+      return;
     }
-  };
-
-  const handleCanvasClick = (event) => {
-    if (placeArmedToolAt(event)) return;
     setSelectedItemId(null);
-    closeSelector();
+    closeEquipmentSelector();
   };
-
-  const closeSelector = () => setPendingPlacement(null);
 
   const handleConfirmPlacement = ({ camera, displayName, equipmentType, manufacturer, modelName, costPerUnit } = {}) => {
-    const { x, y, type, replaceItemId } = pendingPlacement;
+    if (!pendingEquipment) return;
+    const { x, y, type, replaceItemId } = pendingEquipment;
 
     if (replaceItemId != null) {
       if (type === 'camera' && camera) {
@@ -210,8 +205,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
 
   const handleChangeCameraModel = (item) => {
     if (!item || item.type !== 'camera') return;
-    setPendingPlacement({ x: item.x, y: item.y, type: 'camera', replaceItemId: item.id });
-    setSelectedItemId(null);
+    openEquipmentSelector({ x: item.x, y: item.y, type: 'camera', replaceItemId: item.id });
   };
 
   const handleDeleteEquipment = (id) => {
@@ -303,8 +297,11 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
 
       <div
         className="image-fullscreen-wrapper"
-        onClick={handleCanvasClick}
-        onDrop={handleNewItem}
+        onClick={handleCanvasInteraction}
+        onDrop={(event) => {
+          event.preventDefault();
+          handleCanvasInteraction(event);
+        }}
         onDragOver={(e) => e.preventDefault()}
       >
         <img
@@ -368,9 +365,9 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
       </div>
 
       <EquipmentSelector
-        visible={pendingPlacement != null}
-        placementType={pendingPlacement?.type ?? null}
-        onHide={closeSelector}
+        visible={pendingEquipment != null}
+        placementType={pendingEquipment?.type ?? null}
+        onHide={closeEquipmentSelector}
         onConfirmSelection={handleConfirmPlacement}
       />
 
