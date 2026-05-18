@@ -170,3 +170,96 @@ html, body, #root {
   width: 100%;
   height: 100%;
 }
+/* ==========================================================================
+   PRIME REACT MEGAMENU DARK THEME OVERRIDES (WITH HOVER FIXES)
+   ========================================================================== */
+
+/* 1. Base Draggable Elements Text Color */
+.dark-dashboard-menu .p-menuitem-link .p-menuitem-text,
+.dark-dashboard-menu .draggable-toolbar-item span {
+    color: #ced4da !important; /* Readable light grey text at rest */
+    font-weight: 500 !important;
+    transition: color 0.15s ease-in-out;
+}
+
+/* 2. CRITICAL HOVER FIX: Flip text color to dark when list item background changes */
+.dark-dashboard-menu .p-menuitem-link:hover .p-menuitem-text,
+.dark-dashboard-menu .p-menuitem-link:hover .draggable-toolbar-item,
+.dark-dashboard-menu .p-menuitem-link:hover .draggable-toolbar-item span {
+    color: #212529 !important; /* Changes text to dark charcoal to contrast with light hover states */
+}
+
+/* 3. Root Menu Heading Categories (e.g., 'New', 'Draw') */
+.dark-dashboard-menu > .p-megamenu-root-list > .p-menuitem > .p-menuitem-link .p-menuitem-text {
+    color: #ffffff !important; /* Always crisp bright white for root headers */
+    font-weight: 600 !important;
+}
+
+/* 4. Root Menu Heading Categories Hover State */
+.dark-dashboard-menu > .p-megamenu-root-list > .p-menuitem > .p-menuitem-link:hover .p-menuitem-text {
+    color: #212529 !important; /* Flips root header cleanly if the background goes white on hover */
+}
+
+/* 5. Cascading Drawer Column Sub-headers */
+.dark-dashboard-menu .p-megamenu-submenu-header {
+    background: #1c1f22 !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    padding: 0.6rem 1rem !important;
+    border-bottom: 1px solid #2d3238 !important;
+}
+
+/* 1. Style the parent MegaMenu component base inside the sidebar */
+.toolbar-sidebar .p-megamenu {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+.toolbar-sidebar .p-megamenu .p-megamenu-root-list > .p-menuitem > .p-menuitem-content {
+    background: transparent !important;
+    color: #ced4da !important;
+}
+
+.toolbar-sidebar .p-megamenu .p-menuitem-link:hover {
+    background: #2d3238 !important;
+}
+
+/* 2. Style the floating dropdown panel that rolls out */
+.p-megamenu-panel {
+    background-color: #212529 !important;
+    border: 1px solid #2d3238 !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+    padding: 0.5rem !important;
+}
+
+/* 3. Style individual submenu lists and content cells */
+.p-megamenu-panel .p-megamenu-submenu {
+    background: #212529 !important;
+}
+
+.p-megamenu-panel .p-menuitem-content {
+    background: transparent !important;
+    transition: background 0.2s ease;
+}
+
+/* 4. Fix row templates text and hover interactions */
+.p-megamenu-panel .p-menuitem-content div[draggable="true"] {
+    background: transparent !important; /* Strips old hardcoded inline dark color rules */
+    color: #e2e8f0 !important;
+    border-radius: 4px;
+}
+
+.p-megamenu-panel .p-menuitem:hover .p-menuitem-content {
+    background-color: #343a40 !important;
+}
+
+/* 5. Clean up sub-header elements if visible */
+.p-megamenu-panel .p-megamenu-submenu-header {
+    background: #1c1f22 !important;
+    color: #8a99ad !important;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.5rem 1.25rem !important;
+}

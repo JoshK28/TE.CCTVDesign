@@ -21,7 +21,13 @@ export default function Toolbar({ onSelectTool, onUndo, onRedo, canUndo, canRedo
                 draggable
                 onDragStart={(e) => { e.dataTransfer.setData('tool', item.label); }}
                 onClick={() => onSelectTool(item.label)}
-                style={{ padding: '0.75rem 1.25rem', cursor: 'grab', display: 'flex', alignItems: 'center' }}
+                style={{
+                    padding: '0.75rem 1.25rem',
+                    cursor: 'grab',
+                    display: 'flex',
+                    alignItems: 'center',
+                    background: '#212529',
+                }}
             >
                 {iconSrc ? (
                     <img
@@ -101,8 +107,25 @@ export default function Toolbar({ onSelectTool, onUndo, onRedo, canUndo, canRedo
     ];
 
     return (
-        <div className="card">
-            <MegaMenu model={items} orientation="vertical" breakpoint="960px" />
+        <div 
+            className="card toolbar-card-override" 
+            style={{ 
+                background: '#212529', 
+                borderRight: '1px solid #2d3238', 
+                height: '100%',
+            }}
+        >
+            <MegaMenu 
+                model={items} 
+                orientation="vertical" 
+                style={{ 
+                    background: 'transparent', 
+                    border: 'none',
+                    color: '#ffffff !inportant'
+                }}
+                // You can add global css class hooks to style inner items cleanly
+                className="dark-dashboard-menu"
+            />
         </div>
     );
 }
