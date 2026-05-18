@@ -9,10 +9,7 @@ export default function Toolbar({ onArmTool }) {
     return (
       <div
         draggable
-        onDragStart={(e) => {
-          e.dataTransfer.setData('tool', item.label);
-          onArmTool(item.label);
-        }}
+        onDragStart={() => onArmTool(item.label)}
         onClick={() => onArmTool(item.label)}
         style={{ padding: '0.75rem 1.25rem', cursor: 'grab' }}
       >

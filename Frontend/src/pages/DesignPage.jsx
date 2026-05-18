@@ -8,41 +8,37 @@ import { calculateFovPolygon } from '../utils/fov';
 import { getLocalPoint } from '../utils/points';
 import { empty_Walls, segmentsToWallGraph, wallToSegments } from '../utils/wallsConverter';
 
-const DEFAULT_CAMERA_SETTINGS = {
-  name: '',
+const CAMERA_DEFAULTS = {
   focalLength: 2.8,
   height: 3,
   tilt: 0,
-  rotation: 0,
   resolution: '1080p',
   irRange: 30,
   notes: '',
   fovOpacity: 0.3,
   fovColor: 'rgba(0, 150, 255, 0.3)',
-  attributes: {},
 };
 
-const createDevice = (tool, x, y, id = Date.now(), rotation = 0) => ({
+const createCamera = ({ x, y, name = '', attributes = {}, rotation = 0, id = Date.now() }) => ({
   id,
-  type: tool,
+  type: 'camera',
   x,
   y,
-  ...DEFAULT_CAMERA_SETTINGS,
   rotation,
+  name: name || attributes.cameraModel || attributes.modelName || '',
+  ...CAMERA_DEFAULTS,
+  resolution: attributes.resolution ?? CAMERA_DEFAULTS.resolution,
+  attributes,
 });
 
-const applyCameraCatalog = (device, camera) => ({
-  ...device,
-  name: camera.modelNumber ?? device.name,
-  resolution: camera.resolution ?? device.resolution,
-  attributes: {
-    ...(device.attributes ?? {}),
-    cameraId: camera.id,
-    cameraModel: camera.modelNumber,
-    brand: camera.brand,
-    resolution: camera.resolution,
-    cameraType: camera.type,
-  },
+const createDevice = ({ x, y, type, name = '', attributes = {}, rotation = 0, id = Date.now() }) => ({
+  id,
+  type,
+  x,
+  y,
+  rotation,
+  name: name || attributes.modelName || '',
+  attributes,
 });
 
 function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedChanges = false }) {
@@ -65,23 +61,26 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     // clear equipment when switching floors
     setEquipment([]);
 
-    // fetch camera placements for this floor
     const fetchPlacements = async () => {
       try {
         const res = await api.get(`/api/camerplacements/${floorId}`);
         const loaded = (res.data ?? []).map((p) => {
-          const device = createDevice(p.type || 'camera', p.x, p.y, p.placementID ?? Date.now(), p.rotation ?? 0);
-          // restore device attributes from database
-          return {
-            ...device,
-            name: p.cameraModel ?? '',
-            attributes: {
-              cameraId: p.cameraId ?? 0,
-              cameraModel: p.cameraModel ?? '',
-              brand: p.brand ?? '',
-              resolution: p.resolution ?? ''
-            }
+          const attributes = {
+            cameraId: p.cameraId ?? 0,
+            cameraModel: p.cameraModel ?? '',
+            brand: p.brand ?? '',
+            resolution: p.resolution ?? '',
           };
+          const args = {
+            x: p.x,
+            y: p.y,
+            id: p.placementID ?? Date.now(),
+            rotation: p.rotation ?? 0,
+            name: p.cameraModel ?? '',
+            attributes,
+          };
+          const type = p.type || 'camera';
+          return type === 'camera' ? createCamera(args) : createDevice({ ...args, type });
         });
         setEquipment(loaded);
       } catch (err) {
@@ -162,56 +161,22 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     closeEquipmentSelector();
   };
 
-  const handleConfirmPlacement = ({
-    camera,
-    displayName,
-    equipmentType,
-    subtype,
-    manufacturer,
-    modelName,
-    costPerUnit,
-  } = {}) => {
+  const handleConfirmPlacement = ({ subtype, name, attributes = {} } = {}) => {
     if (!pendingEquipment) return;
     const { x, y, type, replaceItemId } = pendingEquipment;
 
     if (replaceItemId != null) {
-      if (type === 'camera' && camera) {
-        updatePlacement(replaceItemId, (item) => applyCameraCatalog(item, camera));
-        setSelectedItemId(replaceItemId);
-      }
+      updatePlacement(replaceItemId, (item) => ({
+        name: name ?? item.name,
+        attributes: { ...(item.attributes ?? {}), ...attributes },
+      }));
+      setSelectedItemId(replaceItemId);
       return;
     }
 
-    const manualSubtype = subtype ?? equipmentType;
-    const resolvedType = type === 'device' && manualSubtype ? manualSubtype.toLowerCase() : type;
-    const base = createDevice(resolvedType, x, y);
-    let newObject = displayName ? { ...base, name: displayName } : base;
-
-    const normalizedManufacturer = manufacturer?.trim();
-    const normalizedModelName = modelName?.trim();
-    const normalizedSubtype = manualSubtype?.trim();
-
-    if (type === 'device' || (type === 'camera' && !camera)) {
-      newObject = {
-        ...newObject,
-        name: normalizedModelName || newObject.name,
-        attributes: {
-          ...(newObject.attributes ?? {}),
-          ...(normalizedManufacturer ? { brand: normalizedManufacturer } : {}),
-          ...(normalizedModelName ? { modelName: normalizedModelName } : {}),
-          ...(normalizedSubtype
-            ? type === 'camera'
-              ? { cameraType: normalizedSubtype }
-              : {}
-            : {}),
-          ...(typeof costPerUnit === 'number' ? { costPerUnit } : {}),
-        },
-      };
-    }
-
-    if (type === 'camera' && camera) {
-      newObject = applyCameraCatalog(newObject, camera);
-    }
+    const resolvedType = type === 'device' && subtype ? subtype.toLowerCase() : type;
+    const factory = resolvedType === 'camera' ? createCamera : createDevice;
+    const newObject = factory({ x, y, type: resolvedType, name, attributes });
 
     setEquipment((prev) => [...prev, newObject]);
     setSelectedItemId(newObject.id);
@@ -260,7 +225,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
         x: item.x,
         y: item.y,
         rotation: item.rotation || 0,
-        type: item.type || item.kind || 'camera',
+        type: item.type || 'camera',
         cameraModel: item.attributes?.cameraModel ?? '',
         brand: item.attributes?.brand ?? '',
         resolution: item.attributes?.resolution ?? ''
