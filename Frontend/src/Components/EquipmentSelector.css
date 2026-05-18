@@ -1,0 +1,183 @@
+/* Minimal layout only — colors come from the global PrimeReact theme */
+
+.equipment-selector-catalog-layout {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.equipment-selector-catalog-controls {
+  flex: 0 1 42%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.equipment-selector-catalog-controls .p-dropdown,
+.equipment-selector-catalog-controls .p-multiselect,
+.equipment-selector-catalog-controls .p-inputtext {
+  width: 100%;
+}
+
+.equipment-selector-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.equipment-selector-filter-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.equipment-selector-filter-icon {
+  color: var(--primary-color, #646cff);
+  font-size: 0.95rem;
+}
+
+.equipment-selector-filter-title {
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+}
+
+.equipment-selector-filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary-color, #646cff);
+  background: color-mix(in srgb, var(--primary-color, #646cff) 18%, transparent);
+}
+
+.equipment-selector-selected-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+/* Drop overlay filter row + header chrome; list starts with options (close by click-outside / Esc). */
+.equipment-selector-multiselect-panel .p-multiselect-header {
+  display: none;
+}
+
+/* Clear field edge so the model filter is visible on all themes / sidebar backgrounds */
+.equipment-selector-catalog-controls .equipment-selector-model-input.p-inputtext {
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--surface-border, color-mix(in srgb, var(--text-color, #213547) 28%, transparent));
+}
+
+.equipment-selector-catalog-controls .equipment-selector-model-input.p-inputtext:enabled:hover {
+  border-color: var(--surface-400, color-mix(in srgb, var(--text-color, #213547) 40%, transparent));
+}
+
+.equipment-selector-catalog-controls .equipment-selector-model-input.p-inputtext:enabled:focus {
+  border-color: var(--primary-color, #646cff);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color, #646cff) 35%, transparent);
+  outline: none;
+}
+
+.equipment-selector-catalog-divider.p-divider-vertical {
+  margin: 0 0.5rem;
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+.equipment-selector-catalog-results {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow: auto;
+  max-height: min(72vh, 40rem);
+}
+
+.equipment-selector-catalog-results-msg {
+  margin: 0;
+  text-align: left;
+  align-self: flex-start;
+}
+
+.equipment-selector-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.equipment-selector-stack .p-dropdown,
+.equipment-selector-stack .p-inputtext {
+  width: 100%;
+}
+
+.equipment-selector-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.equipment-selector-actions .p-button {
+  flex: 1;
+  min-width: 120px;
+}
+
+.equipment-selector-cam-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.equipment-selector-cam-row.p-button.p-button-text {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
+  justify-content: flex-start;
+}
+
+.equipment-selector-cam-row.p-button.p-button-text:hover {
+  background: var(--surface-hover);
+}
+
+.equipment-selector-cam-row-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  width: 100%;
+  text-align: left;
+}
+
+.equipment-selector-cam-line {
+  display: block;
+  line-height: 1.35;
+}
+
+.equipment-selector-muted {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  color: var(--text-color-secondary);
+  text-align: center;
+}
+
+.equipment-selector-tabview.p-tabview {
+  margin-top: 0.15rem;
+}
+
+.equipment-selector-tabview .p-tabview-panels {
+  padding: 0.65rem 0 0;
+}
+
+.equipment-selector-tab-placeholder {
+  margin: 0;
+  text-align: left;
+}

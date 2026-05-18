@@ -3,6 +3,7 @@ using Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260506001157_UpdateCameraPlacementRelationships")]
+    partial class UpdateCameraPlacementRelationships
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -20,6 +23,39 @@ namespace Backend.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("Backend.Models.AccessControlDevice", b =>
+                {
+                    b.Property<int>("AccessControlID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AccessControlID"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Manufacturer")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Price")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("AccessControlID");
+
+                    b.ToTable("AccessControlDevices");
+                });
 
             modelBuilder.Entity("Backend.Models.Camera", b =>
                 {
@@ -118,7 +154,7 @@ namespace Backend.Migrations
                             Id = 2,
                             Aperture = "F1.4",
                             Brand = "HikVision",
-                            Description = "Camera - 4MP Mini Bullet 4MP Bullet 40m IR IP67 2.8mm HIKVision",
+                            Description = "Camera 4MP Mini Bullet 40m IR IP67 2.8mm HIKVision",
                             FovDiagonal = "123°–98°–62°",
                             FovHorizontal = "103°–83°–53°",
                             FovVertical = "55°–45°–28°",
@@ -137,7 +173,7 @@ namespace Backend.Migrations
                             Id = 3,
                             Aperture = "F2.0",
                             Brand = "HikVision",
-                            Description = "Camera Bullet Single 2MP 30m WiFi IR IP66 2.8mm t/s CCTV c/w Power Adaptor I01213",
+                            Description = "Camera Bullet Single 2MP 30m WiFi IR IP66 2.8mm",
                             FovDiagonal = "135°–102°",
                             FovHorizontal = "114°–86°",
                             FovVertical = "62°–46°",
@@ -156,7 +192,7 @@ namespace Backend.Migrations
                             Id = 4,
                             Aperture = "F1.6",
                             Brand = "HikVision",
-                            Description = "Camera Bullet 6MP 50m IR 2.8mm EXIR H.26 120dB WDR IP67",
+                            Description = "Camera Bullet 6MP 50m IR 2.8mm EXIR H.265 120dB WDR IP67",
                             FovDiagonal = "128°–101°",
                             FovHorizontal = "99°–80°–60°",
                             FovVertical = "61°–51°–38°",
@@ -175,7 +211,7 @@ namespace Backend.Migrations
                             Id = 5,
                             Aperture = "F1.4",
                             Brand = "HikVision",
-                            Description = "Camera - HIKVision 4K AcuSense Strobe Light Audible Warning Varifocal Bullet Netwok",
+                            Description = "Camera HIKVision 4K AcuSense Strobe Light Audible Warning Varifocal Bullet",
                             FovDiagonal = "127.4°–52°",
                             FovHorizontal = "108°–46°",
                             FovVertical = "58°–26°",
@@ -194,7 +230,7 @@ namespace Backend.Migrations
                             Id = 6,
                             Aperture = "F1.4",
                             Brand = "HikVision",
-                            Description = "Camera - Hikvision 4MP Deepin View ANPR Moto VF Bullet 8-32m iDS-(8-32mm)",
+                            Description = "Camera Hikvision 4MP Deepin View ANPR Moto VF Bullet 8-32mm",
                             FovDiagonal = "127°–52°",
                             FovHorizontal = "108°–46°",
                             FovVertical = "58°–26°",
@@ -232,7 +268,7 @@ namespace Backend.Migrations
                             Id = 8,
                             Aperture = "F2.0",
                             Brand = "HikVision",
-                            Description = "Camera Outdoor Dome 2MP 120db WDR IP67 Fixed Lens 30m IR 2.8mm HikVision",
+                            Description = "Camera Outdoor Dome 2MP 120dB WDR IP67 Fixed Lens 30m IR 2.8mm HikVision",
                             FovDiagonal = "135°–102°",
                             FovHorizontal = "114°–86°",
                             FovVertical = "62°–46°",
@@ -270,7 +306,7 @@ namespace Backend.Migrations
                             Id = 10,
                             Aperture = "F1.6",
                             Brand = "HikVision",
-                            Description = "Camera Dome 6MP WDR Smart 2.8mm H.265 120dB (C)(0-STD",
+                            Description = "Camera Dome 6MP WDR Smart 2.8mm H.265 120dB",
                             FovDiagonal = "128°–101°",
                             FovHorizontal = "99°–80°",
                             FovVertical = "61°–51°",
@@ -308,7 +344,7 @@ namespace Backend.Migrations
                             Id = 12,
                             Aperture = "F1.4",
                             Brand = "HikVision",
-                            Description = "Camera - HIKVision 4MP Dome DeepinView Moto Varifocal 2.8- 12mm IK10",
+                            Description = "Camera HIKVision 4MP Dome DeepinView Moto Varifocal 2.8-12mm IK10",
                             FovDiagonal = "127°–52°",
                             FovHorizontal = "108°–46°",
                             FovVertical = "58°–26°",
@@ -327,7 +363,7 @@ namespace Backend.Migrations
                             Id = 13,
                             Aperture = "F1.6",
                             Brand = "HikVision",
-                            Description = "Camera - Hikvision 8 MP Smart Hybrid Light with ColorVu Mini Dome 2.8mm",
+                            Description = "Camera Hikvision 8MP Smart Hybrid Light with ColorVu Mini Dome 2.8mm",
                             FovDiagonal = "120°",
                             FovHorizontal = "102°",
                             FovVertical = "55°",
@@ -346,7 +382,7 @@ namespace Backend.Migrations
                             Id = 14,
                             Aperture = "F1.6",
                             Brand = "HikVision",
-                            Description = "Camera-Hikvision 4MP 4XOutdoor IR Wi-Fi Mini Dome PTZ DS-2DE2A404IW-DE3/W(S6)",
+                            Description = "Camera Hikvision 4MP 4X Outdoor IR Wi-Fi Mini Dome PTZ",
                             FovDiagonal = "115.13°-36.32°",
                             FovHorizontal = "98°–30°",
                             FovVertical = "51.16°-17.8°",
@@ -365,7 +401,7 @@ namespace Backend.Migrations
                             Id = 15,
                             Aperture = "F1.5",
                             Brand = "HikVision",
-                            Description = "Camera-HikVision 2.8mm Panoram Dome 32x PTZ TandemVu Camera",
+                            Description = "Camera HikVision 2.8mm Panoramic Dome 32x PTZ TandemVu Camera",
                             FovDiagonal = "",
                             FovHorizontal = "57°–2.6°",
                             FovVertical = "",
@@ -384,7 +420,7 @@ namespace Backend.Migrations
                             Id = 16,
                             Aperture = "F1.6",
                             Brand = "HikVision",
-                            Description = "Dome Camera 5MP 2.8-12mm Varifocal H.265+ IP67 IK10 HikVision (2.8-12mm)(C)(O-STD)",
+                            Description = "Dome Camera 5MP 2.8-12mm Varifocal H.265+ IP67 IK10 HikVision",
                             FovDiagonal = "128°–35°",
                             FovHorizontal = "99°–30°",
                             FovVertical = "61°–17°",
@@ -403,7 +439,7 @@ namespace Backend.Migrations
                             Id = 17,
                             Aperture = "F2.0",
                             Brand = "HikVision",
-                            Description = "Camera FishEye 5MP H.265 Indoor 20M IR EasyIP3.0 HikVision",
+                            Description = "Camera FishEye 5MP H.265 Indoor 20m IR EasyIP3.0 HikVision",
                             FovDiagonal = "",
                             FovHorizontal = "360°",
                             FovVertical = "",
@@ -422,7 +458,7 @@ namespace Backend.Migrations
                             Id = 18,
                             Aperture = "F2.0",
                             Brand = "HikVision",
-                            Description = "Camera - Hikvision 6 MP Deepin View Fisheye Network 1.16 mm DS-2CD6365G1-IVS(1.16mm)",
+                            Description = "Camera Hikvision 6MP Deepin View Fisheye Network 1.16mm",
                             FovDiagonal = "",
                             FovHorizontal = "360°",
                             FovVertical = "",
@@ -441,7 +477,7 @@ namespace Backend.Migrations
                             Id = 19,
                             Aperture = "F2.0",
                             Brand = "HikVision",
-                            Description = "Camera - 5MP Fixed Fisheye Network",
+                            Description = "Camera 5MP Fixed Fisheye Network",
                             FovDiagonal = "",
                             FovHorizontal = "360°",
                             FovVertical = "",
@@ -503,13 +539,19 @@ namespace Backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PlacementID"));
 
-                    b.Property<int>("CameraId")
+                    b.Property<int?>("AccessControlId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CameraId")
                         .HasColumnType("int");
 
                     b.Property<int>("FloorID")
                         .HasColumnType("int");
 
                     b.Property<int?>("FloorLayoutFloorID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("NetworkingId")
                         .HasColumnType("int");
 
                     b.Property<double>("Rotation")
@@ -527,7 +569,13 @@ namespace Backend.Migrations
 
                     b.HasKey("PlacementID");
 
+                    b.HasIndex("AccessControlId");
+
+                    b.HasIndex("CameraId");
+
                     b.HasIndex("FloorLayoutFloorID");
+
+                    b.HasIndex("NetworkingId");
 
                     b.ToTable("CameraPlacemens");
                 });
@@ -575,6 +623,39 @@ namespace Backend.Migrations
                     b.ToTable("FloorLayouts");
                 });
 
+            modelBuilder.Entity("Backend.Models.NetworkingDevice", b =>
+                {
+                    b.Property<int>("NetworkingID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NetworkingID"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Manufacturer")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Price")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("NetworkingID");
+
+                    b.ToTable("NetworkingDevices");
+                });
+
             modelBuilder.Entity("Backend.Models.Project", b =>
                 {
                     b.Property<int>("ProjectID")
@@ -608,87 +689,6 @@ namespace Backend.Migrations
                     b.ToTable("Projects");
                 });
 
-            modelBuilder.Entity("Backend.Models.UpsDevice", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("DefaultUnits")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("PowerWatts")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("UpsDevices");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            DefaultUnits = 1,
-                            Name = "AXIS QD536 8MP Dome",
-                            PowerWatts = 15
-                        },
-                        new
-                        {
-                            Id = 2,
-                            DefaultUnits = 1,
-                            Name = "HikVision DS-2CD2142FWD",
-                            PowerWatts = 12
-                        },
-                        new
-                        {
-                            Id = 3,
-                            DefaultUnits = 1,
-                            Name = "NVR 16CH 4K",
-                            PowerWatts = 40
-                        },
-                        new
-                        {
-                            Id = 4,
-                            DefaultUnits = 1,
-                            Name = "Network Switch PoE 8-port",
-                            PowerWatts = 60
-                        },
-                        new
-                        {
-                            Id = 5,
-                            DefaultUnits = 1,
-                            Name = "Access Control Panel (4-door)",
-                            PowerWatts = 25
-                        },
-                        new
-                        {
-                            Id = 6,
-                            DefaultUnits = 1,
-                            Name = "Electric Strike (per door)",
-                            PowerWatts = 10
-                        },
-                        new
-                        {
-                            Id = 7,
-                            DefaultUnits = 1,
-                            Name = "HID Card Reader",
-                            PowerWatts = 3
-                        },
-                        new
-                        {
-                            Id = 8,
-                            DefaultUnits = 1,
-                            Name = "Monitors / workstation load (allowance)",
-                            PowerWatts = 80
-                        });
-                });
-
             modelBuilder.Entity("Backend.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -714,13 +714,73 @@ namespace Backend.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("Backend.Models.Wall", b =>
+                {
+                    b.Property<int>("WallID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("WallID"));
+
+                    b.Property<int>("FloorID")
+                        .HasColumnType("int");
+
+                    b.Property<double>("Length")
+                        .HasColumnType("float");
+
+                    b.Property<double>("RealWorldHeight")
+                        .HasColumnType("float");
+
+                    b.Property<double>("RealWorldLength")
+                        .HasColumnType("float");
+
+                    b.Property<double>("X1")
+                        .HasColumnType("float");
+
+                    b.Property<double>("X2")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Y1")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Y2")
+                        .HasColumnType("float");
+
+                    b.HasKey("WallID");
+
+                    b.HasIndex("FloorID");
+
+                    b.ToTable("Walls");
+                });
+
             modelBuilder.Entity("Backend.Models.CameraPlacement", b =>
                 {
+                    b.HasOne("Backend.Models.AccessControlDevice", "AccessControlDevice")
+                        .WithMany()
+                        .HasForeignKey("AccessControlId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Backend.Models.Camera", "Camera")
+                        .WithMany()
+                        .HasForeignKey("CameraId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Backend.Models.FloorLayout", "FloorLayout")
                         .WithMany()
                         .HasForeignKey("FloorLayoutFloorID");
 
+                    b.HasOne("Backend.Models.NetworkingDevice", "NetworkingDevice")
+                        .WithMany()
+                        .HasForeignKey("NetworkingId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("AccessControlDevice");
+
+                    b.Navigation("Camera");
+
                     b.Navigation("FloorLayout");
+
+                    b.Navigation("NetworkingDevice");
                 });
 
             modelBuilder.Entity("Backend.Models.FloorLayout", b =>
@@ -743,6 +803,17 @@ namespace Backend.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Backend.Models.Wall", b =>
+                {
+                    b.HasOne("Backend.Models.FloorLayout", "FloorLayout")
+                        .WithMany()
+                        .HasForeignKey("FloorID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FloorLayout");
                 });
 
             modelBuilder.Entity("Backend.Models.Project", b =>
