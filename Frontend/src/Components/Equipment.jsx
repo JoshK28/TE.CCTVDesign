@@ -25,12 +25,18 @@ function Equipment({ deviceInstance, onSelect, onUpdatePlacement }) {
 
     const offsetX = e.clientX - x;
     const offsetY = e.clientY - y;
+    let isFirstMove = true;
 
     const handlePointerMove = (moveEvent) => {
-      onUpdatePlacement(id, {
-        x: moveEvent.clientX - offsetX,
-        y: moveEvent.clientY - offsetY,
-      });
+      onUpdatePlacement(
+        id,
+        {
+          x: moveEvent.clientX - offsetX,
+          y: moveEvent.clientY - offsetY,
+        },
+        { commit: isFirstMove }
+      );
+      isFirstMove = false;
     };
 
     const handlePointerUp = () => {

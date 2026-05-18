@@ -184,8 +184,14 @@ function Workspace({
   // -----------------------------
   // UPDATE PLACEMENT (with history)
   // -----------------------------
-  const updatePlacement = (id, patchOrBuilder) => {
-    commit();
+  // `options.commit` (default true) pushes a snapshot onto the undo stack
+  // before applying the patch. Streaming callers (e.g. a drag's pointer-move
+  // loop, slider drag) should pass `{ commit: false }` after the first
+  // update of the interaction so the whole gesture collapses into a single
+  // undo entry.
+  const updatePlacement = (id, patchOrBuilder, options = {}) => {
+    const { commit: shouldCommit = true } = options;
+    if (shouldCommit) commit();
 
     setEquipment((prev) =>
       prev.map((item) => {
