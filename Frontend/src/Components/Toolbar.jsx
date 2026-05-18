@@ -3,7 +3,7 @@ import 'primeicons/primeicons.css';
 
 import securityCameraIcon from '../assets/Icons/security-camera.png';
 
-export default function Toolbar({ onSelectTool, onUndo, onRedo, canUndo, canRedo }) {
+export default function Toolbar({ onSelectTool }) {
 
     const getIconFor = (label) => {
         switch (label) {
@@ -80,28 +80,6 @@ export default function Toolbar({ onSelectTool, onUndo, onRedo, canUndo, canRedo
             icon: 'pi pi-pencil',
             items: [[
                 { items: [{ label: 'wall', template: selectableItem }] }
-            ]]
-        },
-        {
-            label: 'Actions',
-            icon: 'pi pi-history',
-            items: [[
-                {
-                    items: [
-                        {
-                            label: 'Undo',
-                            icon: 'pi pi-undo',
-                            disabled: !canUndo,
-                            command: onUndo
-                        },
-                        {
-                            label: 'Redo',
-                            icon: 'pi pi-refresh',
-                            disabled: !canRedo,
-                            command: onRedo
-                        }
-                    ]
-                }
             ]]
         }
     ];

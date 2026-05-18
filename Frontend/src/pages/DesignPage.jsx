@@ -15,6 +15,7 @@ import api from '../services/api';
 import { calculateFovPolygon } from '../utils/fov';
 import { getLocalPoint } from '../utils/points';
 import { empty_Walls, segmentsToWallGraph, wallToSegments } from '../utils/wallsConverter';
+import useUndoRedo from '../hooks/useUndoRedo';
 
 // Imports for Modals & Document Capture
 import ExportModal from '../Components/ExportModal';
@@ -72,47 +73,17 @@ function Workspace({
   const toastRef = useRef(null);
 
   // -----------------------------
-  // UNDO / REDO STACKS
+  // UNDO / REDO
   // -----------------------------
-  const [history, setHistory] = useState([]);
-  const [future, setFuture] = useState([]);
+  const applyHistorySnapshot = useCallback(({ equipment: eq, wallGraphs: wg }) => {
+    setEquipment(eq);
+    setWallGraphs(wg);
+  }, []);
 
-  const snapshot = useCallback(() => ({
-    equipment: JSON.parse(JSON.stringify(equipment)),
-    wallGraphs: JSON.parse(JSON.stringify(wallGraphs)),
-  }), [equipment, wallGraphs]);
-
-  const undo = useCallback(() => {
-    if (history.length === 0) return;
-    const prev = history[history.length - 1];
-
-    setHistory(history.slice(0, -1));
-    setFuture(f => [snapshot(), ...f]);
-
-    setEquipment(prev.equipment);
-    setWallGraphs(prev.wallGraphs);
-  }, [history, snapshot]);
-
-  const redo = useCallback(() => {
-    if (future.length === 0) return;
-    const next = future[0];
-
-    setFuture(future.slice(1));
-    setHistory(h => [...h, snapshot()]);
-
-    setEquipment(next.equipment);
-    setWallGraphs(next.wallGraphs);
-  }, [future, snapshot]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeys = (e) => {
-      if (e.ctrlKey && e.key === 'z') undo();
-      if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) redo();
-    };
-    window.addEventListener('keydown', handleKeys);
-    return () => window.removeEventListener('keydown', handleKeys);
-  }, [undo, redo]);
+  const { commit, undo, redo, canUndo, canRedo } = useUndoRedo(
+    { equipment, wallGraphs },
+    applyHistorySnapshot
+  );
 
   // -----------------------------
   // WALL GRAPH
@@ -214,8 +185,7 @@ function Workspace({
   // UPDATE PLACEMENT (with history)
   // -----------------------------
   const updatePlacement = (id, patchOrBuilder) => {
-    setHistory(prev => [...prev, snapshot()]);
-    setFuture([]);
+    commit();
 
     setEquipment((prev) =>
       prev.map((item) => {
@@ -251,8 +221,7 @@ function Workspace({
   const handleConfirmPlacement = ({ subtype, name, attributes = {} } = {}) => {
     if (!pendingEquipment) return;
 
-    setHistory((prev) => [...prev, snapshot()]);
-    setFuture([]);
+    commit();
 
     const { x, y, type, replaceItemId } = pendingEquipment;
 
@@ -286,8 +255,7 @@ function Workspace({
   // DELETE EQUIPMENT
   // -----------------------------
   const handleDeleteEquipment = (id) => {
-    setHistory(prev => [...prev, snapshot()]);
-    setFuture([]);
+    commit();
 
     setEquipment((prev) => prev.filter((item) => item.id !== id));
     setSelectedItemId(null);
@@ -300,8 +268,7 @@ function Workspace({
   const handleWallGraphChange = (updater) => {
     if (!floorId || typeof updater !== 'function') return;
 
-    setHistory(prev => [...prev, snapshot()]);
-    setFuture([]);
+    commit();
 
     setWallGraphs((prev) => ({
       ...prev,
@@ -437,13 +404,7 @@ function Workspace({
       <Toast ref={toastRef} position="top-right" />
 
       <div className="toolbar-sidebar" style={sidebarContainerStyle}>
-        <Toolbar
-          onSelectTool={armTool}
-          onUndo={undo}
-          onRedo={redo}
-          canUndo={history.length > 0}
-          canRedo={future.length > 0}
-        />
+        <Toolbar onSelectTool={armTool} />
       </div>
 
       <div
@@ -551,8 +512,34 @@ function Workspace({
             top: '10px',
             right: '10px',
             zIndex: 1005,
+            display: 'flex',
+            gap: '8px',
           }}
         >
+          <Button
+            type="button"
+            icon="pi pi-undo"
+            severity="secondary"
+            disabled={!canUndo}
+            tooltip="Undo (Ctrl+Z)"
+            tooltipOptions={{ position: 'bottom' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              undo();
+            }}
+          />
+          <Button
+            type="button"
+            icon="pi pi-refresh"
+            severity="secondary"
+            disabled={!canRedo}
+            tooltip="Redo (Ctrl+Y)"
+            tooltipOptions={{ position: 'bottom' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              redo();
+            }}
+          />
           <Button
             type="button"
             label="Save"
