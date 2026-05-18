@@ -8,6 +8,11 @@ import { calculateFovPolygon } from '../utils/fov';
 import { getLocalPoint } from '../utils/points';
 import { empty_Walls, segmentsToWallGraph, wallToSegments } from '../utils/wallsConverter';
 
+// Imports for Modals & Document Capture
+import ExportModal from '../Components/ExportModal';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+
 const DEFAULT_CAMERA_SETTINGS = {
   name: '',
   focalLength: 2.8,
@@ -31,15 +36,19 @@ const createDevice = (tool, x, y, id = Date.now(), rotation = 0) => ({
   rotation,
 });
 
-function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedChanges = false }) {
+function Workspace({ 
+  imageSrc, 
+  floorId, 
+  onUnsavedChanges = () => {}, 
+  hasUnsavedChanges = false,
+  workspaceRef,
+  exportOptions 
+}) {
   const [activeTool, setActiveTool] = useState(null);
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [pendingPlacement, setPendingPlacement] = useState(null);
-
   const [equipment, setEquipment] = useState([]);
   const [wallGraphs, setWallGraphs] = useState({});
-
-  const [saving, setSaving] = useState(false);
   const toastRef = useRef(null);
 
   const currentWallGraph = floorId ? (wallGraphs[floorId] ?? empty_Walls) : empty_Walls;
@@ -47,17 +56,13 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
 
   useEffect(() => {
     if (!floorId) return;
-
-    // clear equipment when switching floors
     setEquipment([]);
 
-    // fetch camera placements for this floor
     const fetchPlacements = async () => {
       try {
         const res = await api.get(`/api/camerplacements/${floorId}`);
         const loaded = (res.data ?? []).map((p) => {
           const device = createDevice(p.type || 'camera', p.x, p.y, p.placementID ?? Date.now(), p.rotation ?? 0);
-          // restore device attributes from database
           return {
             ...device,
             name: p.cameraModel ?? '',
@@ -75,19 +80,12 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
       }
     };
 
-    // fetch walls for this floor
     const fetchWalls = async () => {
       try {
         const res = await api.get(`/api/walls/${floorId}`);
         const loadedWalls = (res.data ?? []).map((w) => ({
-          id: w.wallID,
-          x1: w.x1,
-          y1: w.y1,
-          x2: w.x2,
-          y2: w.y2,
-          length: w.length,
-          realWorldLength: w.realWorldLength,
-          realWorldHeight: w.realWorldHeight
+          id: w.wallID, x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2,
+          length: w.length, realWorldLength: w.realWorldLength, realWorldHeight: w.realWorldHeight
         }));
         setWallGraphs((prev) => ({ ...prev, [floorId]: segmentsToWallGraph(loadedWalls) }));
       } catch (err) {
@@ -98,19 +96,6 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     fetchPlacements();
     fetchWalls();
   }, [floorId]);
-
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (!activeTool) return;
-      if (activeTool === 'wall') return;
-      if (event.key === 'Escape' || event.key === 'Enter') {
-        setActiveTool(null);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTool]);
 
   const updatePlacement = (id, patchOrBuilder) => {
     setEquipment((prev) =>
@@ -125,16 +110,13 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
 
   const handleNewItem = (event) => {
     event.preventDefault();
-
     const toolToPlace = event.dataTransfer ? event.dataTransfer.getData('tool') : activeTool;
     if (toolToPlace === 'wall') return;
     if (!toolToPlace) {
       setSelectedItemId(null);
       return;
     }
-
     const { x, y } = getLocalPoint(event, event.currentTarget);
-
     setPendingPlacement({ x, y, type: toolToPlace });
     setSelectedItemId(null);
     setActiveTool(null);
@@ -154,11 +136,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
           resolution: camera.resolution ?? item.resolution,
           attributes: {
             ...(item.attributes ?? {}),
-            cameraId: camera.id,
-            cameraModel: camera.modelNumber,
-            brand: camera.brand,
-            resolution: camera.resolution,
-            cameraType: camera.type,
+            cameraId: camera.id, cameraModel: camera.modelNumber, brand: camera.brand, resolution: camera.resolution, cameraType: camera.type,
           },
         }));
         setSelectedItemId(replaceItemId);
@@ -176,11 +154,7 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
         resolution: camera.resolution ?? newObject.resolution,
         attributes: {
           ...(newObject.attributes ?? {}),
-          cameraId: camera.id,
-          cameraModel: camera.modelNumber,
-          brand: camera.brand,
-          resolution: camera.resolution,
-          cameraType: camera.type,
+          cameraId: camera.id, cameraModel: camera.modelNumber, brand: camera.brand, resolution: camera.resolution, cameraType: camera.type,
         },
       };
     }
@@ -188,12 +162,6 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
     setEquipment((prev) => [...prev, newObject]);
     setSelectedItemId(newObject.id);
     onUnsavedChanges(true);
-  };
-
-  const handleChangeCameraModel = (item) => {
-    if (!item || item.type !== 'camera') return;
-    setPendingPlacement({ x: item.x, y: item.y, type: 'camera', replaceItemId: item.id });
-    setSelectedItemId(null);
   };
 
   const handleDeleteEquipment = (id) => {
@@ -204,170 +172,132 @@ function Workspace({ imageSrc, floorId, onUnsavedChanges = () => {}, hasUnsavedC
 
   const handleWallGraphChange = (updater) => {
     if (!floorId || typeof updater !== 'function') return;
-    setWallGraphs((prev) => ({
-      ...prev,
-      [floorId]: updater(prev[floorId] ?? empty_Walls),
-    }));
+    setWallGraphs((prev) => ({ ...prev, [floorId]: updater(prev[floorId] ?? empty_Walls) }));
     onUnsavedChanges(true);
   };
 
-  const handleSave = async () => {
-    if (!floorId) {
-      toastRef.current?.show({
-        severity: 'warn',
-        summary: 'Cannot save',
-        detail: 'No floor layout selected',
-      });
-      return;
-    }
+  // Dynamic style calculation for the FLOATING overlay branding box
+  const getFloatingBrandingStyle = () => {
+    if (!exportOptions?.brandingData) return { display: 'none' };
+    const { position, size } = exportOptions.brandingData;
 
-    setSaving(true);
+    // Sizing Scales Configuration
+    const scale = size === 'small' ? 0.75 : size === 'large' ? 1.25 : 1.0;
 
-    try {
-      // save camera placements
-      const placements = equipment.map((item) => ({
-        floorID: floorId,
-        cameraId: item.attributes?.cameraId ?? null,
-        networkingId: item.attributes?.networkingId ?? null,
-        accessControlId: item.attributes?.accessControlId ?? null,
-        x: item.x,
-        y: item.y,
-        rotation: item.rotation || 0,
-        type: item.type || item.kind || 'camera',
-        cameraModel: item.attributes?.cameraModel ?? '',
-        brand: item.attributes?.brand ?? '',
-        resolution: item.attributes?.resolution ?? ''
-      }));
 
-      await api.post(`/api/camerplacements/save/${floorId}`, placements);
 
-      // save walls for current floor
-      const wallsToSave = currentWalls.map((wall) => ({
-        floorID: floorId,
-        x1: wall.x1,
-        y1: wall.y1,
-        x2: wall.x2,
-        y2: wall.y2,
-        length: wall.length ?? Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1),
-        realWorldLength: wall.realWorldLength ?? 0,
-        realWorldHeight: wall.realWorldHeight ?? 0
-      }));
+    const baseStyle = {
+      position: 'absolute',
+      zIndex: 1010,
+      backgroundColor: 'rgba(255, 255, 255, 0.92)',
+      borderLeft: '4px solid #245d91',
+      padding: `${12 * scale}px ${18 * scale}px`,
+      borderRadius: '4px',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: `${15 * scale}px`,
+      pointerEvents: 'none', // Prevents capturing layout interactions
+      transform: `scale(${scale})`,
+      transformOrigin: position || 'top-left'
+    };
 
-      await api.post(`/api/walls/save/${floorId}`, wallsToSave);
-      toastRef.current?.show({
-        severity: 'success',
-        detail: 'Placements and walls saved successfully.',
-      });
-      onUnsavedChanges(false);
-    } catch (err) {
-      const apiMessage = err?.response?.data;
-      const errorText =
-        typeof apiMessage === 'string'
-          ? apiMessage
-          : apiMessage?.message || err?.message || 'Failed to save';
-      toastRef.current?.show({
-        severity: 'error',
-        summary: 'Save failed',
-        detail: errorText,
-      });
-      console.error('Failed to save', err);
-    } finally {
-      setSaving(false);
-    }
+    // Set placement coordinate rules
+    if (position === 'top-right') { baseStyle.top = '20px'; baseStyle.right = '20px'; }
+    else if (position === 'bottom-left') { baseStyle.bottom = '20px'; baseStyle.left = '20px'; }
+    else if (position === 'bottom-right') { baseStyle.bottom = '20px'; baseStyle.right = '20px'; }
+    else { baseStyle.top = '20px'; baseStyle.left = '20px'; } // Default fallback top-left
+
+    return baseStyle;
   };
-
+  const sidebarContainerStyle = {
+    background: '#212529',
+    borderRight: '1px solid #2d3238',
+    minWidth: '220px',
+    height: '100%',
+    color: '#ffffff'
+  };
   return (
-    <div className="design-workspace">
+    <div className="design-workspace" style={{ background: '#1c1f22', width: '100%', height: '100%', display: 'flex' }}>
       <Toast ref={toastRef} position="top-right" />
-      <div className="toolbar-sidebar">
+      <div className="toolbar-sidebar" style={sidebarContainerStyle}>
         <Toolbar onSelectTool={setActiveTool} />
       </div>
 
-      <div
+      <div 
+        ref={workspaceRef} 
         className="image-fullscreen-wrapper"
-        onClick={() => {
-          setSelectedItemId(null);
-          closeSelector();
-        }}
+        onClick={() => { setSelectedItemId(null); closeSelector(); }}
         onDrop={handleNewItem}
         onDragOver={(e) => e.preventDefault()}
+        style={{ 
+          position: 'relative', 
+          width: '100%', 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          padding: '20px', 
+          boxSizing: 'border-box',
+          background: '#1c1f22'
+        }}
       >
         <img
           src={imageSrc}
           alt="Full-screen design layout"
           className="fullscreen-image"
           draggable="false"
+          crossOrigin="anonymous"
+          style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.3)', borderRadius: '4px' }}
         />
-        <svg className="fov-overlay">
-          {equipment
-            .filter((item) => item.type === 'camera')
-            .map((item) => (
-              <polygon
-                key={item.id}
-                points={calculateFovPolygon(item, currentWalls)}
-                fill={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
-                stroke={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
-                strokeWidth="2"
-              />
-            ))}
-        </svg>
 
-        {equipment.map((item) => (
-          <Equipment
-            key={item.id}
-            deviceInstance={item}
-            onSelect={setSelectedItemId}
-            onUpdatePlacement={updatePlacement}
-          />
+        {/* 🚀 NEW FLOATING BRANDING ELEMENT OVERLAY (Zero structure dimension impact) */}
+        {exportOptions?.brandingActive && exportOptions?.brandingData && (
+          <div style={getFloatingBrandingStyle()}>
+            {exportOptions.brandingData.logo && (
+              <img src={exportOptions.brandingData.logo} alt="Logo" style={{ maxHeight: '35px', maxWidth: '100px', objectFit: 'contain' }} />
+            )}
+            <div>
+              <h4 style={{ margin: 0, color: '#1c1f22', fontSize: '14px', fontWeight: '700', lineHeight: 1.2 }}>
+                {exportOptions.brandingData.projectTitle || 'Specification Layout'}
+              </h4>
+              <p style={{ margin: '2px 0 0 0', color: '#495057', fontSize: '11px', fontWeight: '500' }}>
+                {exportOptions.brandingData.companyName}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {exportOptions?.showFov && (
+          <svg className="fov-overlay" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+            {equipment
+              .filter((item) => item.type === 'camera')
+              .map((item) => (
+                <polygon
+                  key={item.id}
+                  points={calculateFovPolygon(item, currentWalls)}
+                  fill={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
+                  stroke={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
+                  strokeWidth="2"
+                />
+              ))}
+          </svg>
+        )}
+
+        {exportOptions?.showEquipment && equipment.map((item) => (
+          <Equipment key={item.id} deviceInstance={item} onSelect={setSelectedItemId} onUpdatePlacement={updatePlacement} />
         ))}
 
-        <WallDrawingLayer
-          activeTool={activeTool}
-          wallGraph={currentWallGraph}
-          onWallGraphChange={handleWallGraphChange}
-          onExitWallMode={() => setActiveTool(null)}
-        />
-        <p className="item-count">Items Placed: {equipment.length}</p>
+        {exportOptions?.showWalls && (
+          <WallDrawingLayer activeTool={activeTool} wallGraph={currentWallGraph} onWallGraphChange={handleWallGraphChange} onExitWallMode={() => setActiveTool(null)} />
+        )}
 
-        <div
-          style={{
-            position: 'absolute',
-            top: '10px',
-            right: '10px',
-            zIndex: 1005,
-          }}
-        >
-          <Button
-            type="button"
-            label="Save"
-            icon="pi pi-save"
-            severity="success"
-            loading={saving}
-            disabled={saving}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSave();
-            }}
-          />
-        </div>
+        <p className="item-count" data-html2canvas-ignore="true" style={{ position: 'absolute', bottom: '10px', left: '10px', color: '#ffffff', background: 'rgba(0,0,0,0.5)', padding: '4px 8px', borderRadius: '4px', margin: 0 }}>
+          Items Placed: {equipment.length}
+        </p>
       </div>
 
-      <EquipmentSelector
-        visible={pendingPlacement != null}
-        placementType={pendingPlacement?.type ?? null}
-        onHide={closeSelector}
-        onConfirmSelection={handleConfirmPlacement}
-      />
-
-      <AttributesBar
-        selectedItem={
-          selectedItemId == null ? null : equipment.find((e) => e.id === selectedItemId) ?? null
-        }
-        onClose={() => setSelectedItemId(null)}
-        onUpdateSettings={(id, field, value) => updatePlacement(id, () => ({ [field]: value }))}
-        onChangeCameraModel={handleChangeCameraModel}
-        onDeleteEquipment={handleDeleteEquipment}
-      />
+      <EquipmentSelector visible={pendingPlacement != null} placementType={pendingPlacement?.type ?? null} onHide={closeSelector} onConfirmSelection={handleConfirmPlacement} />
+      <AttributesBar selectedItem={selectedItemId == null ? null : equipment.find((e) => e.id === selectedItemId) ?? null} onClose={() => setSelectedItemId(null)} onUpdateSettings={(id, field, value) => updatePlacement(id, () => ({ [field]: value }))} onDeleteEquipment={handleDeleteEquipment} />
     </div>
   );
 }
@@ -383,17 +313,17 @@ function DesignPage() {
   const [selectedLayer, setSelectedLayer] = useState(0);
   const [loading, setLoading] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportWorkspaceConfig, setExportWorkspaceConfig] = useState({
+    showFov: true, showWalls: true, showEquipment: true, brandingActive: false, brandingData: null
+  });
+
+  const workspaceRef = useRef(null);
 
   useEffect(() => {
-    if (imageSrcFromState) {
-      setLoading(false);
-      return;
-    }
-
-    if (!projectId) {
-      navigate('/app/upload');
-      return;
-    }
+    if (imageSrcFromState) { setLoading(false); return; }
+    if (!projectId) { navigate('/app/projects'); return; }
 
     const fetchFloorLayouts = async () => {
       try {
@@ -401,15 +331,106 @@ function DesignPage() {
         setFloorLayouts(res.data);
         setLoading(false);
       } catch (err) {
-        console.error('Failed to fetch floor layouts', err);
+        console.error(err);
         setLoading(false);
       }
     };
-
     fetchFloorLayouts();
   }, [projectId, imageSrcFromState, navigate]);
 
-  if (loading) return <p>Loading floor layouts...</p>;
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  // ── REFACTORED SELECTION EXPORT DRIVER ENGINE ──
+  const handleExecuteExport = async (settings) => {
+    setExportModalOpen(false);
+    const filename = `${settings.branding.projectTitle.replace(/\s+/g, '_')}`;
+
+    // Determine target layers based on user selection in modal
+    const layersToExport = settings.selectedLayerIds && settings.selectedLayerIds.length > 0
+      ? floorLayouts.reduce((acc, current, idx) => {
+          if (settings.selectedLayerIds.includes(current.floorID)) acc.push(idx);
+          return acc;
+        }, [])
+      : [selectedLayer]; // Fallback to current layout if nothing selected
+
+    const originalLayerIndex = selectedLayer;
+
+    if (settings.exportType === 'png') {
+      // Loop over and trigger downloads for each checked target layer as a discrete file
+      for (const idx of layersToExport) {
+        setSelectedLayer(idx);
+        setExportWorkspaceConfig({
+          showFov: settings.showFov, showWalls: settings.showWalls, showEquipment: settings.showEquipment,
+          brandingActive: true, brandingData: settings.branding
+        });
+
+        await sleep(350);
+
+        if (workspaceRef.current) {
+          try {
+            const canvas = await html2canvas(workspaceRef.current, { useCORS: true, scale: 2 });
+            const imgData = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = `${filename}_Layer_${floorLayouts[idx]?.layer || idx + 1}.png`;
+            link.href = imgData;
+            link.click();
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      }
+      setSelectedLayer(originalLayerIndex);
+      resetExportConfig();
+      return;
+    }
+
+    if (settings.exportType === 'pdf') {
+      let pdfInstance = null;
+
+      for (let i = 0; i < layersToExport.length; i++) {
+        const targetIdx = layersToExport[i];
+        setSelectedLayer(targetIdx);
+        setExportWorkspaceConfig({
+          showFov: settings.showFov, showWalls: settings.showWalls, showEquipment: settings.showEquipment,
+          brandingActive: true, brandingData: settings.branding
+        });
+
+        await sleep(400); // Wait safely for images to render correctly
+
+        if (!workspaceRef.current) continue;
+
+        try {
+          const canvas = await html2canvas(workspaceRef.current, { useCORS: true, scale: 1.5 });
+          const imgData = canvas.toDataURL('image/png');
+          const imgWidth = canvas.width;
+          const imgHeight = canvas.height;
+          const pdfOrientation = settings.orientation === 'portrait' ? 'p' : 'l';
+
+          if (i === 0) {
+            pdfInstance = new jsPDF({ orientation: pdfOrientation, unit: 'px', format: [imgWidth, imgHeight] });
+          } else {
+            pdfInstance.addPage([imgWidth, imgHeight], pdfOrientation);
+          }
+          pdfInstance.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      if (pdfInstance) {
+        pdfInstance.save(`${filename}_Report.pdf`);
+      }
+
+      setSelectedLayer(originalLayerIndex);
+      resetExportConfig();
+    }
+  };
+
+  const resetExportConfig = () => {
+    setExportWorkspaceConfig({ showFov: true, showWalls: true, showEquipment: true, brandingActive: false, brandingData: null });
+  };
+
+  if (loading) return <p style={{ color: '#ffffff', padding: '20px' }}>Loading floor layouts...</p>;
 
   const currentImageSrc = imageSrcFromState
     ? imageSrcFromState
@@ -417,70 +438,18 @@ function DesignPage() {
       ? `http://localhost:5113/api/floorlayouts/image/${floorLayouts[selectedLayer]?.floorID}`
       : null;
 
-  if (!currentImageSrc) return <p>No floor layouts found for this project.</p>;
-
   const currentFloorId = floorLayouts.length > 0 ? floorLayouts[selectedLayer]?.floorID : null;
-  const handleBackButton = () => {
-    if (hasUnsavedChanges) {
-      const confirm = window.confirm('You have unsaved changes. Do you want to leave without saving?');
-      if (confirm) navigate('/app/projects');
-    } else {
-      navigate('/app/projects');
-    }
-  };
 
   return (
-    <div className="design-page-container">
-      <div className="design-topbar">
-        <button onClick={handleBackButton} className="back-button">
-          &larr; Back to Project List
-        </button>
-        <button
-          onClick={() => {
-            if (hasUnsavedChanges) {
-              const confirm = window.confirm('You have unsaved changes. Please save before viewing the Bill of Materials.');
-              if (!confirm) return;
-            }
-            navigate('/app/bom', { state: { projectId } });
-          }}
-          style={{padding: '8px 20px',
-            backgroundColor: '#245d91',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            fontSize: '14px'}}
-        >
-          📦 Bill of Materials
-        </button>
-        <button
-          onClick={() => navigate('/app/calculator', { state: { projectId } })}
-          style={{
-            padding: '8px 20px',
-            backgroundColor: '#245d91',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            fontSize: '14px'
-          }}
-        >
-          💾 Storage
-        </button>
+    <div className="design-page-container" style={{ background: '#1c1f22', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="design-topbar" style={{ background: '#212529', borderBottom: '1px solid #2d3238', padding: '10px 20px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <button onClick={() => navigate('/app/projects')} style={backBtnStyle}>&larr; Back to Projects</button>
+        <button onClick={() => navigate('/app/bom', { state: { projectId } })} style={navBtnStyle}>📦 BOM</button>
+        <button onClick={() => navigate('/app/calculator', { state: { projectId } })} style={navBtnStyle}>💾 Storage</button>
+        <button onClick={() => navigate('/app/ups', { state: { projectId } })} style={navBtnStyle}>🔋 UPS</button>
 
-        <button
-          onClick={() => navigate('/app/ups', { state: { projectId } })}
-          style={{
-            padding: '8px 20px',
-            backgroundColor: '#245d91',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            fontSize: '14px'
-          }}
-        >
-          🔋 UPS
+        <button onClick={() => setExportModalOpen(true)} style={exportBtnStyle}>
+          <span>📤</span> Export Plan Layout
         </button>
       </div>
 
@@ -489,23 +458,12 @@ function DesignPage() {
         floorId={currentFloorId}
         onUnsavedChanges={setHasUnsavedChanges}
         hasUnsavedChanges={hasUnsavedChanges}
+        workspaceRef={workspaceRef}
+        exportOptions={exportWorkspaceConfig}
       />
 
       {floorLayouts.length > 1 && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            gap: '10px',
-            backgroundColor: 'rgba(0,0,0,0.6)',
-            padding: '10px 20px',
-            borderRadius: '30px',
-            zIndex: 1000,
-          }}
-        >
+        <div style={footerLayerControlStyle}>
           {floorLayouts.map((layout, index) => (
             <Button
               key={layout.floorID}
@@ -513,19 +471,30 @@ function DesignPage() {
               label={`Layer ${layout.layer}`}
               onClick={() => setSelectedLayer(index)}
               style={{
-                padding: '8px 16px',
-                borderRadius: '20px',
-                backgroundColor: selectedLayer === index ? '#007bff' : '#fff',
-                color: selectedLayer === index ? '#fff' : '#000',
-                fontWeight: selectedLayer === index ? 'bold' : 'normal',
-                border: 'none',
+                padding: '6px 16px', borderRadius: '20px',
+                backgroundColor: selectedLayer === index ? '#245d91' : '#343a40',
+                color: '#ffffff', fontWeight: selectedLayer === index ? 'bold' : 'normal', border: 'none',
               }}
             />
           ))}
         </div>
       )}
+
+      {/* Inject complete metadata structure configurations directly downstream */}
+      <ExportModal 
+        visible={exportModalOpen} 
+        floorLayouts={floorLayouts}
+        currentLayerId={currentFloorId}
+        onHide={() => setExportModalOpen(false)} 
+        onConfirmExport={handleExecuteExport} 
+      />
     </div>
   );
 }
+
+const navBtnStyle = { padding: '8px 18px', backgroundColor: '#343a40', color: '#ffffff', border: '1px solid #495057', borderRadius: '4px', cursor: 'pointer', fontSize: '13.5px', fontWeight: '500' };
+const backBtnStyle = { padding: '8px 15px', backgroundColor: 'transparent', color: '#ced4da', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '500' };
+const exportBtnStyle = { padding: '8px 20px', backgroundColor: '#245d91', color: '#ffffff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' };
+const footerLayerControlStyle = { position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '10px', backgroundColor: 'rgba(33, 37, 41, 0.85)', border: '1px solid #2d3238', padding: '10px 20px', borderRadius: '30px', zIndex: 1000 };
 
 export default DesignPage;

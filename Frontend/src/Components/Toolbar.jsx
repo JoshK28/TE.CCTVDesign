@@ -11,7 +11,8 @@ export default function Toolbar({ onSelectTool }) {
                 draggable 
                 onDragStart={(e) => {e.dataTransfer.setData('tool', item.label);}}
                 onClick={()=> onSelectTool(item.label)}
-                style={{ padding: '0.75rem 1.25rem', cursor: 'grab' }}
+                style={{ padding: '0.75rem 1.25rem', cursor: 'grab',
+                background: '#212529',  }}
             >
                 {isCamera ? (
                     <img src={securityCameraIcon} alt="" style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
@@ -44,8 +45,25 @@ export default function Toolbar({ onSelectTool }) {
     ];
 
     return (
-        <div className="card">
-            <MegaMenu model={items} orientation="vertical" breakpoint="960px" />
+        <div 
+            className="card toolbar-card-override" 
+            style={{ 
+                background: '#212529', 
+                borderRight: '1px solid #2d3238', 
+                height: '100%',
+            }}
+        >
+            <MegaMenu 
+                model={items} 
+                orientation="vertical" 
+                style={{ 
+                    background: 'transparent', 
+                    border: 'none',
+                    color: '#ffffff !inportant'
+                }}
+                // You can add global css class hooks to style inner items cleanly
+                className="dark-dashboard-menu"
+            />
         </div>
-    )
+    );
 }
