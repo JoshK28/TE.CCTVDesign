@@ -1,68 +1,39 @@
-import { useState, useEffect } from 'react';
 import securityCameraIcon from '../assets/Icons/security-camera.png';
-import routerIcon from '../assets/Icons/router.png';
-import sensorIcon from '../assets/Icons/sensor.png';
-import alarmIcon from '../assets/Icons/alarm.png';
+import routerIcon from '../assets/Icons/Router.png';
+import sensorIcon from '../assets/Icons/Sensor.png';
+import alarmIcon from '../assets/Icons/Alarm.png';
 
-const getIcon = (equipmentType) => {
-  const type = String(equipmentType ?? '').toLowerCase().trim();
-
-  switch (type) {
-    case 'camera':
-      return { icon: <img src={securityCameraIcon} alt="" draggable={false} className="equipment-icon" /> };
-
-    case 'router':
-      return { icon: <img src={routerIcon} alt="" draggable={false} className="equipment-icon" /> };
-    case 'sensor':
-      return { icon: <img src={sensorIcon} alt="" draggable={false} className="equipment-icon" /> };
-
-    case 'alarm':
-      return { icon: <img src={alarmIcon} alt="" draggable={false} className="equipment-icon" /> };
-    case 'nvr':
-      return { icon: '💾' };
-    case 'switch':
-      return { icon: '🔀' };
-    case 'access point':
-      return { icon: '📡' };
-    default:
-      return { icon: <span className="equipment-icon">❓</span> };
-  }
+const ICONS = {
+  camera: <img src={securityCameraIcon} alt="" draggable={false} className="equipment-icon" />,
+  router: <img src={routerIcon} alt="" draggable={false} className="equipment-icon" />,
+  sensor: <img src={sensorIcon} alt="" draggable={false} className="equipment-icon" />,
+  alarm: <img src={alarmIcon} alt="" draggable={false} className="equipment-icon" />,
+  nvr: '💾',
+  switch: '🔀',
+  'access point': '📡',
 };
 
+const getIcon = (equipmentType) =>
+  ICONS[String(equipmentType ?? '').toLowerCase().trim()] ?? <span className="equipment-icon">❓</span>;
 
 function Equipment({ deviceInstance, onSelect, onUpdatePlacement }) {
   const { id, type, x, y, rotation = 0 } = deviceInstance;
-  const [livePos, setLivePos] = useState({ x, y });
-
-  useEffect(() => {
-    setLivePos({ x, y });
-  }, [x, y]);
 
   const handlePointerDown = (e) => {
     e.stopPropagation();
+    onSelect(id);
 
-    const startX = e.clientX - livePos.x;
-    const startY = e.clientY - livePos.y;
+    const offsetX = e.clientX - x;
+    const offsetY = e.clientY - y;
 
     const handlePointerMove = (moveEvent) => {
-      const newX = moveEvent.clientX - startX;
-      const newY = moveEvent.clientY - startY;
-
-      setLivePos({ x: newX, y: newY });
-
-      // Live update parent state
-      onUpdatePlacement(id, { x: newX, y: newY });
-
-      // Keep sidebar open and updating
-      onSelect(id);
+      onUpdatePlacement(id, {
+        x: moveEvent.clientX - offsetX,
+        y: moveEvent.clientY - offsetY,
+      });
     };
 
-    const handlePointerUp = (upEvent) => {
-      const finalX = upEvent.clientX - startX;
-      const finalY = upEvent.clientY - startY;
-
-      // Persist updated coordinates into shared placement state.
-      onUpdatePlacement(id, { x: finalX, y: finalY });
+    const handlePointerUp = () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
@@ -80,16 +51,16 @@ function Equipment({ deviceInstance, onSelect, onUpdatePlacement }) {
         onSelect(id);
       }}
       style={{
-        left: livePos.x,
-        top: livePos.y,
+        left: x,
+        top: y,
         position: 'absolute',
         transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
         userSelect: 'none',
         fontSize: '24px',
-        cursor: 'grab'
+        cursor: 'grab',
       }}
     >
-      {getIcon(type).icon}
+      {getIcon(type)}
     </div>
   );
 }

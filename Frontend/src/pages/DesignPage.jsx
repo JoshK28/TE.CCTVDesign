@@ -21,15 +21,7 @@ import ExportModal from '../Components/ExportModal';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
-const DEFAULT_EQUIPMENT_SETTINGS = {
-  name: '',
-  rotation: 0,
-  attributes: {},
-};
-
-const DEFAULT_CAMERA_SETTINGS = {
-  ...DEFAULT_EQUIPMENT_SETTINGS,
-  name: '',
+const CAMERA_DEFAULTS = {
   focalLength: 2.8,
   height: 3,
   tilt: 0,
@@ -40,13 +32,26 @@ const DEFAULT_CAMERA_SETTINGS = {
   fovColor: 'rgba(0, 150, 255, 0.3)',
 };
 
-const createDevice = (tool, x, y, id = Date.now(), rotation = 0) => ({
+const createCamera = ({ x, y, name = '', attributes = {}, rotation = 0, id = Date.now() }) => ({
   id,
-  type: tool,
+  type: 'camera',
   x,
   y,
-  ...(tool === 'camera' ? DEFAULT_CAMERA_SETTINGS : DEFAULT_EQUIPMENT_SETTINGS),
   rotation,
+  name: name || attributes.cameraModel || attributes.modelName || '',
+  ...CAMERA_DEFAULTS,
+  resolution: attributes.resolution ?? CAMERA_DEFAULTS.resolution,
+  attributes,
+});
+
+const createDevice = ({ x, y, type, name = '', attributes = {}, rotation = 0, id = Date.now() }) => ({
+  id,
+  type,
+  x,
+  y,
+  rotation,
+  name: name || attributes.modelName || '',
+  attributes,
 });
 
 function Workspace({
@@ -59,7 +64,7 @@ function Workspace({
 }) {
   const [activeTool, setActiveTool] = useState(null);
   const [selectedItemId, setSelectedItemId] = useState(null);
-  const [pendingPlacement, setPendingPlacement] = useState(null);
+  const [pendingEquipment, setPendingEquipment] = useState(null);
   const [equipment, setEquipment] = useState([]);
   const [wallGraphs, setWallGraphs] = useState({});
   const [saving, setSaving] = useState(false);
@@ -127,24 +132,22 @@ function Workspace({
       try {
         const res = await api.get(`/api/camerplacements/${floorId}`);
         const loaded = (res.data ?? []).map((p) => {
-          const device = createDevice(
-            p.type || p.kind || 'camera',
-            p.x,
-            p.y,
-            p.placementID ?? Date.now(),
-            p.rotation ?? 0
-          );
-          // restore device attributes from database
-          return {
-            ...device,
-            name: p.cameraModel ?? '',
-            attributes: {
-              cameraId: p.cameraId ?? 0,
-              cameraModel: p.cameraModel ?? '',
-              brand: p.brand ?? '',
-              resolution: p.resolution ?? ''
-            }
+          const attributes = {
+            cameraId: p.cameraId ?? 0,
+            cameraModel: p.cameraModel ?? '',
+            brand: p.brand ?? '',
+            resolution: p.resolution ?? '',
           };
+          const args = {
+            x: p.x,
+            y: p.y,
+            id: p.placementID ?? Date.now(),
+            rotation: p.rotation ?? 0,
+            name: p.cameraModel ?? '',
+            attributes,
+          };
+          const type = p.type || 'camera';
+          return type === 'camera' ? createCamera(args) : createDevice({ ...args, type });
         });
         setEquipment(loaded);
       } catch (err) {
@@ -173,6 +176,24 @@ function Workspace({
   }, [floorId]);
 
   // -----------------------------
+  // EQUIPMENT SELECTOR HELPERS
+  // -----------------------------
+  const closeEquipmentSelector = () => setPendingEquipment(null);
+
+  const openEquipmentSelector = ({ x, y, type, replaceItemId }) => {
+    setPendingEquipment(
+      replaceItemId != null ? { x, y, type, replaceItemId } : { x, y, type }
+    );
+    setSelectedItemId(null);
+    setActiveTool(null);
+  };
+
+  const armTool = (tool) => {
+    closeEquipmentSelector();
+    setActiveTool(tool);
+  };
+
+  // -----------------------------
   // ESC / ENTER CANCEL TOOL
   // -----------------------------
   useEffect(() => {
@@ -181,7 +202,7 @@ function Workspace({
       if (activeTool === 'wall') return;
 
       if (event.key === 'Escape' || event.key === 'Enter') {
-        setActiveTool(null);
+        armTool(null);
       }
     };
 
@@ -211,82 +232,42 @@ function Workspace({
   };
 
   // -----------------------------
-  // NEW ITEM PLACEMENT
+  // NEW ITEM PLACEMENT (click or drag/drop)
   // -----------------------------
-  const handleNewItem = (event) => {
-    event.preventDefault();
+  const handleCanvasInteraction = (event) => {
+    const droppedTool = event.dataTransfer ? event.dataTransfer.getData('tool') : '';
+    const toolToPlace = droppedTool || activeTool;
 
-    const toolToPlace = event.dataTransfer
-      ? event.dataTransfer.getData('tool')
-      : activeTool;
-
-    if (toolToPlace === 'wall') return;
-    if (!toolToPlace) {
-      setSelectedItemId(null);
+    if (toolToPlace && toolToPlace !== 'wall') {
+      const { x, y } = getLocalPoint(event, event.currentTarget);
+      openEquipmentSelector({ x, y, type: toolToPlace });
       return;
     }
-    const { x, y } = getLocalPoint(event, event.currentTarget);
-    setPendingPlacement({ x, y, type: toolToPlace });
+
     setSelectedItemId(null);
-    setActiveTool(null);
+    closeEquipmentSelector();
   };
 
-  const closeSelector = () => setPendingPlacement(null);
+  const handleConfirmPlacement = ({ subtype, name, attributes = {} } = {}) => {
+    if (!pendingEquipment) return;
 
-  const handleConfirmPlacement = ({ camera, displayName, equipmentType, manufacturer, modelName, costPerUnit } = {}) => {
-    if (!pendingPlacement) return;
-
-    setHistory(prev => [...prev, snapshot()]);
+    setHistory((prev) => [...prev, snapshot()]);
     setFuture([]);
-    const { x, y, type, replaceItemId } = pendingPlacement;
+
+    const { x, y, type, replaceItemId } = pendingEquipment;
 
     if (replaceItemId != null) {
-      if (type === 'camera' && camera) {
-        updatePlacement(replaceItemId, (item) => ({
-          ...item,
-          name: camera.modelNumber ?? item.name,
-          resolution: camera.resolution ?? item.resolution,
-          attributes: {
-            ...(item.attributes ?? {}),
-            cameraId: camera.id, cameraModel: camera.modelNumber, brand: camera.brand, resolution: camera.resolution, cameraType: camera.type,
-          },
-        }));
-        setSelectedItemId(replaceItemId);
-      }
+      updatePlacement(replaceItemId, (item) => ({
+        name: name ?? item.name,
+        attributes: { ...(item.attributes ?? {}), ...attributes },
+      }));
+      setSelectedItemId(replaceItemId);
       return;
     }
 
-    const resolvedType = type === 'device' && equipmentType ? equipmentType : type;
-    const base = createDevice(resolvedType, x, y);
-    let newObject = displayName ? { ...base, name: displayName } : base;
-
-    if (type === 'device') {
-      const normalizedManufacturer = manufacturer?.trim();
-      const normalizedModelName = modelName?.trim();
-
-      newObject = {
-        ...newObject,
-        name: normalizedModelName || newObject.name,
-        attributes: {
-          ...(newObject.attributes ?? {}),
-          ...(normalizedManufacturer ? { brand: normalizedManufacturer } : {}),
-          ...(normalizedModelName ? { modelName: normalizedModelName } : {}),
-          ...(typeof costPerUnit === 'number' ? { costPerUnit } : {}),
-        },
-      };
-    }
-
-    if (type === 'camera' && camera) {
-      newObject = {
-        ...newObject,
-        name: camera.modelNumber ?? newObject.name,
-        resolution: camera.resolution ?? newObject.resolution,
-        attributes: {
-          ...(newObject.attributes ?? {}),
-          cameraId: camera.id, cameraModel: camera.modelNumber, brand: camera.brand, resolution: camera.resolution, cameraType: camera.type,
-        },
-      };
-    }
+    const resolvedType = type === 'device' && subtype ? subtype.toLowerCase() : type;
+    const factory = resolvedType === 'camera' ? createCamera : createDevice;
+    const newObject = factory({ x, y, type: resolvedType, name, attributes });
 
     setEquipment((prev) => [...prev, newObject]);
     setSelectedItemId(newObject.id);
@@ -298,8 +279,7 @@ function Workspace({
   // -----------------------------
   const handleChangeCameraModel = (item) => {
     if (!item || item.type !== 'camera') return;
-    setPendingPlacement({ x: item.x, y: item.y, type: 'camera', replaceItemId: item.id });
-    setSelectedItemId(null);
+    openEquipmentSelector({ x: item.x, y: item.y, type: 'camera', replaceItemId: item.id });
   };
 
   // -----------------------------
@@ -355,7 +335,7 @@ function Workspace({
         x: item.x,
         y: item.y,
         rotation: item.rotation || 0,
-        type: item.type || item.kind || 'camera',
+        type: item.type || 'camera',
         cameraModel: item.attributes?.cameraModel ?? '',
         brand: item.attributes?.brand ?? '',
         resolution: item.attributes?.resolution ?? ''
@@ -458,7 +438,7 @@ function Workspace({
 
       <div className="toolbar-sidebar" style={sidebarContainerStyle}>
         <Toolbar
-          onSelectTool={setActiveTool}
+          onSelectTool={armTool}
           onUndo={undo}
           onRedo={redo}
           canUndo={history.length > 0}
@@ -469,8 +449,11 @@ function Workspace({
       <div
         ref={workspaceRef}
         className="image-fullscreen-wrapper"
-        onClick={() => { setSelectedItemId(null); closeSelector(); }}
-        onDrop={handleNewItem}
+        onClick={handleCanvasInteraction}
+        onDrop={(event) => {
+          event.preventDefault();
+          handleCanvasInteraction(event);
+        }}
         onDragOver={(e) => e.preventDefault()}
         style={{
           position: 'relative',
@@ -540,7 +523,7 @@ function Workspace({
             wallGraph={currentWallGraph}
             scale={scale}
             onWallGraphChange={handleWallGraphChange}
-            onExitWallMode={() => setActiveTool(null)}
+            onExitWallMode={() => armTool(null)}
           />
         )}
 
@@ -586,9 +569,9 @@ function Workspace({
       </div>
 
       <EquipmentSelector
-        visible={pendingPlacement != null}
-        placementType={pendingPlacement?.type ?? null}
-        onHide={closeSelector}
+        visible={pendingEquipment != null}
+        placementType={pendingEquipment?.type ?? null}
+        onHide={closeEquipmentSelector}
         onConfirmSelection={handleConfirmPlacement}
       />
 
