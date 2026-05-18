@@ -310,22 +310,6 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     );
   };
 
-  if (!isCamera && !isDevice) {
-    return (
-      <Sidebar
-        visible={visible}
-        position="center"
-        onHide={onHide}
-        style={{ width: 'min(800px, 96vw)' }}
-        header="Equipment"
-        dismissable
-        modal
-      >
-        <p className="equipment-selector-muted">Unknown equipment type.</p>
-      </Sidebar>
-    );
-  }
-
   return (
     <Sidebar
       visible={visible}
