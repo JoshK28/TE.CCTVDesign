@@ -151,5 +151,101 @@ namespace Backend.Controllers
 
             return Ok(bomItems);
         }
+
+        // get all devices for a project for use in calculators
+        [HttpGet("project/{projectId}/devices")]
+        public async Task<IActionResult> GetProjectDevices(int projectId)
+        {
+            // get all floor ids for this project
+            var floorIds = await _context.FloorLayouts
+                .Where(f => f.ProjectID == projectId)
+                .Select(f => f.FloorID)
+                .ToListAsync();
+
+            // get all placements with device details
+            var placements = await _context.CameraPlacemens
+                .Where(p => floorIds.Contains(p.FloorID))
+                .Include(p => p.Camera)
+                .Include(p => p.NetworkingDevice)
+                .Include(p => p.AccessControlDevice)
+                .ToListAsync();
+
+            // map resolution to bitrate
+            int GetDefaultBitrate(string resolution) => resolution switch
+            {
+                var r when r.Contains("12MP") => 20480,
+                var r when r.Contains("8MP") => 16384,
+                var r when r.Contains("6MP") => 12288,
+                var r when r.Contains("5MP") => 8192,
+                var r when r.Contains("4MP") => 6144,
+                var r when r.Contains("2MP") => 4096,
+                var r when r.Contains("1080") => 4096,
+                var r when r.Contains("720") => 2048,
+                _ => 4096
+            };
+
+            // map resolution to display format
+            string GetResolutionDisplay(string resolution) => resolution switch
+            {
+                var r when r.Contains("12MP") => "12MP (4000x3000)",
+                var r when r.Contains("8MP") => "8MP (3840x2160)",
+                var r when r.Contains("6MP") => "6MP (3072x2048)",
+                var r when r.Contains("5MP") => "5MP (2560x1920)",
+                var r when r.Contains("4MP") => "4MP (2560x1440)",
+                var r when r.Contains("2MP") => "1080p (1920x1080)",
+                var r when r.Contains("1080") => "1080p (1920x1080)",
+                var r when r.Contains("720") => "720p (1280x720)",
+                _ => "1080p (1920x1080)"
+            };
+
+            // build device list for UPS calculator
+            var upsDevices = placements
+                .Where(p => p.Camera != null || p.NetworkingDevice != null || p.AccessControlDevice != null)
+                .Select(p =>
+                {
+                    string name = "Unknown";
+                    double power = 0;
+                    string category = "Other";
+
+                    if (p.Camera != null)
+                    {
+                        name = p.Camera.ModelNumber;
+                        power = p.Camera.PowerConsumption ?? 0;
+                        category = "Camera";
+                    }
+                    else if (p.NetworkingDevice != null)
+                    {
+                        name = p.NetworkingDevice.Name;
+                        power = p.NetworkingDevice.PowerConsumption ?? 0;
+                        category = "Networking";
+                    }
+                    else if (p.AccessControlDevice != null)
+                    {
+                        name = p.AccessControlDevice.Name;
+                        power = p.AccessControlDevice.PowerConsumption ?? 0;
+                        category = "Access Control";
+                    }
+
+                    return new { name, power, category };
+                })
+                .ToList();
+
+            // build channel list for storage calculator - cameras only
+            var storageChannels = placements
+                .Where(p => p.Camera != null)
+                .Select((p, index) => new
+                {
+                    id = p.PlacementID,
+                    name = $"Channel {index + 1} - {p.Camera!.ModelNumber}",
+                    standard = "PAL",
+                    encoding = "H.265",
+                    resolution = GetResolutionDisplay(p.Camera.Resolution),
+                    fps = 25,
+                    bitrate = p.Camera.Bitrate ?? GetDefaultBitrate(p.Camera.Resolution)
+                })
+                .ToList();
+
+            return Ok(new { upsDevices, storageChannels });
+        }
     }
 }

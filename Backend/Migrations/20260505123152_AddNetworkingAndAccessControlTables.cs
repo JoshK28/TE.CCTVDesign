@@ -17,6 +17,9 @@ namespace Backend.Migrations
                 nullable: true,
                 oldClrType: typeof(int),
                 oldType: "int");
+                
+            // clean invalid CameraId values before adding foreign key
+            migrationBuilder.Sql("UPDATE CameraPlacemens SET CameraId = NULL WHERE CameraId = 0 OR CameraId NOT IN (SELECT Id FROM Cameras)");
 
             migrationBuilder.AddColumn<int>(
                 name: "AccessControlDeviceAccessControlID",
