@@ -33,12 +33,6 @@ function Dashboard({ onLogout }) {
           >
             📊 Storage Calculator
           </button>
-          <button
-            onClick={() => navigate("/app/storage")}
-            className={`sidebar-btn ${location.pathname === "/app/storage" ? "active" : ""}`}
-          >
-            💾 Storage Calculator
-          </button>
 
           <button
             onClick={() => navigate("/app/ups")}
@@ -46,13 +40,6 @@ function Dashboard({ onLogout }) {
           >
             🔋 UPS Calculator
           </button>
-          <button
-            onClick={() => navigate("/app/bom")}
-            className={`sidebar-btn ${location.pathname === "/app/bom" ? "active" : ""}`}
-          >
-            📦 Bill of Materials
-          </button>
-
         </nav>
       </aside>
 

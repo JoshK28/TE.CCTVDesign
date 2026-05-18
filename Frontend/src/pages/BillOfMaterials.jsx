@@ -105,10 +105,14 @@ function BillOfMaterials({ onLogout }) {
       <aside className="bom-sidebar">
         <img src={tePNGLogo} className="bom-logo" alt="Logo" />
         <nav className="sidebar-nav">
-          <button onClick={() => navigate("/app/dashboard")} className="sidebar-btn">← Back to Dashboard</button>
-          <button onClick={() => navigate("/app/calculator")} className={`sidebar-btn ${location.pathname.includes("calculator") ? "active" : ""}`}>📊 Storage Calculator</button>
-          <button onClick={() => navigate("/app/ups")} className={`sidebar-btn ${location.pathname.includes("ups") ? "active" : ""}`}>🔋 UPS Calculator</button>
-          <button onClick={() => navigate("/app/bom")} className={`sidebar-btn ${location.pathname.includes("bom") ? "active" : ""}`}>📦 Bill of Materials</button>
+          <button
+            onClick={() =>
+              projectId ? navigate("/app/design", { state: { projectId } }) : navigate("/app/projects")
+              }
+            className="sidebar-btn"
+          >
+            ← Back to Project
+          </button>
         </nav>
         <button onClick={onLogout} className="logout-button">Logout</button>
       </aside>
