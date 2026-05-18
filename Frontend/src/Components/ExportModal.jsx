@@ -14,8 +14,6 @@ export default function ExportModal({ visible, floorLayouts = [], currentLayerId
   const [orientation, setOrientation] = useState('landscape'); 
   
   const [showFov, setShowFov] = useState(true);
-  const [showWalls, setShowWalls] = useState(true);
-  const [showEquipment, setShowEquipment] = useState(true);
   const [logoPreview, setLogoPreview] = useState(defaultLogo);
   const [selectedLayerIds, setSelectedLayerIds] = useState([]);
 
@@ -50,8 +48,6 @@ export default function ExportModal({ visible, floorLayouts = [], currentLayerId
       exportType,
       orientation,
       showFov,
-      showWalls,
-      showEquipment,
       selectedLayerIds,
       branding: {
         companyName,
@@ -113,12 +109,8 @@ export default function ExportModal({ visible, floorLayouts = [], currentLayerId
 
         {/* Visibility Layer Toggles */}
         <div>
-          <label style={labelStyle}>Include Elements</label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-            <ToggleButton onLabel="FOV On" offLabel="FOV Off" checked={showFov} onChange={(e) => setShowFov(e.value)} />
-            <ToggleButton onLabel="Walls On" offLabel="Walls Off" checked={showWalls} onChange={(e) => setShowWalls(e.value)} />
-            <ToggleButton onLabel="Nodes On" offLabel="Nodes Off" checked={showEquipment} onChange={(e) => setShowEquipment(e.value)} />
-          </div>
+          <label style={labelStyle}>Include FOV &amp; Walls</label>
+          <ToggleButton onLabel="On" offLabel="Off" checked={showFov} onChange={(e) => setShowFov(e.value)} />
         </div>
 
         <div style={{ borderTop: '1px solid #dee2e6' }} />

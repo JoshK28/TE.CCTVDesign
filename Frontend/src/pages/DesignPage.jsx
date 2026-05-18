@@ -350,10 +350,9 @@ function Workspace({
     color: '#ffffff',
   };
 
-  // exportOptions may be undefined when not in an export pass — default to showing everything.
+
   const showFov = exportOptions ? exportOptions.showFov !== false : true;
-  const showWalls = exportOptions ? exportOptions.showWalls !== false : true;
-  const showEquipment = exportOptions ? exportOptions.showEquipment !== false : true;
+  const showWalls = showFov;
 
   const branding = exportOptions?.brandingActive && exportOptions?.brandingData;
 
@@ -429,7 +428,7 @@ function Workspace({
           </svg>
         )}
 
-        {showEquipment && equipment.map((item) => (
+        {equipment.map((item) => (
           <Equipment
             key={item.id}
             deviceInstance={item}
@@ -553,7 +552,7 @@ function DesignPage() {
 
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportWorkspaceConfig, setExportWorkspaceConfig] = useState({
-    showFov: true, showWalls: true, showEquipment: true, brandingActive: false, brandingData: null
+    showFov: true, brandingActive: false, brandingData: null,
   });
 
   const workspaceRef = useRef(null);
@@ -579,7 +578,7 @@ function DesignPage() {
   const renderLayer = async (idx, settings, scale, delay) => {
     setSelectedLayer(idx);
     setExportWorkspaceConfig({
-      showFov: settings.showFov, showWalls: settings.showWalls, showEquipment: settings.showEquipment,
+      showFov: settings.showFov,
       brandingActive: true, brandingData: settings.branding,
     });
     await new Promise((r) => setTimeout(r, delay));
@@ -620,7 +619,7 @@ function DesignPage() {
     }
 
     setSelectedLayer(original);
-    setExportWorkspaceConfig({ showFov: true, showWalls: true, showEquipment: true, brandingActive: false, brandingData: null });
+    setExportWorkspaceConfig({ showFov: true, brandingActive: false, brandingData: null });
   };
 
   if (loading) return <p style={{ color: '#ffffff', padding: '20px' }}>Loading floor layouts...</p>;
