@@ -8,8 +8,8 @@ import { Checkbox } from 'primereact/checkbox';
 import defaultLogo from '../assets/logo.png';
 
 export default function ExportModal({ visible, floorLayouts = [], currentLayerId, onHide, onConfirmExport }) {
-  const [companyName, setCompanyName] = useState('My Security Firm');
-  const [projectTitle, setProjectTitle] = useState('Site Security Blueprint');
+  const [companyName, setCompanyName] = useState('Company Name');
+  const [projectTitle, setProjectTitle] = useState('Project Title');
   const [exportType, setExportType] = useState('pdf'); 
   const [orientation, setOrientation] = useState('landscape'); 
   
@@ -17,10 +17,6 @@ export default function ExportModal({ visible, floorLayouts = [], currentLayerId
   const [showWalls, setShowWalls] = useState(true);
   const [showEquipment, setShowEquipment] = useState(true);
   const [logoPreview, setLogoPreview] = useState(defaultLogo);
-
-  // Floating Parameter Option States
-  const [overlayPosition, setOverlayPosition] = useState('top-left');
-  const [overlaySize, setOverlaySize] = useState('medium');
   const [selectedLayerIds, setSelectedLayerIds] = useState([]);
 
   const fileInputRef = useRef(null);
@@ -61,24 +57,9 @@ export default function ExportModal({ visible, floorLayouts = [], currentLayerId
         companyName,
         projectTitle,
         logo: logoPreview,
-        position: overlayPosition, 
-        size: overlaySize          
       }
     });
   };
-
-  const positionOptions = [
-    { label: '↖️ Top Left', value: 'top-left' },
-    { label: '↗️ Top Right', value: 'top-right' },
-    { label: '↙️ Bottom Left', value: 'bottom-left' },
-    { label: '↘️ Bottom Right', value: 'bottom-right' }
-  ];
-
-  const sizeOptions = [
-    { label: 'Small', value: 'small' },
-    { label: 'Medium', value: 'medium' },
-    { label: 'Large', value: 'large' }
-  ];
 
   return (
     <Dialog 
@@ -153,18 +134,6 @@ export default function ExportModal({ visible, floorLayouts = [], currentLayerId
             <div className="p-inputgroup">
               <span className="p-inputgroup-addon"><i className="pi pi-file"></i></span>
               <InputText placeholder="Project Title" value={projectTitle} onChange={(e) => setProjectTitle(e.target.value)} />
-            </div>
-
-            {/* LOGO UPLOAD & FLOATING CONTROLS SECTION */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-              <div>
-                <label style={{ ...labelStyle, fontSize: '12px' }}>Badge Position</label>
-                <SelectButton value={overlayPosition} options={positionOptions} onChange={(e) => e.value && setOverlayPosition(e.value)} style={{ transform: 'scale(0.9)', transformOrigin: 'left center' }} />
-              </div>
-              <div>
-                <label style={{ ...labelStyle, fontSize: '12px' }}>Badge Sizing scale</label>
-                <SelectButton value={overlaySize} options={sizeOptions} onChange={(e) => e.value && setOverlaySize(e.value)} style={{ transform: 'scale(0.9)', transformOrigin: 'left center' }} />
-              </div>
             </div>
 
             <div>

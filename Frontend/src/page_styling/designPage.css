@@ -20,13 +20,10 @@
   z-index: 1000;
 }
 .floating-branding {
-  position: absolute; z-index: 1010;
+  position: absolute; top: 20px; left: 20px; z-index: 1010;
+  padding: 12px 18px; gap: 15px;
   background-color: rgba(255, 255, 255, 0.92);
   border-left: 4px solid #245d91; border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   display: flex; align-items: center; pointer-events: none;
 }
-.floating-branding--top-left     { top: 20px; left: 20px; }
-.floating-branding--top-right    { top: 20px; right: 20px; }
-.floating-branding--bottom-left  { bottom: 20px; left: 20px; }
-.floating-branding--bottom-right { bottom: 20px; right: 20px; }

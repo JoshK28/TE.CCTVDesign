@@ -24,8 +24,6 @@ import { jsPDF } from 'jspdf';
 
 import '../page_styling/designPage.css';
 
-const BRANDING_SCALES = { small: 0.75, large: 1.25 };
-
 const CAMERA_DEFAULTS = {
   focalLength: 2.8,
   height: 3,
@@ -76,9 +74,7 @@ function Workspace({
 
   const toastRef = useRef(null);
 
-  // -----------------------------
   // UNDO / REDO
-  // -----------------------------
   const applyHistorySnapshot = useCallback(({ equipment: eq, wallGraphs: wg }) => {
     setEquipment(eq);
     setWallGraphs(wg);
@@ -89,15 +85,13 @@ function Workspace({
     applyHistorySnapshot
   );
 
-  // -----------------------------
+
   // WALL GRAPH
-  // -----------------------------
+
   const currentWallGraph = floorId ? (wallGraphs[floorId] ?? empty_Walls) : empty_Walls;
   const currentWalls = wallToSegments(currentWallGraph);
 
-  // -----------------------------
   // LOAD FLOOR DATA
-  // -----------------------------
   useEffect(() => {
     if (!floorId) return;
 
@@ -150,9 +144,7 @@ function Workspace({
     fetchWalls();
   }, [floorId]);
 
-  // -----------------------------
   // EQUIPMENT SELECTOR HELPERS
-  // -----------------------------
   const closeEquipmentSelector = () => setPendingEquipment(null);
 
   const openEquipmentSelector = ({ x, y, type, replaceItemId }) => {
@@ -168,9 +160,8 @@ function Workspace({
     setActiveTool(tool);
   };
 
-  // -----------------------------
+
   // ESC / ENTER CANCEL TOOL
-  // -----------------------------
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (!activeTool) return;
@@ -185,14 +176,8 @@ function Workspace({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeTool]);
 
-  // -----------------------------
   // UPDATE PLACEMENT (with history)
-  // -----------------------------
-  // `options.commit` (default true) pushes a snapshot onto the undo stack
-  // before applying the patch. Streaming callers (e.g. a drag's pointer-move
-  // loop, slider drag) should pass `{ commit: false }` after the first
-  // update of the interaction so the whole gesture collapses into a single
-  // undo entry.
+  // `options.commit` (default true) pushes a snapshot onto the undo stack before applying the patch.
   const updatePlacement = (id, patchOrBuilder, options = {}) => {
     const { commit: shouldCommit = true } = options;
     if (shouldCommit) commit();
@@ -211,9 +196,7 @@ function Workspace({
     onUnsavedChanges(true);
   };
 
-  // -----------------------------
   // NEW ITEM PLACEMENT (click or drag/drop)
-  // -----------------------------
   const handleCanvasInteraction = (event) => {
     const droppedTool = event.dataTransfer ? event.dataTransfer.getData('tool') : '';
     const toolToPlace = droppedTool || activeTool;
@@ -373,8 +356,6 @@ function Workspace({
   const showEquipment = exportOptions ? exportOptions.showEquipment !== false : true;
 
   const branding = exportOptions?.brandingActive && exportOptions?.brandingData;
-  const bScale = BRANDING_SCALES[branding?.size] ?? 1;
-  const bPos = branding?.position || 'top-left';
 
   // -----------------------------
   // RENDER
@@ -417,10 +398,7 @@ function Workspace({
         />
 
         {branding && (
-          <div
-            className={`floating-branding floating-branding--${bPos}`}
-            style={{ padding: `${12 * bScale}px ${18 * bScale}px`, gap: `${15 * bScale}px`, transform: `scale(${bScale})`, transformOrigin: bPos }}
-          >
+          <div className="floating-branding">
             {branding.logo && (
               <img src={branding.logo} alt="Logo" style={{ maxHeight: '35px', maxWidth: '100px', objectFit: 'contain' }} />
             )}
