@@ -22,6 +22,10 @@ import ExportModal from '../Components/ExportModal';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
+import '../page_styling/designPage.css';
+
+const BRANDING_SCALES = { small: 0.75, large: 1.25 };
+
 const CAMERA_DEFAULTS = {
   focalLength: 2.8,
   height: 3,
@@ -355,40 +359,6 @@ function Workspace({
     }
   };
 
-  // -----------------------------
-  // FLOATING BRANDING OVERLAY STYLE
-  // -----------------------------
-  const getFloatingBrandingStyle = () => {
-    if (!exportOptions?.brandingData) return { display: 'none' };
-    const { position, size } = exportOptions.brandingData;
-
-    // Sizing Scales Configuration
-    const brandingScale = size === 'small' ? 0.75 : size === 'large' ? 1.25 : 1.0;
-
-    const baseStyle = {
-      position: 'absolute',
-      zIndex: 1010,
-      backgroundColor: 'rgba(255, 255, 255, 0.92)',
-      borderLeft: '4px solid #245d91',
-      padding: `${12 * brandingScale}px ${18 * brandingScale}px`,
-      borderRadius: '4px',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-      display: 'flex',
-      alignItems: 'center',
-      gap: `${15 * brandingScale}px`,
-      pointerEvents: 'none', // Prevents capturing layout interactions
-      transform: `scale(${brandingScale})`,
-      transformOrigin: position || 'top-left',
-    };
-
-    if (position === 'top-right') { baseStyle.top = '20px'; baseStyle.right = '20px'; }
-    else if (position === 'bottom-left') { baseStyle.bottom = '20px'; baseStyle.left = '20px'; }
-    else if (position === 'bottom-right') { baseStyle.bottom = '20px'; baseStyle.right = '20px'; }
-    else { baseStyle.top = '20px'; baseStyle.left = '20px'; }
-
-    return baseStyle;
-  };
-
   const sidebarContainerStyle = {
     background: '#212529',
     borderRight: '1px solid #2d3238',
@@ -401,6 +371,10 @@ function Workspace({
   const showFov = exportOptions ? exportOptions.showFov !== false : true;
   const showWalls = exportOptions ? exportOptions.showWalls !== false : true;
   const showEquipment = exportOptions ? exportOptions.showEquipment !== false : true;
+
+  const branding = exportOptions?.brandingActive && exportOptions?.brandingData;
+  const bScale = BRANDING_SCALES[branding?.size] ?? 1;
+  const bPos = branding?.position || 'top-left';
 
   // -----------------------------
   // RENDER
@@ -442,18 +416,20 @@ function Workspace({
           style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.3)', borderRadius: '4px' }}
         />
 
-        {/* FLOATING BRANDING ELEMENT OVERLAY */}
-        {exportOptions?.brandingActive && exportOptions?.brandingData && (
-          <div style={getFloatingBrandingStyle()}>
-            {exportOptions.brandingData.logo && (
-              <img src={exportOptions.brandingData.logo} alt="Logo" style={{ maxHeight: '35px', maxWidth: '100px', objectFit: 'contain' }} />
+        {branding && (
+          <div
+            className={`floating-branding floating-branding--${bPos}`}
+            style={{ padding: `${12 * bScale}px ${18 * bScale}px`, gap: `${15 * bScale}px`, transform: `scale(${bScale})`, transformOrigin: bPos }}
+          >
+            {branding.logo && (
+              <img src={branding.logo} alt="Logo" style={{ maxHeight: '35px', maxWidth: '100px', objectFit: 'contain' }} />
             )}
             <div>
               <h4 style={{ margin: 0, color: '#1c1f22', fontSize: '14px', fontWeight: '700', lineHeight: 1.2 }}>
-                {exportOptions.brandingData.projectTitle || 'Specification Layout'}
+                {branding.projectTitle || 'Specification Layout'}
               </h4>
               <p style={{ margin: '2px 0 0 0', color: '#495057', fontSize: '11px', fontWeight: '500' }}>
-                {exportOptions.brandingData.companyName}
+                {branding.companyName}
               </p>
             </div>
           </div>
@@ -621,94 +597,51 @@ function DesignPage() {
     fetchFloorLayouts();
   }, [projectId, imageSrcFromState, navigate]);
 
-  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-  // ── REFACTORED SELECTION EXPORT DRIVER ENGINE ──
-  const handleExecuteExport = async (settings) => {
-    setExportModalOpen(false);
-    const filename = `${settings.branding.projectTitle.replace(/\s+/g, '_')}`;
-
-    // Determine target layers based on user selection in modal
-    const layersToExport = settings.selectedLayerIds && settings.selectedLayerIds.length > 0
-      ? floorLayouts.reduce((acc, current, idx) => {
-          if (settings.selectedLayerIds.includes(current.floorID)) acc.push(idx);
-          return acc;
-        }, [])
-      : [selectedLayer]; // Fallback to current layout if nothing selected
-
-    const originalLayerIndex = selectedLayer;
-
-    if (settings.exportType === 'png') {
-      for (const idx of layersToExport) {
-        setSelectedLayer(idx);
-        setExportWorkspaceConfig({
-          showFov: settings.showFov, showWalls: settings.showWalls, showEquipment: settings.showEquipment,
-          brandingActive: true, brandingData: settings.branding
-        });
-
-        await sleep(350);
-
-        if (workspaceRef.current) {
-          try {
-            const canvas = await html2canvas(workspaceRef.current, { useCORS: true, scale: 2 });
-            const imgData = canvas.toDataURL('image/png');
-            const link = document.createElement('a');
-            link.download = `${filename}_Layer_${floorLayouts[idx]?.layer || idx + 1}.png`;
-            link.href = imgData;
-            link.click();
-          } catch (err) {
-            console.error(err);
-          }
-        }
-      }
-      setSelectedLayer(originalLayerIndex);
-      resetExportConfig();
-      return;
-    }
-
-    if (settings.exportType === 'pdf') {
-      let pdfInstance = null;
-
-      for (let i = 0; i < layersToExport.length; i++) {
-        const targetIdx = layersToExport[i];
-        setSelectedLayer(targetIdx);
-        setExportWorkspaceConfig({
-          showFov: settings.showFov, showWalls: settings.showWalls, showEquipment: settings.showEquipment,
-          brandingActive: true, brandingData: settings.branding
-        });
-
-        await sleep(400); // Wait safely for images to render correctly
-
-        if (!workspaceRef.current) continue;
-
-        try {
-          const canvas = await html2canvas(workspaceRef.current, { useCORS: true, scale: 1.5 });
-          const imgData = canvas.toDataURL('image/png');
-          const imgWidth = canvas.width;
-          const imgHeight = canvas.height;
-          const pdfOrientation = settings.orientation === 'portrait' ? 'p' : 'l';
-
-          if (i === 0) {
-            pdfInstance = new jsPDF({ orientation: pdfOrientation, unit: 'px', format: [imgWidth, imgHeight] });
-          } else {
-            pdfInstance.addPage([imgWidth, imgHeight], pdfOrientation);
-          }
-          pdfInstance.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        } catch (err) {
-          console.error(err);
-        }
-      }
-
-      if (pdfInstance) {
-        pdfInstance.save(`${filename}_Report.pdf`);
-      }
-
-      setSelectedLayer(originalLayerIndex);
-      resetExportConfig();
-    }
+  // Switch to a layer with the given export config, wait for paint, then rasterise.
+  const renderLayer = async (idx, settings, scale, delay) => {
+    setSelectedLayer(idx);
+    setExportWorkspaceConfig({
+      showFov: settings.showFov, showWalls: settings.showWalls, showEquipment: settings.showEquipment,
+      brandingActive: true, brandingData: settings.branding,
+    });
+    await new Promise((r) => setTimeout(r, delay));
+    if (!workspaceRef.current) return null;
+    try { return await html2canvas(workspaceRef.current, { useCORS: true, scale }); }
+    catch (err) { console.error(err); return null; }
   };
 
-  const resetExportConfig = () => {
+  const handleExecuteExport = async (settings) => {
+    setExportModalOpen(false);
+    const filename = settings.branding.projectTitle.replace(/\s+/g, '_');
+    const layers = settings.selectedLayerIds?.length
+      ? floorLayouts.flatMap((l, i) => settings.selectedLayerIds.includes(l.floorID) ? [i] : [])
+      : [selectedLayer];
+    const original = selectedLayer;
+
+    if (settings.exportType === 'png') {
+      for (const i of layers) {
+        const canvas = await renderLayer(i, settings, 2, 350);
+        if (!canvas) continue;
+        Object.assign(document.createElement('a'), {
+          download: `${filename}_Layer_${floorLayouts[i]?.layer || i + 1}.png`,
+          href: canvas.toDataURL('image/png'),
+        }).click();
+      }
+    } else if (settings.exportType === 'pdf') {
+      const orient = settings.orientation === 'portrait' ? 'p' : 'l';
+      let pdf = null;
+      for (const i of layers) {
+        const canvas = await renderLayer(i, settings, 1.5, 400);
+        if (!canvas) continue;
+        const { width: w, height: h } = canvas;
+        if (!pdf) pdf = new jsPDF({ orientation: orient, unit: 'px', format: [w, h] });
+        else pdf.addPage([w, h], orient);
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, w, h);
+      }
+      pdf?.save(`${filename}_Report.pdf`);
+    }
+
+    setSelectedLayer(original);
     setExportWorkspaceConfig({ showFov: true, showWalls: true, showEquipment: true, brandingActive: false, brandingData: null });
   };
 
@@ -749,12 +682,12 @@ function DesignPage() {
   return (
     <div className="design-page-container" style={{ background: '#1c1f22', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <div className="design-topbar" style={{ background: '#212529', borderBottom: '1px solid #2d3238', padding: '10px 20px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-        <button onClick={handleBackButton} style={backBtnStyle}>&larr; Back to Projects</button>
-        <button onClick={handleBomButton} style={navBtnStyle}>📦 BOM</button>
-        <button onClick={() => navigate('/app/calculator', { state: { projectId } })} style={navBtnStyle}>💾 Storage</button>
-        <button onClick={() => navigate('/app/ups', { state: { projectId } })} style={navBtnStyle}>🔋 UPS</button>
+        <button onClick={handleBackButton} className="design-back-btn">&larr; Back to Projects</button>
+        <button onClick={handleBomButton} className="design-nav-btn">📦 BOM</button>
+        <button onClick={() => navigate('/app/calculator', { state: { projectId } })} className="design-nav-btn">💾 Storage</button>
+        <button onClick={() => navigate('/app/ups', { state: { projectId } })} className="design-nav-btn">🔋 UPS</button>
 
-        <button onClick={() => setExportModalOpen(true)} style={exportBtnStyle}>
+        <button onClick={() => setExportModalOpen(true)} className="design-export-btn">
           <span>📤</span> Export Plan Layout
         </button>
       </div>
@@ -769,7 +702,7 @@ function DesignPage() {
       />
 
       {floorLayouts.length > 1 && (
-        <div style={footerLayerControlStyle}>
+        <div className="design-layer-controls">
           {floorLayouts.map((layout, index) => (
             <Button
               key={layout.floorID}
@@ -796,10 +729,5 @@ function DesignPage() {
     </div>
   );
 }
-
-const navBtnStyle = { padding: '8px 18px', backgroundColor: '#343a40', color: '#ffffff', border: '1px solid #495057', borderRadius: '4px', cursor: 'pointer', fontSize: '13.5px', fontWeight: '500' };
-const backBtnStyle = { padding: '8px 15px', backgroundColor: 'transparent', color: '#ced4da', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '500' };
-const exportBtnStyle = { padding: '8px 20px', backgroundColor: '#245d91', color: '#ffffff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' };
-const footerLayerControlStyle = { position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '10px', backgroundColor: 'rgba(33, 37, 41, 0.85)', border: '1px solid #2d3238', padding: '10px 20px', borderRadius: '30px', zIndex: 1000 };
 
 export default DesignPage;
