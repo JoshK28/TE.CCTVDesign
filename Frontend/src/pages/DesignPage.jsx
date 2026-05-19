@@ -344,15 +344,6 @@ function Workspace({
     }
   };
 
-  const sidebarContainerStyle = {
-    background: '#212529',
-    borderRight: '1px solid #2d3238',
-    minWidth: '220px',
-    height: '100%',
-    color: '#ffffff',
-  };
-
-
   const showFov = exportOptions ? exportOptions.showFov !== false : true;
   const showWalls = showFov;
 
@@ -362,10 +353,10 @@ function Workspace({
   // RENDER
   // -----------------------------
   return (
-    <div className="design-workspace" style={{ background: '#1c1f22', width: '100%', height: '100%', display: 'flex' }}>
+    <div className="design-workspace">
       <Toast ref={toastRef} position="top-right" />
 
-      <div className="toolbar-sidebar" style={sidebarContainerStyle}>
+      <div className="toolbar-sidebar">
         <Toolbar onSelectTool={armTool} />
       </div>
 
@@ -378,16 +369,6 @@ function Workspace({
           handleCanvasInteraction(event);
         }}
         onDragOver={(e) => e.preventDefault()}
-        style={{
-          position: 'relative',
-          width: '100%',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: '20px',
-          boxSizing: 'border-box',
-          background: '#1c1f22',
-        }}
       >
         <img
           src={imageSrc}
@@ -395,27 +376,24 @@ function Workspace({
           className="fullscreen-image"
           draggable="false"
           crossOrigin="anonymous"
-          style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.3)', borderRadius: '4px' }}
         />
 
         {branding && (
           <div className="floating-branding">
             {branding.logo && (
-              <img src={branding.logo} alt="Logo" style={{ maxHeight: '35px', maxWidth: '100px', objectFit: 'contain' }} />
+              <img src={branding.logo} alt="Logo" className="floating-branding__logo" />
             )}
             <div>
-              <h4 style={{ margin: 0, color: '#1c1f22', fontSize: '14px', fontWeight: '700', lineHeight: 1.2 }}>
+              <h4 className="floating-branding__title">
                 {branding.projectTitle || 'Specification Layout'}
               </h4>
-              <p style={{ margin: '2px 0 0 0', color: '#495057', fontSize: '11px', fontWeight: '500' }}>
-                {branding.companyName}
-              </p>
+              <p className="floating-branding__company">{branding.companyName}</p>
             </div>
           </div>
         )}
 
         {showFov && (
-          <svg className="fov-overlay" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+          <svg className="fov-overlay">
             {equipment
               .filter((item) => item.type === 'camera')
               .map((item) => (
@@ -449,34 +427,11 @@ function Workspace({
           />
         )}
 
-        <p
-          className="item-count"
-          data-html2canvas-ignore="true"
-          style={{
-            position: 'absolute',
-            bottom: '10px',
-            left: '10px',
-            color: '#ffffff',
-            background: 'rgba(0,0,0,0.5)',
-            padding: '4px 8px',
-            borderRadius: '4px',
-            margin: 0,
-          }}
-        >
+        <p className="item-count" data-html2canvas-ignore="true">
           Items Placed: {equipment.length}
         </p>
 
-        <div
-          data-html2canvas-ignore="true"
-          style={{
-            position: 'absolute',
-            top: '10px',
-            right: '10px',
-            zIndex: 1005,
-            display: 'flex',
-            gap: '8px',
-          }}
-        >
+        <div className="workspace-actions" data-html2canvas-ignore="true">
           <Button
             type="button"
             icon="pi pi-undo"
@@ -624,7 +579,7 @@ function DesignPage() {
     setExportWorkspaceConfig({ showFov: true, brandingActive: false, brandingData: null });
   };
 
-  if (loading) return <p style={{ color: '#ffffff', padding: '20px' }}>Loading floor layouts...</p>;
+  if (loading) return <p className="design-message">Loading floor layouts...</p>;
 
   const currentImageSrc = imageSrcFromState
     ? imageSrcFromState
@@ -632,7 +587,9 @@ function DesignPage() {
     ? `http://localhost:5113/api/floorlayouts/image/${floorLayouts[selectedLayer]?.floorID}`
     : null;
 
-  if (!currentImageSrc) return <p style={{ color: '#ffffff', padding: '20px' }}>No floor layouts found for this project.</p>;
+  if (!currentImageSrc) {
+    return <p className="design-message">No floor layouts found for this project.</p>;
+  }
 
   const currentFloorId =
     floorLayouts.length > 0 ? floorLayouts[selectedLayer]?.floorID : null;
@@ -659,8 +616,8 @@ function DesignPage() {
   };
 
   return (
-    <div className="design-page-container" style={{ background: '#1c1f22', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <div className="design-topbar" style={{ background: '#212529', borderBottom: '1px solid #2d3238', padding: '10px 20px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+    <div className="design-page-container">
+      <div className="design-topbar">
         <button onClick={handleBackButton} className="design-back-btn">&larr; Back to Projects</button>
         <button onClick={handleBomButton} className="design-nav-btn">📦 BOM</button>
         <button onClick={() => navigate('/app/calculator', { state: { projectId } })} className="design-nav-btn">💾 Storage</button>
@@ -687,12 +644,8 @@ function DesignPage() {
               key={layout.floorID}
               type="button"
               label={`Layer ${layout.layer}`}
+              className={`design-layer-btn${selectedLayer === index ? ' design-layer-btn--active' : ''}`}
               onClick={() => setSelectedLayer(index)}
-              style={{
-                padding: '6px 16px', borderRadius: '20px',
-                backgroundColor: selectedLayer === index ? '#245d91' : '#343a40',
-                color: '#ffffff', fontWeight: selectedLayer === index ? 'bold' : 'normal', border: 'none',
-              }}
             />
           ))}
         </div>

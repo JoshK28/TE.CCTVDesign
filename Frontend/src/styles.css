@@ -1,35 +1,4 @@
-/* ------------------
-   DesignPage.jsx Styles
------------------- */
-
-.design-page-container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-}
-
-.design-topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 35px 20px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #ddd;
-}
-
-.design-workspace {
-  display: flex;
-  flex-direction: row;
-  flex: 1; 
-  overflow: hidden;
-}
-
-.toolbar-sidebar {
-  width: 250px;
-  background-color: #ffffff;
-  border-right: 1px solid #ddd;
-  padding: 15px;
-}
+/* Design workspace canvas (shell/chrome: page_styling/designPage.css) */
 
 .back-button {
   position: absolute;
@@ -50,33 +19,17 @@
   background-color: #bfc6ce;
 }
 
-/* This wrapper handles the full-screen image */
-.image-fullscreen-wrapper {
-  flex: 1;
-  position: relative;
-  background-color: #e9ecef; 
-  overflow: auto;
-  padding: 20px;
-}
-
-/* This is the full-screen image itself */
 .fullscreen-image {
   max-width: 100%;
   max-height: 100%;
-  object-fit: contain; /* Scales image down to fit, maintaining aspect ratio */
-  border: 2px solid #555;
-  border-radius: 5px;
+  object-fit: contain;
   pointer-events: none;
 }
 
 .item-count {
   position: absolute;
-  bottom: 10px;
-  right: 10px;
-  color: white;
-  background: rgba(0, 0, 0, 0.6);
-  padding: 5px 10px;
-  border-radius: 5px;
+  color: #ffffff;
+  border-radius: 4px;
   z-index: 1004;
 }
 
