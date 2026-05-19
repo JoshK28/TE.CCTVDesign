@@ -66,6 +66,7 @@ function AttributesBar({
   // COLOUR HELPERS
   // -----------------------------
   function rgbaToHex(rgba) {
+    if (typeof rgba !== 'string') return "#0096ff";
     const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
     if (!match) return "#0096ff";
     const [_, r, g, b] = match;
@@ -87,20 +88,26 @@ function AttributesBar({
   }
 
   function stripOpacity(rgba) {
+    if (typeof rgba !== 'string') return '';
     return rgba.replace(/,?\s*[\d.]+\)$/,'') + ')';
   }
 
   const currentOpacity = selectedItem.fovOpacity ?? 0.3;
-  const isPreset = presetColors.some(
-    preset => stripOpacity(preset) === stripOpacity(selectedItem.fovColor)
-  );
+  const isPreset = selectedItem.fovColor
+    ? presetColors.some(
+        preset => stripOpacity(preset) === stripOpacity(selectedItem.fovColor)
+      )
+    : false;
 
   const attrs = selectedItem.attributes ?? {};
   const isCamera = selectedItem.type === 'camera';
   const brandName = attrs.brand ?? '';
   const modelName = attrs.cameraModel ?? attrs.modelName ?? selectedItem.name ?? '';
   const costPerUnit = attrs.costPerUnit;
-  const propertiesTitle = `${selectedItem.type ?? ''} properties`;
+  const rawType = selectedItem.type ?? '';
+  const propertiesTitle = rawType
+    ? `${rawType.charAt(0).toUpperCase()}${rawType.slice(1)} properties`
+    : 'Properties';
 
   return (
     <Sidebar
