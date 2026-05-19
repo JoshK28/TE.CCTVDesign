@@ -1,35 +1,4 @@
-/* ------------------
-   DesignPage.jsx Styles
------------------- */
-
-.design-page-container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-}
-
-.design-topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 35px 20px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #ddd;
-}
-
-.design-workspace {
-  display: flex;
-  flex-direction: row;
-  flex: 1; 
-  overflow: hidden;
-}
-
-.toolbar-sidebar {
-  width: 250px;
-  background-color: #ffffff;
-  border-right: 1px solid #ddd;
-  padding: 15px;
-}
+/* Design workspace canvas (shell/chrome: page_styling/designPage.css) */
 
 .back-button {
   position: absolute;
@@ -50,34 +19,34 @@
   background-color: #bfc6ce;
 }
 
-/* This wrapper handles the full-screen image */
-.image-fullscreen-wrapper {
-  flex: 1;
-  position: relative;
-  background-color: #e9ecef; 
-  overflow: auto;
-  padding: 20px;
-}
-
-/* This is the full-screen image itself */
 .fullscreen-image {
   max-width: 100%;
   max-height: 100%;
-  object-fit: contain; /* Scales image down to fit, maintaining aspect ratio */
-  border: 2px solid #555;
-  border-radius: 5px;
+  object-fit: contain;
   pointer-events: none;
 }
 
 .item-count {
   position: absolute;
-  bottom: 10px;
-  right: 10px;
-  color: white;
-  background: rgba(0, 0, 0, 0.6);
-  padding: 5px 10px;
-  border-radius: 5px;
+  color: #ffffff;
+  border-radius: 4px;
   z-index: 1004;
+}
+
+/* Standard size for any equipment icon placed on the floor plan,
+   regardless of the source asset's intrinsic dimensions. */
+.equipment-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+}
+
+.equipment-icon--emoji {
+  font-size: 24px;
+  line-height: 32px;
+  text-align: center;
 }
 
 .wall-overlay {
@@ -109,6 +78,22 @@
   fill: #ffffff;
   stroke: #30343f;
   stroke-width: 2;
+}
+
+.wall-length-label {
+  fill: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.7);
+  stroke-width: 3px;
+  pointer-events: none;
+}
+
+.wall-length-label--draft {
+  fill: #8ec7ff;
 }
 
 .wall-draw-capture {
@@ -153,4 +138,97 @@ html, body, #root {
   padding: 0;
   width: 100%;
   height: 100%;
+}
+/* ==========================================================================
+   PRIME REACT MEGAMENU DARK THEME OVERRIDES (WITH HOVER FIXES)
+   ========================================================================== */
+
+/* 1. Base Draggable Elements Text Color */
+.dark-dashboard-menu .p-menuitem-link .p-menuitem-text,
+.dark-dashboard-menu .draggable-toolbar-item span {
+    color: #ced4da !important; /* Readable light grey text at rest */
+    font-weight: 500 !important;
+    transition: color 0.15s ease-in-out;
+}
+
+/* 2. CRITICAL HOVER FIX: Flip text color to dark when list item background changes */
+.dark-dashboard-menu .p-menuitem-link:hover .p-menuitem-text,
+.dark-dashboard-menu .p-menuitem-link:hover .draggable-toolbar-item,
+.dark-dashboard-menu .p-menuitem-link:hover .draggable-toolbar-item span {
+    color: #212529 !important; /* Changes text to dark charcoal to contrast with light hover states */
+}
+
+/* 3. Root Menu Heading Categories (e.g., 'New', 'Draw') */
+.dark-dashboard-menu > .p-megamenu-root-list > .p-menuitem > .p-menuitem-link .p-menuitem-text {
+    color: #ffffff !important; /* Always crisp bright white for root headers */
+    font-weight: 600 !important;
+}
+
+/* 4. Root Menu Heading Categories Hover State */
+.dark-dashboard-menu > .p-megamenu-root-list > .p-menuitem > .p-menuitem-link:hover .p-menuitem-text {
+    color: #212529 !important; /* Flips root header cleanly if the background goes white on hover */
+}
+
+/* 5. Cascading Drawer Column Sub-headers */
+.dark-dashboard-menu .p-megamenu-submenu-header {
+    background: #1c1f22 !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    padding: 0.6rem 1rem !important;
+    border-bottom: 1px solid #2d3238 !important;
+}
+
+/* 1. Style the parent MegaMenu component base inside the sidebar */
+.toolbar-sidebar .p-megamenu {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+.toolbar-sidebar .p-megamenu .p-megamenu-root-list > .p-menuitem > .p-menuitem-content {
+    background: transparent !important;
+    color: #ced4da !important;
+}
+
+.toolbar-sidebar .p-megamenu .p-menuitem-link:hover {
+    background: #2d3238 !important;
+}
+
+/* 2. Style the floating dropdown panel that rolls out */
+.p-megamenu-panel {
+    background-color: #212529 !important;
+    border: 1px solid #2d3238 !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+    padding: 0.5rem !important;
+}
+
+/* 3. Style individual submenu lists and content cells */
+.p-megamenu-panel .p-megamenu-submenu {
+    background: #212529 !important;
+}
+
+.p-megamenu-panel .p-menuitem-content {
+    background: transparent !important;
+    transition: background 0.2s ease;
+}
+
+/* 4. Fix row templates text and hover interactions */
+.p-megamenu-panel .p-menuitem-content div[draggable="true"] {
+    background: transparent !important; /* Strips old hardcoded inline dark color rules */
+    color: #e2e8f0 !important;
+    border-radius: 4px;
+}
+
+.p-megamenu-panel .p-menuitem:hover .p-menuitem-content {
+    background-color: #343a40 !important;
+}
+
+/* 5. Clean up sub-header elements if visible */
+.p-megamenu-panel .p-megamenu-submenu-header {
+    background: #1c1f22 !important;
+    color: #8a99ad !important;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.5rem 1.25rem !important;
 }

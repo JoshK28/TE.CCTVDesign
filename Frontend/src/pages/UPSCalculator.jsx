@@ -1,11 +1,16 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import AppLayout from "../Components/AppLayout";
 import "../page_styling/upsCalculator.css";
-import tePNGLogo from "../assets/logo.png";
 import api from "../services/api";
 
+const NAV = [
+  { label: "⬅ Back to Dashboard", to: "/app/dashboard" },
+  { label: "📊 Storage Calculator", to: "/app/calculator" },
+  { label: "🔋 UPS Calculator", to: "/app/ups" },
+];
+
 function UPSCalculator({ onLogout }) {
-  const navigate = useNavigate();
   const location = useLocation();
 
   const projectId = location.state?.projectId;
@@ -58,37 +63,22 @@ function UPSCalculator({ onLogout }) {
     fetchProjectDevices();
   }, [projectId]);
 
-  const addRow = () => setRows([...rows, { id: Date.now(), product: "", power: 0, units: 1 }]);
-  const removeRow = (id) => setRows(rows.filter(r => r.id !== id));
+  const addRow = () =>
+    setRows((prev) => [...prev, { id: Date.now(), product: "", power: 0, units: 1 }]);
+  const removeRow = (id) => setRows((prev) => prev.filter((r) => r.id !== id));
+  const updateRow = (index, patch) =>
+    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
 
   const totalPower = rows.reduce((sum, r) => sum + r.power * r.units, 0);
   const predictedUptime = ((batterySize * 12 * 0.8) / (totalPower || 1)).toFixed(2);
 
   return (
-    <div className="ups-layout">
-      <aside className="ups-sidebar">
-        <img src={tePNGLogo} alt="Logo" className="ups-logo" />
-        <nav className="sidebar-nav">
-          <button onClick={() => navigate("/app/dashboard")} className="sidebar-btn">
-            ⬅ Back to Dashboard
-          </button>
-          <button
-            onClick={() => navigate("/app/calculator")}
-            className={`sidebar-btn ${location.pathname.includes("calculator") ? "active" : ""}`}
-          >
-            📊 Storage Calculator
-          </button>
-          <button
-            onClick={() => navigate("/app/ups")}
-            className={`sidebar-btn ${location.pathname.includes("ups") ? "active" : ""}`}
-          >
-            🔋 UPS Calculator
-          </button>
-        </nav>
-        <button onClick={onLogout} className="logout-button">Logout</button>
-      </aside>
-
-      <main className="ups-main">
+    <AppLayout
+      className="ups-page"
+      nav={NAV}
+      onLogout={onLogout}
+      mainClassName="ups-main"
+    >
         <h1>UPS Calculator</h1>
         {projectId && projectName && (
           <p style={{ color: '#245d91', fontWeight: 'bold' }}>
@@ -118,11 +108,7 @@ function UPSCalculator({ onLogout }) {
                   <input
                     type="text"
                     value={r.product}
-                    onChange={(e) => {
-                      const updated = [...rows];
-                      updated[i].product = e.target.value;
-                      setRows(updated);
-                    }}
+                    onChange={(e) => updateRow(i, { product: e.target.value })}
                     placeholder="Device name"
                   />
                 </td>
@@ -130,11 +116,7 @@ function UPSCalculator({ onLogout }) {
                   <input
                     type="text"
                     value={r.category ?? ""}
-                    onChange={(e) => {
-                      const updated = [...rows];
-                      updated[i].category = e.target.value;
-                      setRows(updated);
-                    }}
+                    onChange={(e) => updateRow(i, { category: e.target.value })}
                     placeholder="Category"
                   />
                 </td>
@@ -142,22 +124,14 @@ function UPSCalculator({ onLogout }) {
                   <input
                     type="number"
                     value={r.power}
-                    onChange={(e) => {
-                      const updated = [...rows];
-                      updated[i].power = Number(e.target.value);
-                      setRows(updated);
-                    }}
+                    onChange={(e) => updateRow(i, { power: Number(e.target.value) })}
                   />
                 </td>
                 <td>
                   <input
                     type="number"
                     value={r.units}
-                    onChange={(e) => {
-                      const updated = [...rows];
-                      updated[i].units = Number(e.target.value);
-                      setRows(updated);
-                    }}
+                    onChange={(e) => updateRow(i, { units: Number(e.target.value) })}
                   />
                 </td>
                 <td>
@@ -191,8 +165,7 @@ function UPSCalculator({ onLogout }) {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </AppLayout>
   );
 }
 

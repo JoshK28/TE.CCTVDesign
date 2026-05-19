@@ -4,15 +4,23 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import api from "../services/api";
+import AppLayout from "../Components/AppLayout";
 import "../page_styling/bom.css";
-import tePNGLogo from "../assets/logo.png";
 
 function BillOfMaterials({ onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
-
-  // get projectId passed from design page
   const projectId = location.state?.projectId;
+
+  const nav = [
+    {
+      label: "← Back to Project",
+      onClick: () =>
+        projectId
+          ? navigate("/app/design", { state: { projectId } })
+          : navigate("/app/projects"),
+    },
+  ];
 
   const [currency, setCurrency] = useState("USD");
   const rate = { USD: 1, EUR: 0.93, AUD: 1.5, PGK: 3.5, ZAR: 18.2 };
@@ -101,19 +109,12 @@ function BillOfMaterials({ onLogout }) {
   };
 
   return (
-    <div className="bom-layout">
-      <aside className="bom-sidebar">
-        <img src={tePNGLogo} className="bom-logo" alt="Logo" />
-        <nav className="sidebar-nav">
-          <button onClick={() => navigate("/app/dashboard")} className="sidebar-btn">← Back to Dashboard</button>
-          <button onClick={() => navigate("/app/calculator")} className={`sidebar-btn ${location.pathname.includes("calculator") ? "active" : ""}`}>📊 Storage Calculator</button>
-          <button onClick={() => navigate("/app/ups")} className={`sidebar-btn ${location.pathname.includes("ups") ? "active" : ""}`}>🔋 UPS Calculator</button>
-          <button onClick={() => navigate("/app/bom")} className={`sidebar-btn ${location.pathname.includes("bom") ? "active" : ""}`}>📦 Bill of Materials</button>
-        </nav>
-        <button onClick={onLogout} className="logout-button">Logout</button>
-      </aside>
-
-      <main className="bom-main">
+    <AppLayout
+      className="bom-page"
+      nav={nav}
+      onLogout={onLogout}
+      mainClassName="bom-main"
+    >
         <h1>Bill of Materials</h1>
 
         {loading && <p>Loading project data...</p>}
@@ -183,8 +184,7 @@ function BillOfMaterials({ onLogout }) {
             </div>
           </>
         )}
-      </main>
-    </div>
+    </AppLayout>
   );
 }
 
