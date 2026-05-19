@@ -22,8 +22,30 @@ function BillOfMaterials({ onLogout }) {
     },
   ];
 
-  const [currency, setCurrency] = useState("USD");
-  const rate = { USD: 1, EUR: 0.93, AUD: 1.5, PGK: 3.5, ZAR: 18.2 };
+  const [currency, setCurrency] = useState("AUD");
+  const [rates, setRates] = useState({AUD: 1,PGK: 2.45,});
+
+
+  useEffect(() => {
+  const fetchRates = async () => {
+    try {
+      const res = await fetch(
+        "https://api.exchangerate-api.com/v4/latest/AUD"
+      );
+
+      const data = await res.json();
+
+      setRates({
+        AUD: 1,
+        PGK: data.rates.PGK,
+      });
+    } catch (err) {
+      console.error("Failed to fetch exchange rates", err);
+    }
+  };
+
+  fetchRates();
+}, []);
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,12 +73,17 @@ function BillOfMaterials({ onLogout }) {
     fetchBomData();
   }, [projectId]);
 
-  const currentRate = rate[currency];
+  const currentRate = rates[currency];
   const subtotal = products.reduce((sum, p) => sum + p.unitPrice * p.quantity, 0);
   const convertedSubtotal = (subtotal * currentRate).toFixed(2);
   const tax = (convertedSubtotal * 0.1).toFixed(2);
   const services = (convertedSubtotal * 0.05).toFixed(2);
   const finalTotal = (Number(convertedSubtotal) + Number(tax) + Number(services)).toFixed(2);
+  const formatCurrency = (value) =>
+  new Intl.NumberFormat("en-AU", {
+    style: "currency",
+    currency,
+  }).format(value);
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
@@ -125,7 +152,7 @@ function BillOfMaterials({ onLogout }) {
             <div className="currency-box">
               <label>Project Currency:</label>
               <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
-                {Object.keys(rate).map((curr) => <option key={curr} value={curr}>{curr}</option>)}
+                {Object.keys(rates).map((curr) => <option key={curr} value={curr}>{curr}</option>)}
               </select>
             </div>
 
@@ -163,10 +190,10 @@ function BillOfMaterials({ onLogout }) {
                 </div>
                 <div className="qty">Qty: {p.quantity}</div>
                 <div className="price">
-                  {(p.unitPrice * currentRate).toFixed(2)} {currency}
+                  {formatCurrency(p.unitPrice * currentRate)}
                 </div>
                 <div className="total" style={{ textAlign: 'right', fontWeight: 'bold', color: '#245d91' }}>
-                  {(p.unitPrice * p.quantity * currentRate).toFixed(2)} {currency}
+                  {formatCurrency(p.unitPrice * p.quantity * currentRate)}
                 </div>
               </div>
             ))}
