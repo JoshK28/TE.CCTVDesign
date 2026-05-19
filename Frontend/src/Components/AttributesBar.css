@@ -104,3 +104,33 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   margin-top: 10px;
 }
+
+/* -----------------------------
+   TABS
+----------------------------- */
+.attributes-tabview .p-tabview-nav {
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 12px;
+}
+
+.attributes-tabview .p-tabview-panels {
+  padding: 0;
+  background: transparent;
+}
+
+.attributes-tabview .p-tabview-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.attributes-tabview .p-tabview-nav li .p-tabview-nav-link {
+  padding: 0.85rem 1rem;
+  font-weight: 600;
+}
+
+.appearance-empty {
+  margin: 0;
+  font-size: 13px;
+  color: #777;
+}
