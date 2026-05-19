@@ -15,12 +15,12 @@ import "../page_styling/appLayout.css";
  *
  * Any other props are forwarded to the outer wrapper (e.g. mouse handlers).
  */
-function AppLayout({ nav = [], onLogout, mainClassName = "", children, ...rest }) {
+function AppLayout({ nav = [], onLogout, mainClassName = "", className = "", children, ...rest }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
   return (
-    <div className="app-layout" {...rest}>
+    <div className={`app-layout ${className}`.trim()} {...rest}>
       <aside className="app-sidebar">
         <img src={tePNGLogo} alt="Logo" className="app-logo" />
 

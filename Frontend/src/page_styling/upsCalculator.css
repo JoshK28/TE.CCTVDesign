@@ -1,65 +1,11 @@
-.ups-layout {
-  display: flex;
-  min-height: 100vh;
+/* UPS calculator (shell: appLayout.css) */
+
+.ups-page.app-layout {
   background: #f8f8f8;
   color: #222;
-  font-family: "Segoe UI", sans-serif;
 }
-
-.ups-sidebar {
-  width: 220px;
-  background: #1f1f1f;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  padding: 25px 15px;
-}
-
-.ups-logo {
-  width: 120px;
-  margin-bottom: 40px;
-}
-
-.sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-}
-
-.sidebar-btn {
-  background: #ffffffd9;
-  color: #222;
-  border: none;
-  border-radius: 10px;
-  padding: 10px;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.sidebar-btn.active {
-  background: rgb(4, 66, 105);
-  color: #fff;
-  font-weight: 600;
-}
-
-.logout-button {
-  background: #fff;
-  color: #000;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: 0.3s;
-}
-.logout-button:hover { background: #ccc; }
 
 .ups-main {
-  flex: 1;
-  padding: 40px;
   text-align: center;
 }
 
@@ -76,8 +22,13 @@
   cursor: pointer;
 }
 
-.add-btn { background: #4caf50; }
-.remove-btn { background: #d32f2f; }
+.add-btn {
+  background: #4caf50;
+}
+
+.remove-btn {
+  background: #d32f2f;
+}
 
 .ups-table {
   width: 100%;
@@ -88,11 +39,13 @@
   margin-top: 10px;
 }
 
-th, td {
+.ups-table th,
+.ups-table td {
   padding: 10px;
 }
 
-input, select {
+.ups-main input,
+.ups-main select {
   border: none;
   border-radius: 6px;
   padding: 6px;
@@ -115,4 +68,11 @@ input, select {
   border-radius: 15px;
   margin-top: 20px;
   padding: 20px;
+}
+
+.ups-main .delete-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
 }

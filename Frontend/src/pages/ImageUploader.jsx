@@ -1,9 +1,15 @@
 import React, { useState, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import AppLayout from "../Components/AppLayout";
 import ScaleCalibrator from "../Components/ScaleCalibrator";
 import "../page_styling/imageUploader.css";
-import tePNGLogo from "../assets/logo.png";
+
+const UPLOAD_NAV = [
+  { label: "⬅ Back to Dashboard", to: "/app/dashboard" },
+  { label: "📁 New Project", to: "/app/upload" },
+  { label: "📂 View Projects", to: "/app/projects" },
+];
 
 const DEFAULT_LAYER = {
   file: null,
@@ -19,7 +25,6 @@ const clampZoom = (w) => Math.min(300, Math.max(10, w));
 
 function ImageUploader({ onLogout }) {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [form, setForm] = useState({
     projectName: "",
@@ -379,43 +384,13 @@ function ImageUploader({ onLogout }) {
   );
 
   return (
-    <div className="upload-layout" onMouseMove={onDrag} onMouseUp={stopDrag}>
-      <aside className="upload-sidebar">
-        <img src={tePNGLogo} alt="Logo" className="upload-logo" />
-
-        <nav className="sidebar-nav">
-          <button
-            onClick={() => navigate("/app/dashboard")}
-            className="sidebar-btn"
-          >
-            ⬅ Back to Dashboard
-          </button>
-
-          <button
-            onClick={() => navigate("/app/upload")}
-            className={`sidebar-btn ${
-              location.pathname === "/app/upload" ? "active" : ""
-            }`}
-          >
-            📁 New Project
-          </button>
-
-          <button
-            onClick={() => navigate("/app/projects")}
-            className={`sidebar-btn ${
-              location.pathname === "/app/projects" ? "active" : ""
-            }`}
-          >
-            📂 View Projects
-          </button>
-        </nav>
-
-        <button onClick={onLogout} className="logout-button">
-          Logout
-        </button>
-      </aside>
-
-      <main className="upload-main">
+    <AppLayout
+      nav={UPLOAD_NAV}
+      onLogout={onLogout}
+      mainClassName="upload-main"
+      onMouseMove={onDrag}
+      onMouseUp={stopDrag}
+    >
         <h1>Create Project</h1>
 
         <div className={`form-container ${showScalingStep ? "form-container--scaling" : ""}`}>
@@ -426,8 +401,7 @@ function ImageUploader({ onLogout }) {
 
           {renderStepActions()}
         </div>
-      </main>
-    </div>
+    </AppLayout>
   );
 }
 

@@ -1,8 +1,14 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import "../page_styling/StorageCalculator.css";
-import tePNGLogo from "../assets/logo.png";
+import { useLocation } from "react-router-dom";
+import AppLayout from "../Components/AppLayout";
+import "../page_styling/storageCalculator.css";
 import api from "../services/api";
+
+const NAV = [
+  { label: "⬅ Back to Dashboard", to: "/app/dashboard" },
+  { label: "📂 View Projects", to: "/app/projects" },
+  { label: "📊 Storage Calculator", to: "/app/calculator" },
+];
 
 const DEFAULT_CHANNEL = {
   standard: "PAL",
@@ -13,7 +19,6 @@ const DEFAULT_CHANNEL = {
 };
 
 function StorageNetworkCalculator({ onLogout }) {
-  const navigate = useNavigate();
   const location = useLocation();
 
   // get projectId if coming from design page
@@ -80,30 +85,12 @@ function StorageNetworkCalculator({ onLogout }) {
   };
 
   return (
-    <div className="calc-layout">
-      <aside className="calc-sidebar">
-        <img src={tePNGLogo} alt="Logo" className="calc-logo" />
-        <nav className="sidebar-nav">
-          <button onClick={() => navigate("/app/dashboard")} className="sidebar-btn">
-            ⬅ Back to Dashboard
-          </button>
-          <button
-            onClick={() => navigate("/app/projects")}
-            className={`sidebar-btn ${location.pathname === "/app/projects" ? "active" : ""}`}
-          >
-            📂 View Projects
-          </button>
-          <button
-            onClick={() => navigate("/app/calculator")}
-            className={`sidebar-btn ${location.pathname === "/app/calculator" ? "active" : ""}`}
-          >
-            📊 Storage Calculator
-          </button>
-        </nav>
-        <button onClick={onLogout} className="logout-button">Logout</button>
-      </aside>
-
-      <main className="calc-main">
+    <AppLayout
+      className="calc-page"
+      nav={NAV}
+      onLogout={onLogout}
+      mainClassName="calc-main"
+    >
         <h1>Storage and Network Calculator</h1>
         {projectId && projectName && (
           <p style={{ color: '#245d91', fontWeight: 'bold' }}>
@@ -217,8 +204,7 @@ function StorageNetworkCalculator({ onLogout }) {
             </div>
           )}
         </section>
-      </main>
-    </div>
+    </AppLayout>
   );
 }
 

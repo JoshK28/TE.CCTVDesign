@@ -1,11 +1,16 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import AppLayout from "../Components/AppLayout";
 import "../page_styling/upsCalculator.css";
-import tePNGLogo from "../assets/logo.png";
 import api from "../services/api";
 
+const NAV = [
+  { label: "⬅ Back to Dashboard", to: "/app/dashboard" },
+  { label: "📊 Storage Calculator", to: "/app/calculator" },
+  { label: "🔋 UPS Calculator", to: "/app/ups" },
+];
+
 function UPSCalculator({ onLogout }) {
-  const navigate = useNavigate();
   const location = useLocation();
 
   const projectId = location.state?.projectId;
@@ -68,30 +73,12 @@ function UPSCalculator({ onLogout }) {
   const predictedUptime = ((batterySize * 12 * 0.8) / (totalPower || 1)).toFixed(2);
 
   return (
-    <div className="ups-layout">
-      <aside className="ups-sidebar">
-        <img src={tePNGLogo} alt="Logo" className="ups-logo" />
-        <nav className="sidebar-nav">
-          <button onClick={() => navigate("/app/dashboard")} className="sidebar-btn">
-            ⬅ Back to Dashboard
-          </button>
-          <button
-            onClick={() => navigate("/app/calculator")}
-            className={`sidebar-btn ${location.pathname.includes("calculator") ? "active" : ""}`}
-          >
-            📊 Storage Calculator
-          </button>
-          <button
-            onClick={() => navigate("/app/ups")}
-            className={`sidebar-btn ${location.pathname.includes("ups") ? "active" : ""}`}
-          >
-            🔋 UPS Calculator
-          </button>
-        </nav>
-        <button onClick={onLogout} className="logout-button">Logout</button>
-      </aside>
-
-      <main className="ups-main">
+    <AppLayout
+      className="ups-page"
+      nav={NAV}
+      onLogout={onLogout}
+      mainClassName="ups-main"
+    >
         <h1>UPS Calculator</h1>
         {projectId && projectName && (
           <p style={{ color: '#245d91', fontWeight: 'bold' }}>
@@ -178,8 +165,7 @@ function UPSCalculator({ onLogout }) {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </AppLayout>
   );
 }
 
