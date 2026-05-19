@@ -23,6 +23,11 @@ const ICONS = {
 };
 
 const getIcon = (deviceInstance) => {
+  // Custom user-uploaded icon takes precedence over defaults.
+  if (deviceInstance?.customIcon) {
+    return renderImg(deviceInstance.customIcon);
+  }
+
   const type = String(deviceInstance?.type ?? '').toLowerCase().trim();
 
   if (type === 'camera') {

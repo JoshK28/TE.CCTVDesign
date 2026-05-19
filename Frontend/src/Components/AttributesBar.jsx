@@ -21,8 +21,10 @@ function AttributesBar({
   // -----------------------------
   const [showPicker, setShowPicker] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+  const [iconError, setIconError] = useState('');
   const pickerRef = useRef(null);
   const swatchRef = useRef(null);
+  const iconInputRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -43,6 +45,7 @@ function AttributesBar({
   useEffect(() => {
     setActiveTab(0);
     setShowPicker(false);
+    setIconError('');
   }, [selectedItem?.id]);
 
   // -----------------------------
@@ -98,6 +101,40 @@ function AttributesBar({
         preset => stripOpacity(preset) === stripOpacity(selectedItem.fovColor)
       )
     : false;
+
+  // -----------------------------
+  // CUSTOM ICON UPLOAD
+  // -----------------------------
+  const MAX_ICON_BYTES = 1_000_000; // 1 MB cap to keep state/undo snapshots reasonable
+  const ALLOWED_ICON_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp', 'image/gif'];
+
+  function handleIconUpload(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    if (!ALLOWED_ICON_TYPES.includes(file.type)) {
+      setIconError('Unsupported file type. Use PNG, JPG, SVG, WEBP, or GIF.');
+      return;
+    }
+    if (file.size > MAX_ICON_BYTES) {
+      setIconError('Image is too large. Please choose a file under 1 MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setIconError('');
+      onUpdateSettings(selectedItem.id, 'customIcon', reader.result);
+    };
+    reader.onerror = () => setIconError('Failed to read the selected file.');
+    reader.readAsDataURL(file);
+  }
+
+  function handleResetIcon() {
+    setIconError('');
+    onUpdateSettings(selectedItem.id, 'customIcon', null);
+  }
 
   const attrs = selectedItem.attributes ?? {};
   const isCamera = selectedItem.type === 'camera';
@@ -285,7 +322,7 @@ function AttributesBar({
           {/* =========================== */}
           <TabPanel header="Appearance" leftIcon="pi pi-palette mr-2">
 
-            {isCamera ? (
+            {isCamera && (
               <>
                 <h3 className="section-subtitle">FOV Appearance</h3>
                 <div className="section-box">
@@ -359,11 +396,59 @@ function AttributesBar({
                   </div>
                 </div>
               </>
-            ) : (
-              <p className="appearance-empty">
-                No appearance options available for this equipment type.
-              </p>
             )}
+
+            {/* CUSTOM ICON */}
+            <h3 className="section-subtitle">Custom Icon</h3>
+            <div className="section-box">
+              <div className="field">
+                <label>Icon</label>
+                <div className="custom-icon-row">
+                  <div className="custom-icon-preview">
+                    {selectedItem.customIcon ? (
+                      <img
+                        src={selectedItem.customIcon}
+                        alt="Custom icon preview"
+                      />
+                    ) : (
+                      <span className="custom-icon-placeholder">Default</span>
+                    )}
+                  </div>
+                  <div className="custom-icon-actions">
+                    <input
+                      ref={iconInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif"
+                      style={{ display: 'none' }}
+                      onChange={handleIconUpload}
+                    />
+                    <Button
+                      type="button"
+                      label={selectedItem.customIcon ? 'Replace icon' : 'Upload icon'}
+                      icon="pi pi-upload"
+                      outlined
+                      onClick={() => iconInputRef.current?.click()}
+                    />
+                    {selectedItem.customIcon && (
+                      <Button
+                        type="button"
+                        label="Reset to default"
+                        icon="pi pi-refresh"
+                        severity="secondary"
+                        text
+                        onClick={handleResetIcon}
+                      />
+                    )}
+                  </div>
+                </div>
+                <p className="custom-icon-hint">
+                  PNG, JPG, SVG, WEBP or GIF. Max 1 MB.
+                </p>
+                {iconError && (
+                  <p className="custom-icon-error">{iconError}</p>
+                )}
+              </div>
+            </div>
           </TabPanel>
         </TabView>
 

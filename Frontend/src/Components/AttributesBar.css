@@ -134,3 +134,62 @@
   font-size: 13px;
   color: #777;
 }
+
+/* -----------------------------
+   CUSTOM ICON
+----------------------------- */
+.custom-icon-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.custom-icon-preview {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border: 1px dashed #c5c5c5;
+  border-radius: 8px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.custom-icon-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.custom-icon-placeholder {
+  font-size: 11px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.custom-icon-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.custom-icon-actions .p-button {
+  width: 100%;
+}
+
+.custom-icon-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #777;
+}
+
+.custom-icon-error {
+  margin: 0;
+  font-size: 12px;
+  color: #d9534f;
+}
