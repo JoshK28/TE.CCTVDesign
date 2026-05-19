@@ -5,6 +5,18 @@ import ScaleCalibrator from "../Components/ScaleCalibrator";
 import "../page_styling/imageUploader.css";
 import tePNGLogo from "../assets/logo.png";
 
+const DEFAULT_LAYER = {
+  file: null,
+  preview: null,
+  imageWidth: 80,
+  offsetX: 0,
+  offsetY: 0,
+  rotation: 0,
+  showGrid: false,
+};
+
+const clampZoom = (w) => Math.min(300, Math.max(10, w));
+
 function ImageUploader({ onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -16,45 +28,31 @@ function ImageUploader({ onLogout }) {
     description: "",
     scale: "1:100",
   });
-  const [floorImages, setFloorImages] = useState([
-    {
-      file: null,
-      preview: null,
-      imageWidth: 80,
-      offsetX: 0,
-      offsetY: 0,
-      rotation: 0,
-      showGrid: false,
-    },
-  ]);
+  const [floorImages, setFloorImages] = useState([DEFAULT_LAYER]);
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [showScalingStep, setShowScalingStep] = useState(false);
 
-  const setField = (key, value) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
+  const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  // Patch a single layer. `patch` may be an object or a (layer) => partial fn.
+  const updateLayer = (index, patch) =>
+    setFloorImages((prev) =>
+      prev.map((layer, i) => {
+        if (i !== index) return layer;
+        const delta = typeof patch === "function" ? patch(layer) : patch;
+        return { ...layer, ...delta };
+      })
+    );
 
   const dragState = useRef({ dragging: false, startX: 0, startY: 0, index: null });
 
-  const handleAddLayer = () =>
-    setFloorImages([
-      ...floorImages,
-      {
-        file: null,
-        preview: null,
-        imageWidth: 80,
-        offsetX: 0,
-        offsetY: 0,
-        rotation: 0,
-        showGrid: false,
-      },
-    ]);
+  const handleAddLayer = () => setFloorImages((prev) => [...prev, DEFAULT_LAYER]);
 
   const handleRemoveLayer = (index) =>
-    setFloorImages(floorImages.filter((_, i) => i !== index));
+    setFloorImages((prev) => prev.filter((_, i) => i !== index));
 
   const handleImageChange = (event, index) => {
     const file = event.target.files[0];
@@ -65,78 +63,31 @@ function ImageUploader({ onLogout }) {
       return;
     }
 
-    const preview = URL.createObjectURL(file);
-    const updated = [...floorImages];
-    updated[index] = {
-      file,
-      preview,
-      imageWidth: 80,
-      offsetX: 0,
-      offsetY: 0,
-      rotation: 0,
-      showGrid: false,
-    };
-    setFloorImages(updated);
+    updateLayer(index, { ...DEFAULT_LAYER, file, preview: URL.createObjectURL(file) });
   };
 
-  // ZOOM
-  const handleZoomIn = (index) => {
-    const updated = [...floorImages];
-    updated[index].imageWidth = Math.min(updated[index].imageWidth + 10, 300);
-    setFloorImages(updated);
-  };
+  const handleZoomIn = (index) =>
+    updateLayer(index, (l) => ({ imageWidth: clampZoom(l.imageWidth + 10) }));
 
-  const handleZoomOut = (index) => {
-    const updated = [...floorImages];
-    updated[index].imageWidth = Math.max(updated[index].imageWidth - 10, 10);
-    setFloorImages(updated);
-  };
+  const handleZoomOut = (index) =>
+    updateLayer(index, (l) => ({ imageWidth: clampZoom(l.imageWidth - 10) }));
 
-  const handleResetZoom = (index) => {
-    const updated = [...floorImages];
-    updated[index].imageWidth = 80;
-    updated[index].offsetX = 0;
-    updated[index].offsetY = 0;
-    updated[index].rotation = 0;
-    setFloorImages(updated);
-  };
+  const handleResetZoom = (index) =>
+    updateLayer(index, { imageWidth: 80, offsetX: 0, offsetY: 0, rotation: 0 });
 
-  const handleAutoFit = (index) => {
-    const updated = [...floorImages];
-    updated[index].imageWidth = 100;
-    updated[index].offsetX = 0;
-    updated[index].offsetY = 0;
-    setFloorImages(updated);
-  };
+  const handleAutoFit = (index) =>
+    updateLayer(index, { imageWidth: 100, offsetX: 0, offsetY: 0 });
 
-  // ROTATION
-  const handleRotateLeft = (index) => {
-    const updated = [...floorImages];
-    updated[index].rotation = (updated[index].rotation - 90 + 360) % 360;
-    setFloorImages(updated);
-  };
+  const handleRotateLeft = (index) =>
+    updateLayer(index, (l) => ({ rotation: (l.rotation - 90 + 360) % 360 }));
 
-  const handleRotateRight = (index) => {
-    const updated = [...floorImages];
-    updated[index].rotation = (updated[index].rotation + 90) % 360;
-    setFloorImages(updated);
-  };
+  const handleRotateRight = (index) =>
+    updateLayer(index, (l) => ({ rotation: (l.rotation + 90) % 360 }));
 
-  // GRID
-  const toggleGrid = (index) => {
-    const updated = [...floorImages];
-    updated[index].showGrid = !updated[index].showGrid;
-    setFloorImages(updated);
-  };
+  const toggleGrid = (index) => updateLayer(index, (l) => ({ showGrid: !l.showGrid }));
 
-  // DRAG / PAN
   const startDrag = (e, index) => {
-    dragState.current = {
-      dragging: true,
-      startX: e.clientX,
-      startY: e.clientY,
-      index,
-    };
+    dragState.current = { dragging: true, startX: e.clientX, startY: e.clientY, index };
   };
 
   const stopDrag = () => {
@@ -145,27 +96,16 @@ function ImageUploader({ onLogout }) {
 
   const onDrag = (e) => {
     if (!dragState.current.dragging) return;
-
     const { index, startX, startY } = dragState.current;
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
-
-    const updated = [...floorImages];
-    updated[index].offsetX += dx;
-    updated[index].offsetY += dy;
-
     dragState.current.startX = e.clientX;
     dragState.current.startY = e.clientY;
-
-    setFloorImages(updated);
+    updateLayer(index, (l) => ({ offsetX: l.offsetX + dx, offsetY: l.offsetY + dy }));
   };
 
-  // DOUBLE CLICK TO ZOOM
-  const handleDoubleClick = (index) => {
-    const updated = [...floorImages];
-    updated[index].imageWidth = Math.min(updated[index].imageWidth + 20, 300);
-    setFloorImages(updated);
-  };
+  const handleDoubleClick = (index) =>
+    updateLayer(index, (l) => ({ imageWidth: clampZoom(l.imageWidth + 20) }));
 
   const handleWheel = (event, index) => {
     event.preventDefault();

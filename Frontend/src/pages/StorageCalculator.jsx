@@ -4,6 +4,14 @@ import "../page_styling/StorageCalculator.css";
 import tePNGLogo from "../assets/logo.png";
 import api from "../services/api";
 
+const DEFAULT_CHANNEL = {
+  standard: "PAL",
+  encoding: "H.264",
+  resolution: "12MP (4000x3000)",
+  fps: 25,
+  bitrate: 20480,
+};
+
 function StorageNetworkCalculator({ onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -12,7 +20,7 @@ function StorageNetworkCalculator({ onLogout }) {
   const projectId = location.state?.projectId;
 
   const [channels, setChannels] = useState([
-    { id: 1, name: "Channel 1", standard: "PAL", encoding: "H.264", resolution: "12MP (4000x3000)", fps: 25, bitrate: 20480 }
+    { id: 1, name: "Channel 1", ...DEFAULT_CHANNEL },
   ]);
 
   const [diskSpaceTB, setDiskSpaceTB] = useState(4);
@@ -47,22 +55,17 @@ function StorageNetworkCalculator({ onLogout }) {
     fetchProjectDevices();
   }, [projectId]);
 
-  const addChannel = () => {
-    const newChannel = {
-      id: Date.now(),
-      name: `Channel ${channels.length + 1}`,
-      standard: "PAL",
-      encoding: "H.264",
-      resolution: "12MP (4000x3000)",
-      fps: 25,
-      bitrate: 20480,
-    };
-    setChannels([...channels, newChannel]);
-  };
+  const addChannel = () =>
+    setChannels((prev) => [
+      ...prev,
+      { id: Date.now(), name: `Channel ${prev.length + 1}`, ...DEFAULT_CHANNEL },
+    ]);
 
-  const deleteChannel = (id) => {
-    setChannels(channels.filter((ch) => ch.id !== id));
-  };
+  const deleteChannel = (id) =>
+    setChannels((prev) => prev.filter((ch) => ch.id !== id));
+
+  const updateChannel = (index, patch) =>
+    setChannels((prev) => prev.map((ch, i) => (i === index ? { ...ch, ...patch } : ch)));
 
   const calculate = () => {
     const totalBitrate = channels.reduce((acc, ch) => acc + Number(ch.bitrate), 0);
@@ -129,31 +132,28 @@ function StorageNetworkCalculator({ onLogout }) {
                   <tr key={ch.id}>
                     <td>{ch.name}</td>
                     <td>
-                      <select value={ch.standard} onChange={(e) => {
-                        const updated = [...channels];
-                        updated[i].standard = e.target.value;
-                        setChannels(updated);
-                      }}>
+                      <select
+                        value={ch.standard}
+                        onChange={(e) => updateChannel(i, { standard: e.target.value })}
+                      >
                         <option>PAL</option>
                         <option>NTSC</option>
                       </select>
                     </td>
                     <td>
-                      <select value={ch.encoding} onChange={(e) => {
-                        const updated = [...channels];
-                        updated[i].encoding = e.target.value;
-                        setChannels(updated);
-                      }}>
+                      <select
+                        value={ch.encoding}
+                        onChange={(e) => updateChannel(i, { encoding: e.target.value })}
+                      >
                         <option>H.264</option>
                         <option>H.265</option>
                       </select>
                     </td>
                     <td>
-                      <select value={ch.resolution} onChange={(e) => {
-                        const updated = [...channels];
-                        updated[i].resolution = e.target.value;
-                        setChannels(updated);
-                      }}>
+                      <select
+                        value={ch.resolution}
+                        onChange={(e) => updateChannel(i, { resolution: e.target.value })}
+                      >
                         <option>12MP (4000x3000)</option>
                         <option>8MP (3840x2160)</option>
                         <option>5MP (2560x1920)</option>
@@ -162,18 +162,18 @@ function StorageNetworkCalculator({ onLogout }) {
                       </select>
                     </td>
                     <td>
-                      <input type="number" value={ch.fps} onChange={(e) => {
-                        const updated = [...channels];
-                        updated[i].fps = e.target.value;
-                        setChannels(updated);
-                      }} />
+                      <input
+                        type="number"
+                        value={ch.fps}
+                        onChange={(e) => updateChannel(i, { fps: e.target.value })}
+                      />
                     </td>
                     <td>
-                      <input type="number" value={ch.bitrate} onChange={(e) => {
-                        const updated = [...channels];
-                        updated[i].bitrate = e.target.value;
-                        setChannels(updated);
-                      }} />
+                      <input
+                        type="number"
+                        value={ch.bitrate}
+                        onChange={(e) => updateChannel(i, { bitrate: e.target.value })}
+                      />
                     </td>
                     <td>
                       <button className="delete-btn" onClick={() => deleteChannel(ch.id)}>🗑</button>

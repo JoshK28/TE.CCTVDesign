@@ -58,8 +58,11 @@ function UPSCalculator({ onLogout }) {
     fetchProjectDevices();
   }, [projectId]);
 
-  const addRow = () => setRows([...rows, { id: Date.now(), product: "", power: 0, units: 1 }]);
-  const removeRow = (id) => setRows(rows.filter(r => r.id !== id));
+  const addRow = () =>
+    setRows((prev) => [...prev, { id: Date.now(), product: "", power: 0, units: 1 }]);
+  const removeRow = (id) => setRows((prev) => prev.filter((r) => r.id !== id));
+  const updateRow = (index, patch) =>
+    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
 
   const totalPower = rows.reduce((sum, r) => sum + r.power * r.units, 0);
   const predictedUptime = ((batterySize * 12 * 0.8) / (totalPower || 1)).toFixed(2);
@@ -118,11 +121,7 @@ function UPSCalculator({ onLogout }) {
                   <input
                     type="text"
                     value={r.product}
-                    onChange={(e) => {
-                      const updated = [...rows];
-                      updated[i].product = e.target.value;
-                      setRows(updated);
-                    }}
+                    onChange={(e) => updateRow(i, { product: e.target.value })}
                     placeholder="Device name"
                   />
                 </td>
@@ -130,11 +129,7 @@ function UPSCalculator({ onLogout }) {
                   <input
                     type="text"
                     value={r.category ?? ""}
-                    onChange={(e) => {
-                      const updated = [...rows];
-                      updated[i].category = e.target.value;
-                      setRows(updated);
-                    }}
+                    onChange={(e) => updateRow(i, { category: e.target.value })}
                     placeholder="Category"
                   />
                 </td>
@@ -142,22 +137,14 @@ function UPSCalculator({ onLogout }) {
                   <input
                     type="number"
                     value={r.power}
-                    onChange={(e) => {
-                      const updated = [...rows];
-                      updated[i].power = Number(e.target.value);
-                      setRows(updated);
-                    }}
+                    onChange={(e) => updateRow(i, { power: Number(e.target.value) })}
                   />
                 </td>
                 <td>
                   <input
                     type="number"
                     value={r.units}
-                    onChange={(e) => {
-                      const updated = [...rows];
-                      updated[i].units = Number(e.target.value);
-                      setRows(updated);
-                    }}
+                    onChange={(e) => updateRow(i, { units: Number(e.target.value) })}
                   />
                 </td>
                 <td>
