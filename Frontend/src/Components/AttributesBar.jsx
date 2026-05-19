@@ -208,22 +208,21 @@ function AttributesBar({
               )}
             </div>
 
-            {/* PLACEMENT */}
-            <h3 className="section-subtitle">Placement</h3>
-            <div className="section-box">
-              <div className="field slider-field">
-                <label>Rotation (°)</label>
-                <Slider
-                  value={selectedItem.rotation || 0}
-                  onChange={(e) => onUpdateSettings(selectedItem.id, "rotation", e.value)}
-                  min={0}
-                  max={360}
-                />
-                <span className="slider-value">{selectedItem.rotation || 0}°</span>
-              </div>
+            {isCamera && (
+              <>
+                <h3 className="section-subtitle">Placement</h3>
+                <div className="section-box">
+                  <div className="field slider-field">
+                    <label>Rotation (°)</label>
+                    <Slider
+                      value={selectedItem.rotation || 0}
+                      onChange={(e) => onUpdateSettings(selectedItem.id, "rotation", e.value)}
+                      min={0}
+                      max={360}
+                    />
+                    <span className="slider-value">{selectedItem.rotation || 0}°</span>
+                  </div>
 
-              {isCamera && (
-                <>
                   <div className="field">
                     <label>Camera Height (m)</label>
                     <InputNumber
@@ -244,9 +243,9 @@ function AttributesBar({
                     />
                     <span className="slider-value">{selectedItem.tilt || 0}°</span>
                   </div>
-                </>
-              )}
-            </div>
+                </div>
+              </>
+            )}
 
             {isCamera && (
               <>

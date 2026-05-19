@@ -47,12 +47,11 @@ const createCamera = ({ x, y, name = '', attributes = {}, rotation = 0, id = Dat
   attributes,
 });
 
-const createDevice = ({ x, y, type, name = '', attributes = {}, rotation = 0, id = Date.now() }) => ({
+const createDevice = ({ x, y, type, name = '', attributes = {}, id = Date.now() }) => ({
   id,
   type,
   x,
   y,
-  rotation,
   name: name || attributes.modelName || '',
   attributes,
 });
@@ -668,7 +667,7 @@ function DesignPage() {
           <span>📤</span> Export Plan Layout
         </button>
       </div>
-
+      
       <Workspace
         imageSrc={currentImageSrc}
         floorId={currentFloorId}
