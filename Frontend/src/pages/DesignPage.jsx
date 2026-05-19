@@ -218,7 +218,9 @@ function Workspace({
     const { x, y, type, replaceItemId } = pendingEquipment;
 
     if (replaceItemId != null) {
+      const shouldUpdateType = type === 'device' && subtype;
       updatePlacement(replaceItemId, (item) => ({
+        ...(shouldUpdateType ? { type: subtype.toLowerCase() } : {}),
         name: name ?? item.name,
         attributes: { ...(item.attributes ?? {}), ...attributes },
       }));
@@ -236,11 +238,12 @@ function Workspace({
   };
 
   // -----------------------------
-  // CHANGE CAMERA MODEL
+  // CHANGE EQUIPMENT MODEL
   // -----------------------------
-  const handleChangeCameraModel = (item) => {
-    if (!item || item.type !== 'camera') return;
-    openEquipmentSelector({ x: item.x, y: item.y, type: 'camera', replaceItemId: item.id });
+  const handleChangeModel = (item) => {
+    if (!item) return;
+    const selectorType = item.type === 'camera' ? 'camera' : 'device';
+    openEquipmentSelector({ x: item.x, y: item.y, type: selectorType, replaceItemId: item.id });
   };
 
   // -----------------------------
@@ -530,7 +533,7 @@ function Workspace({
         onUpdateSettings={(id, field, value) =>
           updatePlacement(id, () => ({ [field]: value }))
         }
-        onChangeCameraModel={handleChangeCameraModel}
+        onChangeModel={handleChangeModel}
         onDeleteEquipment={handleDeleteEquipment}
       />
     </div>

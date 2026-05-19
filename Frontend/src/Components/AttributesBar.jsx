@@ -12,7 +12,7 @@ function AttributesBar({
   selectedItem,
   onClose,
   onUpdateSettings,
-  onChangeCameraModel,
+  onChangeModel,
   onDeleteEquipment,
 }) {
 
@@ -152,14 +152,14 @@ function AttributesBar({
               )}
             </div>
 
-            {selectedItem.type === 'camera' && typeof onChangeCameraModel === 'function' && (
+            {typeof onChangeModel === 'function' && (
               <div className="attributes-change-model-section">
                 <Button
                   type="button"
-                  label="Change camera model"
+                  label="Change model"
                   icon="pi pi-sync"
                   outlined
-                  onClick={() => onChangeCameraModel(selectedItem)}
+                  onClick={() => onChangeModel(selectedItem)}
                 />
               </div>
             )}
