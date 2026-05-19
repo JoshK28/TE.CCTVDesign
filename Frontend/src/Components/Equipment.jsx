@@ -1,23 +1,43 @@
 import securityCameraIcon from '../assets/Icons/security-camera.png';
+import domeIcon from '../assets/Icons/Dome.png';
 import routerIcon from '../assets/Icons/Router.png';
 import sensorIcon from '../assets/Icons/Sensor.png';
 import alarmIcon from '../assets/Icons/Alarm.png';
 
-const ICONS = {
-  camera: <img src={securityCameraIcon} alt="" draggable={false} className="equipment-icon" />,
-  router: <img src={routerIcon} alt="" draggable={false} className="equipment-icon" />,
-  sensor: <img src={sensorIcon} alt="" draggable={false} className="equipment-icon" />,
-  alarm: <img src={alarmIcon} alt="" draggable={false} className="equipment-icon" />,
-  nvr: '💾',
-  switch: '🔀',
-  'access point': '📡',
+const renderImg = (src) => (
+  <img src={src} alt="" draggable={false} className="equipment-icon" />
+);
+
+const CAMERA_TYPE_ICONS = {
+  dome: domeIcon,
 };
 
-const getIcon = (equipmentType) =>
-  ICONS[String(equipmentType ?? '').toLowerCase().trim()] ?? <span className="equipment-icon">❓</span>;
+const ICONS = {
+  camera: renderImg(securityCameraIcon),
+  router: renderImg(routerIcon),
+  sensor: renderImg(sensorIcon),
+  alarm: renderImg(alarmIcon),
+  nvr: <span className="equipment-icon equipment-icon--emoji">💾</span>,
+  switch: <span className="equipment-icon equipment-icon--emoji">🔀</span>,
+  'access point': <span className="equipment-icon equipment-icon--emoji">📡</span>,
+};
+
+const getIcon = (deviceInstance) => {
+  const type = String(deviceInstance?.type ?? '').toLowerCase().trim();
+
+  if (type === 'camera') {
+    const cameraType = String(deviceInstance?.attributes?.cameraType ?? '')
+      .toLowerCase()
+      .trim();
+    const src = CAMERA_TYPE_ICONS[cameraType] ?? securityCameraIcon;
+    return renderImg(src);
+  }
+
+  return ICONS[type] ?? <span className="equipment-icon equipment-icon--emoji">❓</span>;
+};
 
 function Equipment({ deviceInstance, onSelect, onUpdatePlacement }) {
-  const { id, type, x, y, rotation = 0 } = deviceInstance;
+  const { id, x, y, rotation = 0 } = deviceInstance;
 
   const handlePointerDown = (e) => {
     e.stopPropagation();
@@ -62,11 +82,10 @@ function Equipment({ deviceInstance, onSelect, onUpdatePlacement }) {
         position: 'absolute',
         transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
         userSelect: 'none',
-        fontSize: '24px',
         cursor: 'grab',
       }}
     >
-      {getIcon(type)}
+      {getIcon(deviceInstance)}
     </div>
   );
 }

@@ -196,6 +196,31 @@ function AttributesBar({
             />
             <span className="slider-value">{selectedItem.rotation || 0}°</span>
           </div>
+
+          {isCamera && (
+            <>
+              <div className="field">
+                <label>Camera Height (m)</label>
+                <InputNumber
+                  value={selectedItem.height || 3}
+                  onValueChange={(e) => onUpdateSettings(selectedItem.id, "height", e.value)}
+                  min={1}
+                  max={20}
+                />
+              </div>
+
+              <div className="field slider-field">
+                <label>Tilt (°)</label>
+                <Slider
+                  value={selectedItem.tilt || 0}
+                  onChange={(e) => onUpdateSettings(selectedItem.id, "tilt", e.value)}
+                  min={-90}
+                  max={90}
+                />
+                <span className="slider-value">{selectedItem.tilt || 0}°</span>
+              </div>
+            </>
+          )}
         </div>
 
         {isCamera && (
@@ -284,31 +309,6 @@ function AttributesBar({
                   }}
                 />
                 <span className="slider-value">{currentOpacity.toFixed(2)}</span>
-              </div>
-            </div>
-
-            {/* PHYSICAL */}
-            <h3 className="section-subtitle">Physical</h3>
-            <div className="section-box">
-              <div className="field">
-                <label>Camera Height (m)</label>
-                <InputNumber
-                  value={selectedItem.height || 3}
-                  onValueChange={(e) => onUpdateSettings(selectedItem.id, "height", e.value)}
-                  min={1}
-                  max={20}
-                />
-              </div>
-
-              <div className="field slider-field">
-                <label>Tilt (°)</label>
-                <Slider
-                  value={selectedItem.tilt || 0}
-                  onChange={(e) => onUpdateSettings(selectedItem.id, "tilt", e.value)}
-                  min={-90}
-                  max={90}
-                />
-                <span className="slider-value">{selectedItem.tilt || 0}°</span>
               </div>
             </div>
 
