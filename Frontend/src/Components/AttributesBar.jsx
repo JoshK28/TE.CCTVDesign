@@ -4,8 +4,11 @@ import { Slider } from 'primereact/slider';
 import { InputNumber } from 'primereact/inputnumber';
 import { InputText } from 'primereact/inputtext';
 import { ColorPicker } from 'primereact/colorpicker';
+import { InputSwitch } from 'primereact/inputswitch';
+import { Dropdown } from 'primereact/dropdown';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { useState, useRef, useEffect } from 'react';
+
 import './AttributesBar.css';
 
 function AttributesBar({
@@ -15,13 +18,10 @@ function AttributesBar({
   onChangeModel,
   onDeleteEquipment,
 }) {
-
-  // -----------------------------
-  // HOOKS MUST ALWAYS RUN FIRST
-  // -----------------------------
   const [showPicker, setShowPicker] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [iconError, setIconError] = useState('');
+
   const pickerRef = useRef(null);
   const swatchRef = useRef(null);
   const iconInputRef = useRef(null);
@@ -37,53 +37,46 @@ function AttributesBar({
         setShowPicker(false);
       }
     }
-    if (showPicker) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+    if (showPicker) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showPicker]);
 
-  // Reset to first tab whenever a different item is selected
   useEffect(() => {
     setActiveTab(0);
     setShowPicker(false);
     setIconError('');
   }, [selectedItem?.id]);
 
-  // -----------------------------
-  // CONDITIONAL RETURN MUST COME AFTER HOOKS
-  // -----------------------------
   if (!selectedItem) return null;
 
-  // -----------------------------
-  // STATIC DATA
-  // -----------------------------
   const presetColors = [
-    "rgba(0, 150, 255, 0.3)",
-    "rgba(255, 0, 0, 0.3)",
-    "rgba(0, 255, 0, 0.3)",
-    "rgba(255, 165, 0, 0.3)",
-    "rgba(128, 0, 128, 0.3)",
-    "rgba(255, 255, 0, 0.3)"
+    'rgba(0, 150, 255, 0.3)',
+    'rgba(255, 0, 0, 0.3)',
+    'rgba(0, 255, 0, 0.3)',
+    'rgba(255, 165, 0, 0.3)',
+    'rgba(128, 0, 128, 0.3)',
+    'rgba(255, 255, 0, 0.3)',
   ];
 
-  // -----------------------------
-  // COLOUR HELPERS
-  // -----------------------------
   function rgbaToHex(rgba) {
-    if (typeof rgba !== 'string') return "#0096ff";
+    if (typeof rgba !== 'string') return '#0096ff';
     const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-    if (!match) return "#0096ff";
+    if (!match) return '#0096ff';
     const [_, r, g, b] = match;
     return (
-      "#" +
-      [r, g, b].map(x => {
-        const hex = parseInt(x).toString(16);
-        return hex.length === 1 ? "0" + hex : hex;
-      }).join("")
+      '#' +
+      [r, g, b]
+        .map((x) => {
+          const hex = parseInt(x).toString(16);
+          return hex.length === 1 ? '0' + hex : hex;
+        })
+        .join('')
     );
   }
 
   function hexToRgba(hex, opacity) {
-    hex = hex.replace("#", "");
+    hex = hex.replace('#', '');
     const r = parseInt(hex.substring(0, 2), 16);
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
@@ -92,31 +85,36 @@ function AttributesBar({
 
   function stripOpacity(rgba) {
     if (typeof rgba !== 'string') return '';
-    return rgba.replace(/,?\s*[\d.]+\)$/,'') + ')';
+    return rgba.replace(/,?\s*[\d.]+\)$/, ')');
   }
 
   const currentOpacity = selectedItem.fovOpacity ?? 0.3;
   const isPreset = selectedItem.fovColor
     ? presetColors.some(
-        preset => stripOpacity(preset) === stripOpacity(selectedItem.fovColor)
+        (preset) => stripOpacity(preset) === stripOpacity(selectedItem.fovColor)
       )
     : false;
 
-  // -----------------------------
-  // CUSTOM ICON UPLOAD
-  // -----------------------------
-  const MAX_ICON_BYTES = 1_000_000; // 1 MB cap to keep state/undo snapshots reasonable
-  const ALLOWED_ICON_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp', 'image/gif'];
+  const MAX_ICON_BYTES = 1_000_000;
+  const ALLOWED_ICON_TYPES = [
+    'image/png',
+    'image/jpeg',
+    'image/svg+xml',
+    'image/webp',
+    'image/gif',
+  ];
 
   function handleIconUpload(event) {
     const file = event.target.files?.[0];
     event.target.value = '';
+
     if (!file) return;
 
     if (!ALLOWED_ICON_TYPES.includes(file.type)) {
       setIconError('Unsupported file type. Use PNG, JPG, SVG, WEBP, or GIF.');
       return;
     }
+
     if (file.size > MAX_ICON_BYTES) {
       setIconError('Image is too large. Please choose a file under 1 MB.');
       return;
@@ -138,13 +136,25 @@ function AttributesBar({
 
   const attrs = selectedItem.attributes ?? {};
   const isCamera = selectedItem.type === 'camera';
+
   const brandName = attrs.brand ?? '';
-  const modelName = attrs.cameraModel ?? attrs.modelName ?? selectedItem.name ?? '';
+  const modelName =
+    attrs.cameraModel ?? attrs.modelName ?? selectedItem.name ?? '';
   const costPerUnit = attrs.costPerUnit;
+
   const rawType = selectedItem.type ?? '';
   const propertiesTitle = rawType
     ? `${rawType.charAt(0).toUpperCase()}${rawType.slice(1)} properties`
     : 'Properties';
+
+  const sensorOptions = [
+    { label: '1/3"', value: '1/3' },
+    { label: '1/2.8"', value: '1/2.8' },
+    { label: '1/2.7"', value: '1/2.7' },
+    { label: '1/2"', value: '1/2' },
+    { label: '2/3"', value: '2/3' },
+    { label: '1"', value: '1' },
+  ];
 
   return (
     <Sidebar
@@ -157,7 +167,6 @@ function AttributesBar({
       style={{ width: '380px' }}
     >
       <div className="sidebar-content">
-
         <h2 className="section-title">{propertiesTitle}</h2>
 
         <TabView
@@ -165,22 +174,20 @@ function AttributesBar({
           activeIndex={activeTab}
           onTabChange={(e) => setActiveTab(e.index)}
         >
-          {/* =========================== */}
-          {/*       SETTINGS TAB          */}
-          {/* =========================== */}
+          {/* SETTINGS TAB */}
           <TabPanel header="Settings" leftIcon="pi pi-cog mr-2">
-
-            {/* Equipment details */}
             <h3 className="section-subtitle">Equipment details</h3>
             <div className="section-box">
               <div className="field">
                 <label>Brand name</label>
                 <div className="readonly-value">{brandName || '—'}</div>
               </div>
+
               <div className="field">
                 <label>Model name</label>
                 <div className="readonly-value">{modelName || '—'}</div>
               </div>
+
               {costPerUnit != null && (
                 <div className="field">
                   <label>Cost per unit</label>
@@ -189,7 +196,7 @@ function AttributesBar({
               )}
             </div>
 
-            {typeof onChangeModel === 'function' && (
+            {onChangeModel && (
               <div className="attributes-change-model-section">
                 <Button
                   type="button"
@@ -210,7 +217,9 @@ function AttributesBar({
                   severity="danger"
                   outlined
                   onClick={() => {
-                    if (window.confirm('Remove this equipment from the layout?')) {
+                    if (
+                      window.confirm('Remove this equipment from the layout?')
+                    ) {
                       onDeleteEquipment(selectedItem.id);
                     }
                   }}
@@ -218,14 +227,15 @@ function AttributesBar({
               </div>
             )}
 
-            {/* GENERAL */}
             <h3 className="section-subtitle">General</h3>
             <div className="section-box">
               <div className="field">
                 <label>Name</label>
                 <InputText
-                  value={selectedItem.name || ""}
-                  onChange={(e) => onUpdateSettings(selectedItem.id, "name", e.target.value)}
+                  value={selectedItem.name || ''}
+                  onChange={(e) =>
+                    onUpdateSettings(selectedItem.id, 'name', e.target.value)
+                  }
                 />
               </div>
 
@@ -253,18 +263,24 @@ function AttributesBar({
                     <label>Rotation (°)</label>
                     <Slider
                       value={selectedItem.rotation || 0}
-                      onChange={(e) => onUpdateSettings(selectedItem.id, "rotation", e.value)}
+                      onChange={(e) =>
+                        onUpdateSettings(selectedItem.id, 'rotation', e.value)
+                      }
                       min={0}
                       max={360}
                     />
-                    <span className="slider-value">{selectedItem.rotation || 0}°</span>
+                    <span className="slider-value">
+                      {selectedItem.rotation || 0}°
+                    </span>
                   </div>
 
                   <div className="field">
                     <label>Camera Height (m)</label>
                     <InputNumber
                       value={selectedItem.height || 3}
-                      onValueChange={(e) => onUpdateSettings(selectedItem.id, "height", e.value)}
+                      onValueChange={(e) =>
+                        onUpdateSettings(selectedItem.id, 'height', e.value)
+                      }
                       min={1}
                       max={20}
                     />
@@ -274,11 +290,15 @@ function AttributesBar({
                     <label>Tilt (°)</label>
                     <Slider
                       value={selectedItem.tilt || 0}
-                      onChange={(e) => onUpdateSettings(selectedItem.id, "tilt", e.value)}
+                      onChange={(e) =>
+                        onUpdateSettings(selectedItem.id, 'tilt', e.value)
+                      }
                       min={-90}
                       max={90}
                     />
-                    <span className="slider-value">{selectedItem.tilt || 0}°</span>
+                    <span className="slider-value">
+                      {selectedItem.tilt || 0}°
+                    </span>
                   </div>
                 </div>
               </>
@@ -286,28 +306,64 @@ function AttributesBar({
 
             {isCamera && (
               <>
-                {/* LENS */}
                 <h3 className="section-subtitle">Lens & Optics</h3>
                 <div className="section-box">
                   <div className="field">
                     <label>Focal Length (mm)</label>
                     <InputNumber
                       value={selectedItem.focalLength || 2.8}
-                      onValueChange={(e) => onUpdateSettings(selectedItem.id, "focalLength", e.value)}
+                      onValueChange={(e) =>
+                        onUpdateSettings(
+                          selectedItem.id,
+                          'focalLength',
+                          e.value
+                        )
+                      }
                       min={1}
                       max={50}
                     />
                   </div>
+
+                  <div className="field">
+                    <label>Sensor Type</label>
+                    <Dropdown
+                      value={selectedItem.sensorType || '1/2.8'}
+                      options={sensorOptions}
+                      onChange={(e) =>
+                        onUpdateSettings(
+                          selectedItem.id,
+                          'sensorType',
+                          e.value
+                        )
+                      }
+                      placeholder="Select sensor size"
+                    />
+                  </div>
+
+                  <div className="field">
+                    <label>Corridor Mode</label>
+                    <InputSwitch
+                      checked={selectedItem.corridorMode || false}
+                      onChange={(e) =>
+                        onUpdateSettings(
+                          selectedItem.id,
+                          'corridorMode',
+                          e.value
+                        )
+                      }
+                    />
+                  </div>
                 </div>
 
-                {/* IR */}
                 <h3 className="section-subtitle">Infrared</h3>
                 <div className="section-box">
                   <div className="field">
                     <label>IR Range (m)</label>
                     <InputNumber
                       value={selectedItem.irRange || 30}
-                      onValueChange={(e) => onUpdateSettings(selectedItem.id, "irRange", e.value)}
+                      onValueChange={(e) =>
+                        onUpdateSettings(selectedItem.id, 'irRange', e.value)
+                      }
                       min={0}
                       max={200}
                     />
@@ -317,17 +373,12 @@ function AttributesBar({
             )}
           </TabPanel>
 
-          {/* =========================== */}
-          {/*       APPEARANCE TAB        */}
-          {/* =========================== */}
+          {/* APPEARANCE TAB */}
           <TabPanel header="Appearance" leftIcon="pi pi-palette mr-2">
-
             {isCamera && (
               <>
                 <h3 className="section-subtitle">FOV Appearance</h3>
                 <div className="section-box">
-
-                  {/* PRESET COLOURS */}
                   <div className="field">
                     <label>Preset Colours</label>
                     <div className="fov-swatches">
@@ -335,31 +386,38 @@ function AttributesBar({
                         <div
                           key={index}
                           className={`fov-swatch ${
-                            stripOpacity(color) === stripOpacity(selectedItem.fovColor) ? "selected" : ""
+                            stripOpacity(color) ===
+                            stripOpacity(selectedItem.fovColor)
+                              ? 'selected'
+                              : ''
                           }`}
                           style={{ backgroundColor: color }}
                           onClick={() => {
                             setShowPicker(false);
-                            onUpdateSettings(selectedItem.id, "fovColor", color);
+                            onUpdateSettings(
+                              selectedItem.id,
+                              'fovColor',
+                              color
+                            );
                           }}
                         />
                       ))}
 
-                      {/* CUSTOM COLOUR SWATCH */}
                       <div
                         ref={swatchRef}
-                        className={`fov-swatch custom ${!isPreset ? "selected" : ""}`}
+                        className={`fov-swatch custom ${
+                          !isPreset ? 'selected' : ''
+                        }`}
                         style={{ backgroundColor: selectedItem.fovColor }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          setShowPicker(prev => !prev);
+                          setShowPicker((prev) => !prev);
                         }}
                       >
                         <span className="edit-indicator">✎</span>
                       </div>
                     </div>
 
-                    {/* INLINE PICKER */}
                     {showPicker && (
                       <div ref={pickerRef} className="picker-inline">
                         <ColorPicker
@@ -368,14 +426,17 @@ function AttributesBar({
                           inline
                           onChange={(e) => {
                             const rgba = hexToRgba(e.value, currentOpacity);
-                            onUpdateSettings(selectedItem.id, "fovColor", rgba);
+                            onUpdateSettings(
+                              selectedItem.id,
+                              'fovColor',
+                              rgba
+                            );
                           }}
                         />
                       </div>
                     )}
                   </div>
 
-                  {/* OPACITY */}
                   <div className="field slider-field">
                     <label>Opacity</label>
                     <Slider
@@ -385,24 +446,34 @@ function AttributesBar({
                       step={0.05}
                       onChange={(e) => {
                         const newOpacity = e.value;
-                        onUpdateSettings(selectedItem.id, "fovOpacity", newOpacity);
+                        onUpdateSettings(
+                          selectedItem.id,
+                          'fovOpacity',
+                          newOpacity
+                        );
 
                         const hex = rgbaToHex(selectedItem.fovColor);
                         const rgba = hexToRgba(hex, newOpacity);
-                        onUpdateSettings(selectedItem.id, "fovColor", rgba);
+                        onUpdateSettings(
+                          selectedItem.id,
+                          'fovColor',
+                          rgba
+                        );
                       }}
                     />
-                    <span className="slider-value">{currentOpacity.toFixed(2)}</span>
+                    <span className="slider-value">
+                      {currentOpacity.toFixed(2)}
+                    </span>
                   </div>
                 </div>
               </>
             )}
 
-            {/* CUSTOM ICON */}
             <h3 className="section-subtitle">Custom Icon</h3>
             <div className="section-box">
               <div className="field">
                 <label>Icon</label>
+
                 <div className="custom-icon-row">
                   <div className="custom-icon-preview">
                     {selectedItem.customIcon ? (
@@ -414,6 +485,7 @@ function AttributesBar({
                       <span className="custom-icon-placeholder">Default</span>
                     )}
                   </div>
+
                   <div className="custom-icon-actions">
                     <input
                       ref={iconInputRef}
@@ -422,13 +494,17 @@ function AttributesBar({
                       style={{ display: 'none' }}
                       onChange={handleIconUpload}
                     />
+
                     <Button
                       type="button"
-                      label={selectedItem.customIcon ? 'Replace icon' : 'Upload icon'}
+                      label={
+                        selectedItem.customIcon ? 'Replace icon' : 'Upload icon'
+                      }
                       icon="pi pi-upload"
                       outlined
                       onClick={() => iconInputRef.current?.click()}
                     />
+
                     {selectedItem.customIcon && (
                       <Button
                         type="button"
@@ -441,9 +517,11 @@ function AttributesBar({
                     )}
                   </div>
                 </div>
+
                 <p className="custom-icon-hint">
                   PNG, JPG, SVG, WEBP or GIF. Max 1 MB.
                 </p>
+
                 {iconError && (
                   <p className="custom-icon-error">{iconError}</p>
                 )}
@@ -451,7 +529,6 @@ function AttributesBar({
             </div>
           </TabPanel>
         </TabView>
-
       </div>
     </Sidebar>
   );

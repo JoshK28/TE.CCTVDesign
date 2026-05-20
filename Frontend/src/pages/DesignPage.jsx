@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+
 import { Toast } from 'primereact/toast';
 import { Button } from 'primereact/button';
 
@@ -17,24 +18,37 @@ import { getLocalPoint } from '../utils/points';
 import { empty_Walls, segmentsToWallGraph, wallToSegments } from '../utils/wallsConverter';
 import useUndoRedo from '../hooks/useUndoRedo';
 
-// Imports for Modals & Document Capture
 import ExportModal from '../Components/ExportModal';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
 import '../page_styling/designPage.css';
 
+
+// ppm converter
+const scaleToPpm = (scaleString) => {
+  if (!scaleString || !scaleString.includes(":")) return null;
+  const ppm = parseFloat(scaleString.split(":")[1]);
+  return Number.isFinite(ppm) ? ppm : null;
+};
+
+
+// camera defaults
 const CAMERA_DEFAULTS = {
   focalLength: 2.8,
+  sensorType: "1/2.8",
+  corridorMode: false,
+  irRange: 30,
   height: 3,
   tilt: 0,
   resolution: '1080p',
-  irRange: 30,
   notes: '',
   fovOpacity: 0.3,
   fovColor: 'rgba(0, 150, 255, 0.3)',
 };
 
+
+// camera factory
 const createCamera = ({ x, y, name = '', attributes = {}, rotation = 0, id = Date.now() }) => ({
   id,
   type: 'camera',
@@ -47,6 +61,8 @@ const createCamera = ({ x, y, name = '', attributes = {}, rotation = 0, id = Dat
   attributes,
 });
 
+
+// device factory
 const createDevice = ({ x, y, type, name = '', attributes = {}, id = Date.now() }) => ({
   id,
   type,
@@ -56,10 +72,15 @@ const createDevice = ({ x, y, type, name = '', attributes = {}, id = Date.now() 
   attributes,
 });
 
+
+// ------------------------------------------------------
+// WORKSPACE
+// ------------------------------------------------------
 function Workspace({
   imageSrc,
   floorId,
   scale,
+  ppm,
   onUnsavedChanges = () => {},
   workspaceRef,
   exportOptions,
@@ -73,7 +94,7 @@ function Workspace({
 
   const toastRef = useRef(null);
 
-  // UNDO / REDO
+  // undo/redo
   const applyHistorySnapshot = useCallback(({ equipment: eq, wallGraphs: wg }) => {
     setEquipment(eq);
     setWallGraphs(wg);
@@ -84,13 +105,11 @@ function Workspace({
     applyHistorySnapshot
   );
 
-
-  // WALL GRAPH
-
   const currentWallGraph = floorId ? (wallGraphs[floorId] ?? empty_Walls) : empty_Walls;
   const currentWalls = wallToSegments(currentWallGraph);
 
-  // LOAD FLOOR DATA
+
+  // load placements + walls
   useEffect(() => {
     if (!floorId) return;
 
@@ -99,6 +118,7 @@ function Workspace({
     const fetchPlacements = async () => {
       try {
         const res = await api.get(`/api/camerplacements/${floorId}`);
+
         const loaded = (res.data ?? []).map((p) => {
           const attributes = {
             cameraId: p.cameraId ?? 0,
@@ -106,6 +126,7 @@ function Workspace({
             brand: p.brand ?? '',
             resolution: p.resolution ?? '',
           };
+
           const args = {
             x: p.x,
             y: p.y,
@@ -114,9 +135,22 @@ function Workspace({
             name: p.cameraModel ?? '',
             attributes,
           };
+
           const type = p.type || 'camera';
-          return type === 'camera' ? createCamera(args) : createDevice({ ...args, type });
+
+          if (type === 'camera') {
+            return {
+              ...createCamera(args),
+              focalLength: p.focalLength ?? 2.8,
+              sensorType: p.sensorType ?? "1/2.8",
+              corridorMode: p.corridorMode ?? false,
+              irRange: p.irRange ?? 30,
+            };
+          }
+
+          return createDevice({ ...args, type });
         });
+
         setEquipment(loaded);
       } catch (err) {
         console.error('Failed to load placements', err);
@@ -126,13 +160,21 @@ function Workspace({
     const fetchWalls = async () => {
       try {
         const res = await api.get(`/api/walls/${floorId}`);
+
         const loadedWalls = (res.data ?? []).map((w) => ({
-          id: w.wallID, x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2,
-          length: w.length, realWorldLength: w.realWorldLength, realWorldHeight: w.realWorldHeight
+          id: w.wallID,
+          x1: w.x1,
+          y1: w.y1,
+          x2: w.x2,
+          y2: w.y2,
+          length: w.length,
+          realWorldLength: w.realWorldLength,
+          realWorldHeight: w.realWorldHeight,
         }));
+
         setWallGraphs((prev) => ({
           ...prev,
-          [floorId]: segmentsToWallGraph(loadedWalls)
+          [floorId]: segmentsToWallGraph(loadedWalls),
         }));
       } catch (err) {
         console.error('Failed to load walls', err);
@@ -143,7 +185,8 @@ function Workspace({
     fetchWalls();
   }, [floorId]);
 
-  // EQUIPMENT SELECTOR HELPERS
+
+  // equipment selector
   const closeEquipmentSelector = () => setPendingEquipment(null);
 
   const openEquipmentSelector = ({ x, y, type, replaceItemId }) => {
@@ -160,7 +203,7 @@ function Workspace({
   };
 
 
-  // ESC / ENTER CANCEL TOOL
+  // esc/enter cancel
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (!activeTool) return;
@@ -175,19 +218,22 @@ function Workspace({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeTool]);
 
-  // UPDATE PLACEMENT (with history)
-  // `options.commit` (default true) pushes a snapshot onto the undo stack before applying the patch.
+
+  // update placement
   const updatePlacement = (id, patchOrBuilder, options = {}) => {
     const { commit: shouldCommit = true } = options;
+
     if (shouldCommit) commit();
 
     setEquipment((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
+
         const patch =
           typeof patchOrBuilder === 'function'
             ? patchOrBuilder(item)
             : patchOrBuilder;
+
         return { ...item, ...patch };
       })
     );
@@ -195,7 +241,8 @@ function Workspace({
     onUnsavedChanges(true);
   };
 
-  // NEW ITEM PLACEMENT (click or drag/drop)
+
+  // place new item
   const handleCanvasInteraction = (event) => {
     const droppedTool = event.dataTransfer ? event.dataTransfer.getData('tool') : '';
     const toolToPlace = droppedTool || activeTool;
@@ -210,6 +257,7 @@ function Workspace({
     closeEquipmentSelector();
   };
 
+
   const handleConfirmPlacement = ({ subtype, name, attributes = {} } = {}) => {
     if (!pendingEquipment) return;
 
@@ -219,47 +267,47 @@ function Workspace({
 
     if (replaceItemId != null) {
       const shouldUpdateType = type === 'device' && subtype;
+
       updatePlacement(replaceItemId, (item) => ({
         ...(shouldUpdateType ? { type: subtype.toLowerCase() } : {}),
         name: name ?? item.name,
         attributes: { ...(item.attributes ?? {}), ...attributes },
       }));
+
       setSelectedItemId(replaceItemId);
       return;
     }
 
     const resolvedType = type === 'device' && subtype ? subtype.toLowerCase() : type;
     const factory = resolvedType === 'camera' ? createCamera : createDevice;
-    const newObject = factory({ x, y, type: resolvedType, name, attributes });
 
+    const newObject = factory({ x, y, type: resolvedType, name, attributes });
     setEquipment((prev) => [...prev, newObject]);
     setSelectedItemId(newObject.id);
+
     onUnsavedChanges(true);
   };
 
-  // -----------------------------
-  // CHANGE EQUIPMENT MODEL
-  // -----------------------------
+
+  // change model
   const handleChangeModel = (item) => {
     if (!item) return;
+
     const selectorType = item.type === 'camera' ? 'camera' : 'device';
     openEquipmentSelector({ x: item.x, y: item.y, type: selectorType, replaceItemId: item.id });
   };
 
-  // -----------------------------
-  // DELETE EQUIPMENT
-  // -----------------------------
+
+  // delete
   const handleDeleteEquipment = (id) => {
     commit();
-
     setEquipment((prev) => prev.filter((item) => item.id !== id));
     setSelectedItemId(null);
     onUnsavedChanges(true);
   };
 
-  // -----------------------------
-  // WALL GRAPH CHANGE
-  // -----------------------------
+
+  // wall graph change
   const handleWallGraphChange = (updater) => {
     if (!floorId || typeof updater !== 'function') return;
 
@@ -273,9 +321,8 @@ function Workspace({
     onUnsavedChanges(true);
   };
 
-  // -----------------------------
-  // SAVE
-  // -----------------------------
+
+  // save
   const handleSave = async () => {
     if (!floorId) {
       toastRef.current?.show({
@@ -300,7 +347,13 @@ function Workspace({
         type: item.type || 'camera',
         cameraModel: item.attributes?.cameraModel ?? '',
         brand: item.attributes?.brand ?? '',
-        resolution: item.attributes?.resolution ?? ''
+        resolution: item.attributes?.resolution ?? '',
+
+        // new FOV fields
+        focalLength: item.focalLength,
+        sensorType: item.sensorType,
+        corridorMode: item.corridorMode,
+        irRange: item.irRange,
       }));
 
       await api.post(`/api/camerplacements/save/${floorId}`, placements);
@@ -311,8 +364,7 @@ function Workspace({
         y1: wall.y1,
         x2: wall.x2,
         y2: wall.y2,
-        length:
-          wall.length ?? Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1),
+        length: wall.length ?? Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1),
         realWorldLength: wall.realWorldLength ?? 0,
         realWorldHeight: wall.realWorldHeight ?? 0,
       }));
@@ -344,14 +396,13 @@ function Workspace({
     }
   };
 
+
   const showFov = exportOptions ? exportOptions.showFov !== false : true;
   const showWalls = showFov;
-
   const branding = exportOptions?.brandingActive && exportOptions?.brandingData;
 
-  // -----------------------------
-  // RENDER
-  // -----------------------------
+
+  // render
   return (
     <div className="design-workspace">
       <Toast ref={toastRef} position="top-right" />
@@ -399,7 +450,13 @@ function Workspace({
               .map((item) => (
                 <polygon
                   key={item.id}
-                  points={calculateFovPolygon(item, currentWalls)}
+                  points={calculateFovPolygon(item, currentWalls, {
+                    ppm,
+                    sensorType: item.sensorType,
+                    corridorMode: item.corridorMode,
+                    focalLength: item.focalLength,
+                    maxDistanceMeters: item.irRange,
+                  })}
                   fill={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
                   stroke={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
                   strokeWidth="2"
@@ -444,6 +501,7 @@ function Workspace({
               undo();
             }}
           />
+
           <Button
             type="button"
             icon="pi pi-refresh"
@@ -456,6 +514,7 @@ function Workspace({
               redo();
             }}
           />
+
           <Button
             type="button"
             label="Save"
@@ -495,6 +554,10 @@ function Workspace({
   );
 }
 
+
+// ------------------------------------------------------
+// DESIGN PAGE WRAPPER
+// ------------------------------------------------------
 function DesignPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -509,14 +572,24 @@ function DesignPage() {
 
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportWorkspaceConfig, setExportWorkspaceConfig] = useState({
-    showFov: true, brandingActive: false, brandingData: null,
+    showFov: true,
+    brandingActive: false,
+    brandingData: null,
   });
 
   const workspaceRef = useRef(null);
 
+
   useEffect(() => {
-    if (imageSrcFromState) { setLoading(false); return; }
-    if (!projectId) { navigate('/app/projects'); return; }
+    if (imageSrcFromState) {
+      setLoading(false);
+      return;
+    }
+
+    if (!projectId) {
+      navigate('/app/projects');
+      return;
+    }
 
     const fetchFloorLayouts = async () => {
       try {
@@ -528,50 +601,74 @@ function DesignPage() {
         setLoading(false);
       }
     };
+
     fetchFloorLayouts();
   }, [projectId, imageSrcFromState, navigate]);
 
-  // Switch to a layer with the given export config, wait for paint, then rasterise.
+
   const renderLayer = async (idx, settings, scale, delay) => {
     setSelectedLayer(idx);
+
     setExportWorkspaceConfig({
       showFov: settings.showFov,
-      brandingActive: true, brandingData: settings.branding,
+      brandingActive: true,
+      brandingData: settings.branding,
     });
+
     await new Promise((r) => setTimeout(r, delay));
+
     if (!workspaceRef.current) return null;
-    try { return await html2canvas(workspaceRef.current, { useCORS: true, scale }); }
-    catch (err) { console.error(err); return null; }
+
+    try {
+      return await html2canvas(workspaceRef.current, { useCORS: true, scale });
+    } catch (err) {
+            console.error(err);
+      return null;
+    }
   };
 
   const handleExecuteExport = async (settings) => {
     setExportModalOpen(false);
+
     const filename = settings.branding.projectTitle.replace(/\s+/g, '_');
+
     const layers = settings.selectedLayerIds?.length
-      ? floorLayouts.flatMap((l, i) => settings.selectedLayerIds.includes(l.floorID) ? [i] : [])
+      ? floorLayouts.flatMap((l, i) =>
+          settings.selectedLayerIds.includes(l.floorID) ? [i] : []
+        )
       : [selectedLayer];
+
     const original = selectedLayer;
 
     if (settings.exportType === 'png') {
       for (const i of layers) {
         const canvas = await renderLayer(i, settings, 2, 350);
         if (!canvas) continue;
-        Object.assign(document.createElement('a'), {
-          download: `${filename}_Layer_${floorLayouts[i]?.layer || i + 1}.png`,
-          href: canvas.toDataURL('image/png'),
-        }).click();
+
+        const link = document.createElement('a');
+        link.download = `${filename}_Layer_${floorLayouts[i]?.layer || i + 1}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
       }
     } else if (settings.exportType === 'pdf') {
       const orient = settings.orientation === 'portrait' ? 'p' : 'l';
       let pdf = null;
+
       for (const i of layers) {
         const canvas = await renderLayer(i, settings, 1.5, 400);
         if (!canvas) continue;
+
         const { width: w, height: h } = canvas;
-        if (!pdf) pdf = new jsPDF({ orientation: orient, unit: 'px', format: [w, h] });
-        else pdf.addPage([w, h], orient);
+
+        if (!pdf) {
+          pdf = new jsPDF({ orientation: orient, unit: 'px', format: [w, h] });
+        } else {
+          pdf.addPage([w, h], orient);
+        }
+
         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, w, h);
       }
+
       pdf?.save(`${filename}_Report.pdf`);
     }
 
@@ -593,6 +690,7 @@ function DesignPage() {
 
   const currentFloorId =
     floorLayouts.length > 0 ? floorLayouts[selectedLayer]?.floorID : null;
+
   const currentScale =
     floorLayouts.length > 0 ? floorLayouts[selectedLayer]?.scale ?? '' : '';
 
@@ -609,29 +707,51 @@ function DesignPage() {
 
   const handleBomButton = () => {
     if (hasUnsavedChanges) {
-      const ok = window.confirm('You have unsaved changes. Please save before viewing the Bill of Materials.');
+      const ok = window.confirm(
+        'You have unsaved changes. Please save before viewing the Bill of Materials.'
+      );
       if (!ok) return;
     }
+
     navigate('/app/bom', { state: { projectId } });
   };
 
   return (
     <div className="design-page-container">
       <div className="design-topbar">
-        <button onClick={handleBackButton} className="design-back-btn">&larr; Back to Projects</button>
-        <button onClick={handleBomButton} className="design-nav-btn">📦 BOM</button>
-        <button onClick={() => navigate('/app/calculator', { state: { projectId } })} className="design-nav-btn">💾 Storage</button>
-        <button onClick={() => navigate('/app/ups', { state: { projectId } })} className="design-nav-btn">🔋 UPS</button>
+        <button onClick={handleBackButton} className="design-back-btn">
+          &larr; Back to Projects
+        </button>
 
-        <button onClick={() => setExportModalOpen(true)} className="design-export-btn">
+        <button onClick={handleBomButton} className="design-nav-btn">📦 BOM</button>
+
+        <button
+          onClick={() => navigate('/app/calculator', { state: { projectId } })}
+          className="design-nav-btn"
+        >
+          💾 Storage
+        </button>
+
+        <button
+          onClick={() => navigate('/app/ups', { state: { projectId } })}
+          className="design-nav-btn"
+        >
+          🔋 UPS
+        </button>
+
+        <button
+          onClick={() => setExportModalOpen(true)}
+          className="design-export-btn"
+        >
           <span>📤</span> Export Plan Layout
         </button>
       </div>
-      
+
       <Workspace
         imageSrc={currentImageSrc}
         floorId={currentFloorId}
         scale={currentScale}
+        ppm={scaleToPpm(currentScale)}
         onUnsavedChanges={setHasUnsavedChanges}
         workspaceRef={workspaceRef}
         exportOptions={exportWorkspaceConfig}
@@ -644,7 +764,9 @@ function DesignPage() {
               key={layout.floorID}
               type="button"
               label={`Layer ${layout.layer}`}
-              className={`design-layer-btn${selectedLayer === index ? ' design-layer-btn--active' : ''}`}
+              className={`design-layer-btn${
+                selectedLayer === index ? ' design-layer-btn--active' : ''
+              }`}
               onClick={() => setSelectedLayer(index)}
             />
           ))}
