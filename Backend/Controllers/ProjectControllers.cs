@@ -132,7 +132,26 @@ namespace Backend.Controllers
             if (project == null)
                 return NotFound("Project not found");
 
-            return Ok(project);
+            // map to anonymous object to avoid circular reference
+            return Ok(new
+            {
+                project.ProjectID,
+                project.Title,
+                project.Address,
+                project.Description,
+                project.UserID,
+                FloorLayouts = project.FloorLayouts.Select(f => new
+                {
+                    f.FloorID,
+                    f.FileName,
+                    f.Layer,
+                    f.Scale,
+                    f.Width,
+                    f.Height,
+                    f.ImageContentType
+                    // intentionally omitting f.Project and f.ImageData to avoid cycle and large payloads
+                })
+            });
         }
 
         // handles DELETE requests to /api/projects/{id}
