@@ -41,6 +41,12 @@ namespace Backend.Data
         // allows the app to read and write the Wall location
         public DbSet<Wall> Walls => Set<Wall>();
 
+        // represents the CustomCameras table - globally accessible user-created camera variants
+        public DbSet<CustomCamera> CustomCameras => Set<CustomCamera>();
+
+        // represents the Obstacles table - drawn shapes on the design canvas
+        public DbSet<Obstacle> Obstacles => Set<Obstacle>();
+
         // this method runs when the database is first being set up
         // it pre-fills the Cameras table with 21 HikVision cameras
         // so the data is automatically available without manual entry
@@ -94,6 +100,24 @@ namespace Backend.Data
                 .HasOne(c => c.AccessControlDevice)
                 .WithMany()
                 .HasForeignKey(c => c.AccessControlId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Obstacle>()
+                .HasOne(o => o.FloorLayout)
+                .WithMany()
+                .HasForeignKey(o => o.FloorID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CustomCamera>()
+                .HasOne(c => c.CreatedBy)
+                .WithMany()
+                .HasForeignKey(c => c.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict); // don't delete custom cameras if user is deleted
+
+            modelBuilder.Entity<CameraPlacement>()
+                .HasOne(c => c.CustomCamera)
+                .WithMany()
+                .HasForeignKey(c => c.CustomCameraId)
                 .OnDelete(DeleteBehavior.SetNull);
         }
     }
