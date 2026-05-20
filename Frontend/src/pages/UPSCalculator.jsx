@@ -1,14 +1,8 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import AppLayout from "../Components/AppLayout";
 import "../page_styling/upsCalculator.css";
 import api from "../services/api";
-
-const NAV = [
-  { label: "⬅ Back to Dashboard", to: "/app/dashboard" },
-  { label: "📊 Storage Calculator", to: "/app/calculator" },
-  { label: "🔋 UPS Calculator", to: "/app/ups" },
-];
 
 function UPSCalculator({ onLogout }) {
   const location = useLocation();
@@ -19,6 +13,17 @@ function UPSCalculator({ onLogout }) {
   const [batterySize, setBatterySize] = useState(100);
   const [loading, setLoading] = useState(false);
   const [projectName, setProjectName] = useState("");
+  const navigate = useNavigate();
+  const fromDesign = !!projectId;
+
+  const NAV = fromDesign
+  ? [{ label: "⬅ Back to Design", onClick: () => navigate(-1) }]
+  : [
+      { label: "⬅ Back to Dashboard", to: "/app/dashboard" },
+      { label: "📂 View Projects", to: "/app/projects" },
+      { label: "📊 Storage Calculator", to: "/app/calculator" },
+      { label: "🔋 UPS Calculator", to: "/app/ups" },
+    ];
 
   // auto populate rows if projectId is provided
   useEffect(() => {
@@ -85,6 +90,7 @@ function UPSCalculator({ onLogout }) {
             Project: {projectName}
           </p>
         )}
+        
         {loading && <p>Loading project devices...</p>}
 
         <div className="controls">
@@ -124,12 +130,14 @@ function UPSCalculator({ onLogout }) {
                   <input
                     type="number"
                     value={r.power}
+                    min="0"
                     onChange={(e) => updateRow(i, { power: Number(e.target.value) })}
                   />
                 </td>
                 <td>
                   <input
                     type="number"
+                    min="1"
                     value={r.units}
                     onChange={(e) => updateRow(i, { units: Number(e.target.value) })}
                   />
@@ -149,6 +157,7 @@ function UPSCalculator({ onLogout }) {
             <label>Battery Size (Ah): </label>
             <input
               type="number"
+              min="0"
               value={batterySize}
               onChange={(e) => setBatterySize(e.target.value)}
             />
