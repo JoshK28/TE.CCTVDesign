@@ -8,7 +8,8 @@ import {
   Equipment,
   EquipmentSelector,
   AttributesBar,
-  WallDrawingLayer
+  WallDrawingLayer,
+  ObstacleDrawingLayer
 } from '../Components/index';
 
 import api from '../services/api';
@@ -69,6 +70,7 @@ function Workspace({
   const [pendingEquipment, setPendingEquipment] = useState(null);
   const [equipment, setEquipment] = useState([]);
   const [wallGraphs, setWallGraphs] = useState({});
+  const [obstacles, setObstacles] = useState([]);
   const [saving, setSaving] = useState(false);
 
   const toastRef = useRef(null);
@@ -141,6 +143,20 @@ function Workspace({
 
     fetchPlacements();
     fetchWalls();
+
+    const fetchObstacles = async () => {
+      try {
+        const res = await api.get(`/api/obstacles/floor/${floorId}`);
+        const loaded = (res.data ?? []).map((o) => ({
+          ...o,
+          id: o.obstacleId, 
+        }));
+        setObstacles(loaded);
+      } catch (err) {
+        console.error('Failed to load obstacles', err);
+      }
+    };
+    fetchObstacles();
   }, [floorId]);
 
   // EQUIPMENT SELECTOR HELPERS
@@ -342,6 +358,18 @@ function Workspace({
     } finally {
       setSaving(false);
     }
+    
+    const obstaclesToSave = obstacles.map((o) => ({
+      floorID: floorId,
+      label: o.label,
+      x: o.x,
+      y: o.y,
+      width: o.width,
+      height: o.height,
+      rotation: o.rotation ?? 0,
+      color: o.color ?? '#FF0000',
+    }));
+    await api.post(`/api/obstacles/save/${floorId}`, obstaclesToSave);
   };
 
   const showFov = exportOptions ? exportOptions.showFov !== false : true;
@@ -399,7 +427,7 @@ function Workspace({
               .map((item) => (
                 <polygon
                   key={item.id}
-                  points={calculateFovPolygon(item, currentWalls)}
+                  points={calculateFovPolygon(item, currentWalls, {}, obstacles)}
                   fill={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
                   stroke={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
                   strokeWidth="2"
@@ -407,15 +435,6 @@ function Workspace({
               ))}
           </svg>
         )}
-
-        {equipment.map((item) => (
-          <Equipment
-            key={item.id}
-            deviceInstance={item}
-            onSelect={setSelectedItemId}
-            onUpdatePlacement={updatePlacement}
-          />
-        ))}
 
         {showWalls && (
           <WallDrawingLayer
@@ -426,6 +445,25 @@ function Workspace({
             onExitWallMode={() => armTool(null)}
           />
         )}
+
+        <ObstacleDrawingLayer
+          activeTool={activeTool}
+          obstacles={obstacles}
+          onObstaclesChange={(updater) => {
+            setObstacles(typeof updater === 'function' ? updater(obstacles) : updater);
+            onUnsavedChanges(true);
+          }}
+          onExitObstacleMode={() => armTool(null)}
+        />
+        
+        {equipment.map((item) => (
+          <Equipment
+            key={item.id}
+            deviceInstance={item}
+            onSelect={setSelectedItemId}
+            onUpdatePlacement={updatePlacement}
+          />
+        ))}
 
         <p className="item-count" data-html2canvas-ignore="true">
           Items Placed: {equipment.length}
