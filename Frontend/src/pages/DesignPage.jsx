@@ -91,10 +91,20 @@ function Workspace({
   const [equipment, setEquipment] = useState([]);
   const [wallGraphs, setWallGraphs] = useState({});
   const [saving, setSaving] = useState(false);
-
   const toastRef = useRef(null);
 
-  // undo/redo
+  /* -----------------------------
+     MEASURE TOOL STATE
+  ----------------------------- */
+  const [measureStart, setMeasureStart] = useState(null);
+  const [measureEnd, setMeasureEnd] = useState(null);
+  const [measurePreview, setMeasurePreview] = useState(null);
+  const [measureCursor, setMeasureCursor] = useState(null);
+  const [measureEscCount, setMeasureEscCount] = useState(0);
+
+  /* -----------------------------
+     UNDO / REDO
+  ----------------------------- */
   const applyHistorySnapshot = useCallback(({ equipment: eq, wallGraphs: wg }) => {
     setEquipment(eq);
     setWallGraphs(wg);
@@ -105,11 +115,12 @@ function Workspace({
     applyHistorySnapshot
   );
 
-  const currentWallGraph = floorId ? (wallGraphs[floorId] ?? empty_Walls) : empty_Walls;
+  const currentWallGraph = floorId ? wallGraphs[floorId] ?? empty_Walls : empty_Walls;
   const currentWalls = wallToSegments(currentWallGraph);
 
-
-  // load placements + walls
+  /* -----------------------------
+     LOAD PLACEMENTS + WALLS
+  ----------------------------- */
   useEffect(() => {
     if (!floorId) return;
 
@@ -118,13 +129,12 @@ function Workspace({
     const fetchPlacements = async () => {
       try {
         const res = await api.get(`/api/camerplacements/${floorId}`);
-
         const loaded = (res.data ?? []).map((p) => {
           const attributes = {
             cameraId: p.cameraId ?? 0,
-            cameraModel: p.cameraModel ?? '',
-            brand: p.brand ?? '',
-            resolution: p.resolution ?? '',
+            cameraModel: p.cameraModel ?? "",
+            brand: p.brand ?? "",
+            resolution: p.resolution ?? "",
           };
 
           const args = {
@@ -132,13 +142,13 @@ function Workspace({
             y: p.y,
             id: p.placementID ?? Date.now(),
             rotation: p.rotation ?? 0,
-            name: p.cameraModel ?? '',
+            name: p.cameraModel ?? "",
             attributes,
           };
 
-          const type = p.type || 'camera';
+          const type = p.type || "camera";
 
-          if (type === 'camera') {
+          if (type === "camera") {
             return {
               ...createCamera(args),
               focalLength: p.focalLength ?? 2.8,
@@ -153,14 +163,13 @@ function Workspace({
 
         setEquipment(loaded);
       } catch (err) {
-        console.error('Failed to load placements', err);
+        console.error("Failed to load placements", err);
       }
     };
 
     const fetchWalls = async () => {
       try {
         const res = await api.get(`/api/walls/${floorId}`);
-
         const loadedWalls = (res.data ?? []).map((w) => ({
           id: w.wallID,
           x1: w.x1,
@@ -177,7 +186,7 @@ function Workspace({
           [floorId]: segmentsToWallGraph(loadedWalls),
         }));
       } catch (err) {
-        console.error('Failed to load walls', err);
+        console.error("Failed to load walls", err);
       }
     };
 
@@ -185,8 +194,9 @@ function Workspace({
     fetchWalls();
   }, [floorId]);
 
-
-  // equipment selector
+  /* -----------------------------
+     TOOL ARMING
+  ----------------------------- */
   const closeEquipmentSelector = () => setPendingEquipment(null);
 
   const openEquipmentSelector = ({ x, y, type, replaceItemId }) => {
@@ -200,26 +210,56 @@ function Workspace({
   const armTool = (tool) => {
     closeEquipmentSelector();
     setActiveTool(tool);
+
+    if (tool === "measure") {
+      setMeasureStart(null);
+      setMeasureEnd(null);
+      setMeasurePreview(null);
+      setMeasureCursor(null);
+      setMeasureEscCount(0);
+    }
   };
 
-
-  // esc/enter cancel
+  /* -----------------------------
+     ESC / ENTER HANDLING
+  ----------------------------- */
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (!activeTool) return;
-      if (activeTool === 'wall') return;
+      if (activeTool !== "measure") return;
 
-      if (event.key === 'Escape' || event.key === 'Enter') {
-        armTool(null);
+      if (event.key === "Escape") {
+        if (measureStart || measureEnd || measurePreview) {
+          // First ESC clears measurement
+          setMeasureStart(null);
+          setMeasureEnd(null);
+          setMeasurePreview(null);
+          setMeasureCursor(null);
+          setMeasureEscCount(1);
+          return;
+        }
+
+        // Second ESC exits tool
+        if (measureEscCount === 1) {
+          setMeasureEscCount(0);
+          setActiveTool(null);
+        }
+      }
+
+      if (event.key === "Enter") {
+        if (measureStart && !measureEnd && measurePreview) {
+          setMeasureEnd(measurePreview);
+          setMeasurePreview(null);
+        }
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTool]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeTool, measureStart, measureEnd, measurePreview, measureEscCount]);
 
-
-  // update placement
+  /* -----------------------------
+     UPDATE PLACEMENT
+  ----------------------------- */
   const updatePlacement = (id, patchOrBuilder, options = {}) => {
     const { commit: shouldCommit = true } = options;
 
@@ -230,7 +270,7 @@ function Workspace({
         if (item.id !== id) return item;
 
         const patch =
-          typeof patchOrBuilder === 'function'
+          typeof patchOrBuilder === "function"
             ? patchOrBuilder(item)
             : patchOrBuilder;
 
@@ -241,13 +281,36 @@ function Workspace({
     onUnsavedChanges(true);
   };
 
-
-  // place new item
+  /* -----------------------------
+     CANVAS INTERACTION
+  ----------------------------- */
   const handleCanvasInteraction = (event) => {
-    const droppedTool = event.dataTransfer ? event.dataTransfer.getData('tool') : '';
+    if (activeTool === "measure") {
+      const { x, y } = getLocalPoint(event, event.currentTarget);
+
+      // First click
+      if (!measureStart) {
+        setMeasureStart({ x, y });
+        setMeasureCursor(null); // stop cursor preview
+        return;
+      }
+
+      // Second click
+      if (!measureEnd) {
+        setMeasureEnd({ x, y });
+        setMeasurePreview(null);
+        return;
+      }
+
+      // After finishing, ignore further clicks
+      return;
+    }
+
+    // Equipment placement
+    const droppedTool = event.dataTransfer ? event.dataTransfer.getData("tool") : "";
     const toolToPlace = droppedTool || activeTool;
 
-    if (toolToPlace && toolToPlace !== 'wall') {
+    if (toolToPlace && toolToPlace !== "wall") {
       const { x, y } = getLocalPoint(event, event.currentTarget);
       openEquipmentSelector({ x, y, type: toolToPlace });
       return;
@@ -257,7 +320,37 @@ function Workspace({
     closeEquipmentSelector();
   };
 
+  /* -----------------------------
+     LIVE PREVIEW MOVEMENT
+  ----------------------------- */
+  const handlePointerMove = (e) => {
+    if (activeTool === "measure") {
+      const pt = getLocalPoint(e, e.currentTarget);
 
+      // Always track cursor for preview circle
+      if (!measureStart) {
+        setMeasureCursor(pt);
+      }
+
+      // Only show preview line if start exists and end does not
+      if (measureStart && !measureEnd) {
+        setMeasurePreview(pt);
+      }
+    }
+  };
+
+  /* -----------------------------
+     RIGHT CLICK DISABLED
+  ----------------------------- */
+  const handleContextMenu = (e) => {
+    if (activeTool === "measure") {
+      e.preventDefault();
+    }
+  };
+
+  /* -----------------------------
+     CONFIRM PLACEMENT
+  ----------------------------- */
   const handleConfirmPlacement = ({ subtype, name, attributes = {} } = {}) => {
     if (!pendingEquipment) return;
 
@@ -266,7 +359,7 @@ function Workspace({
     const { x, y, type, replaceItemId } = pendingEquipment;
 
     if (replaceItemId != null) {
-      const shouldUpdateType = type === 'device' && subtype;
+      const shouldUpdateType = type === "device" && subtype;
 
       updatePlacement(replaceItemId, (item) => ({
         ...(shouldUpdateType ? { type: subtype.toLowerCase() } : {}),
@@ -278,27 +371,29 @@ function Workspace({
       return;
     }
 
-    const resolvedType = type === 'device' && subtype ? subtype.toLowerCase() : type;
-    const factory = resolvedType === 'camera' ? createCamera : createDevice;
+    const resolvedType = type === "device" && subtype ? subtype.toLowerCase() : type;
+    const factory = resolvedType === "camera" ? createCamera : createDevice;
 
     const newObject = factory({ x, y, type: resolvedType, name, attributes });
+
     setEquipment((prev) => [...prev, newObject]);
     setSelectedItemId(newObject.id);
-
     onUnsavedChanges(true);
   };
 
-
-  // change model
+  /* -----------------------------
+     CHANGE MODEL
+  ----------------------------- */
   const handleChangeModel = (item) => {
     if (!item) return;
 
-    const selectorType = item.type === 'camera' ? 'camera' : 'device';
+    const selectorType = item.type === "camera" ? "camera" : "device";
     openEquipmentSelector({ x: item.x, y: item.y, type: selectorType, replaceItemId: item.id });
   };
 
-
-  // delete
+  /* -----------------------------
+     DELETE EQUIPMENT
+  ----------------------------- */
   const handleDeleteEquipment = (id) => {
     commit();
     setEquipment((prev) => prev.filter((item) => item.id !== id));
@@ -306,10 +401,11 @@ function Workspace({
     onUnsavedChanges(true);
   };
 
-
-  // wall graph change
+  /* -----------------------------
+     WALL GRAPH CHANGE
+  ----------------------------- */
   const handleWallGraphChange = (updater) => {
-    if (!floorId || typeof updater !== 'function') return;
+    if (!floorId || typeof updater !== "function") return;
 
     commit();
 
@@ -321,14 +417,15 @@ function Workspace({
     onUnsavedChanges(true);
   };
 
-
-  // save
+  /* -----------------------------
+     SAVE
+  ----------------------------- */
   const handleSave = async () => {
     if (!floorId) {
       toastRef.current?.show({
-        severity: 'warn',
-        summary: 'Cannot save',
-        detail: 'No floor layout selected',
+        severity: "warn",
+        summary: "Cannot save",
+        detail: "No floor layout selected",
       });
       return;
     }
@@ -344,12 +441,10 @@ function Workspace({
         x: item.x,
         y: item.y,
         rotation: item.rotation || 0,
-        type: item.type || 'camera',
-        cameraModel: item.attributes?.cameraModel ?? '',
-        brand: item.attributes?.brand ?? '',
-        resolution: item.attributes?.resolution ?? '',
-
-        // new FOV fields
+        type: item.type || "camera",
+        cameraModel: item.attributes?.cameraModel ?? "",
+        brand: item.attributes?.brand ?? "",
+        resolution: item.attributes?.resolution ?? "",
         focalLength: item.focalLength,
         sensorType: item.sensorType,
         corridorMode: item.corridorMode,
@@ -372,37 +467,37 @@ function Workspace({
       await api.post(`/api/walls/save/${floorId}`, wallsToSave);
 
       toastRef.current?.show({
-        severity: 'success',
-        detail: 'Placements and walls saved successfully.',
+        severity: "success",
+        detail: "Placements and walls saved successfully.",
       });
 
       onUnsavedChanges(false);
     } catch (err) {
       const apiMessage = err?.response?.data;
       const errorText =
-        typeof apiMessage === 'string'
+        typeof apiMessage === "string"
           ? apiMessage
-          : apiMessage?.message || err?.message || 'Failed to save';
+          : apiMessage?.message || err?.message || "Failed to save";
 
       toastRef.current?.show({
-        severity: 'error',
-        summary: 'Save failed',
+        severity: "error",
+        summary: "Save failed",
         detail: errorText,
       });
 
-      console.error('Failed to save', err);
+      console.error("Failed to save", err);
     } finally {
       setSaving(false);
     }
   };
 
-
   const showFov = exportOptions ? exportOptions.showFov !== false : true;
   const showWalls = showFov;
   const branding = exportOptions?.brandingActive && exportOptions?.brandingData;
 
-
-  // render
+  /* -----------------------------
+     RENDER
+  ----------------------------- */
   return (
     <div className="design-workspace">
       <Toast ref={toastRef} position="top-right" />
@@ -415,6 +510,8 @@ function Workspace({
         ref={workspaceRef}
         className="image-fullscreen-wrapper"
         onClick={handleCanvasInteraction}
+        onPointerMove={handlePointerMove}
+        onContextMenu={handleContextMenu}
         onDrop={(event) => {
           event.preventDefault();
           handleCanvasInteraction(event);
@@ -436,7 +533,7 @@ function Workspace({
             )}
             <div>
               <h4 className="floating-branding__title">
-                {branding.projectTitle || 'Specification Layout'}
+                {branding.projectTitle || "Specification Layout"}
               </h4>
               <p className="floating-branding__company">{branding.companyName}</p>
             </div>
@@ -446,7 +543,7 @@ function Workspace({
         {showFov && (
           <svg className="fov-overlay">
             {equipment
-              .filter((item) => item.type === 'camera')
+              .filter((item) => item.type === "camera")
               .map((item) => (
                 <polygon
                   key={item.id}
@@ -457,11 +554,133 @@ function Workspace({
                     focalLength: item.focalLength,
                     maxDistanceMeters: item.irRange,
                   })}
-                  fill={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
-                  stroke={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
+                  fill={item.fovColor ?? "rgba(0, 150, 255, 0.3)"}
+                  stroke={item.fovColor ?? "rgba(0, 150, 255, 0.3)"}
                   strokeWidth="2"
                 />
               ))}
+          </svg>
+        )}
+
+        {/* CURSOR PREVIEW START CIRCLE */}
+        {activeTool === "measure" && !measureStart && measureCursor && (
+          <svg className="measure-overlay">
+            <circle
+              cx={measureCursor.x}
+              cy={measureCursor.y}
+              className="measure-point-start"
+            />
+          </svg>
+        )}
+
+        {/* FINAL MEASUREMENT */}
+        {measureStart && measureEnd && (
+          <svg className="measure-overlay">
+            {/* Start point */}
+            <circle
+              cx={measureStart.x}
+              cy={measureStart.y}
+              className="measure-point-start"
+            />
+
+            {/* End point */}
+            <circle
+              cx={measureEnd.x}
+              cy={measureEnd.y}
+              className="measure-point-end"
+            />
+
+            {/* Line */}
+            <line
+              x1={measureStart.x}
+              y1={measureStart.y}
+              x2={measureEnd.x}
+              y2={measureEnd.y}
+              className="measure-line"
+            />
+
+            {/* Label */}
+            {(() => {
+              const midX = (measureStart.x + measureEnd.x) / 2;
+              const midY = (measureStart.y + measureEnd.y) / 2;
+              const dist = (
+                Math.hypot(
+                  measureEnd.x - measureStart.x,
+                  measureEnd.y - measureStart.y
+                ) / ppm
+              ).toFixed(2);
+
+              return (
+                <>
+                  <rect
+                    x={midX - 30}
+                    y={midY - 14}
+                    width="60"
+                    height="28"
+                    className="measure-label-bg"
+                  />
+                  <text
+                    x={midX}
+                    y={midY}
+                    className="measure-label-text"
+                  >
+                    {dist} m
+                  </text>
+                </>
+              );
+            })()}
+          </svg>
+        )}
+
+        {/* LIVE PREVIEW */}
+        {measureStart && !measureEnd && measurePreview && (
+          <svg className="measure-overlay">
+            {/* Start point */}
+            <circle
+              cx={measureStart.x}
+              cy={measureStart.y}
+              className="measure-point-start"
+            />
+
+            {/* Preview line */}
+            <line
+              x1={measureStart.x}
+              y1={measureStart.y}
+              x2={measurePreview.x}
+              y2={measurePreview.y}
+              className="measure-line measure-line--preview"
+            />
+
+            {/* Preview label */}
+            {(() => {
+              const midX = (measureStart.x + measurePreview.x) / 2;
+              const midY = (measureStart.y + measurePreview.y) / 2;
+              const dist = (
+                Math.hypot(
+                  measurePreview.x - measureStart.x,
+                  measurePreview.y - measureStart.y
+                ) / ppm
+              ).toFixed(2);
+
+                            return (
+                <>
+                  <rect
+                    x={midX - 30}
+                    y={midY - 14}
+                    width="60"
+                    height="28"
+                    className="measure-label-bg"
+                  />
+                  <text
+                    x={midX}
+                    y={midY}
+                    className="measure-label-text"
+                  >
+                    {dist} m
+                  </text>
+                </>
+              );
+            })()}
           </svg>
         )}
 
@@ -495,7 +714,7 @@ function Workspace({
             severity="secondary"
             disabled={!canUndo}
             tooltip="Undo (Ctrl+Z)"
-            tooltipOptions={{ position: 'bottom' }}
+            tooltipOptions={{ position: "bottom" }}
             onClick={(e) => {
               e.stopPropagation();
               undo();
@@ -508,7 +727,7 @@ function Workspace({
             severity="secondary"
             disabled={!canRedo}
             tooltip="Redo (Ctrl+Y)"
-            tooltipOptions={{ position: 'bottom' }}
+            tooltipOptions={{ position: "bottom" }}
             onClick={(e) => {
               e.stopPropagation();
               redo();

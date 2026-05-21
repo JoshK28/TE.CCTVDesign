@@ -176,3 +176,77 @@
   background: #245d91;
   font-weight: bold;
 }
+
+.measure-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 40; /* Above FOV and walls */
+}
+
+/* Final measurement line */
+.measure-line {
+  stroke: white;
+  stroke-width: 4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px black);
+}
+
+/* Live preview line */
+.measure-line--preview {
+  stroke: white;
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 2px black);
+}
+
+/* Start point circle */
+.measure-point-start {
+  fill: white;
+  stroke: black;
+  stroke-width: 2;
+  r: 6;
+}
+
+/* End point circle */
+.measure-point-end {
+  fill: red;
+  stroke: black;
+  stroke-width: 2;
+  r: 6;
+}
+
+/* Label background */
+.measure-label-bg {
+  fill: rgba(50, 50, 50, 0.9);
+  stroke: black;
+  stroke-width: 0.5;
+  rx: 4;
+  ry: 4;
+}
+
+/* Label text */
+.measure-label-text {
+  fill: white;
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: none;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+/* Legacy label classes (still used by your Workspace) */
+.measure-label {
+  fill: white;
+  font-size: 14px;
+  font-weight: 600;
+  text-shadow: 0 0 3px black;
+  pointer-events: none;
+}
+
+.measure-label--preview {
+  opacity: 0.85;
+}

@@ -9,6 +9,13 @@ export default function Toolbar({ onSelectTool }) {
         switch (label) {
             case 'camera':
                 return securityCameraIcon;
+            case 'measure':
+                // PrimeIcons ruler-ish icon
+                return 'pi pi-arrows-h';
+            case 'wall':
+                return 'pi pi-minus';
+            case 'device':
+                return 'pi pi-box';
             default:
                 return null;
         }
@@ -16,6 +23,8 @@ export default function Toolbar({ onSelectTool }) {
 
     const draggableItem = (item) => {
         const iconSrc = getIconFor(item.label);
+        const isImage = iconSrc && !iconSrc.startsWith('pi ');
+
         return (
             <div
                 draggable
@@ -29,7 +38,7 @@ export default function Toolbar({ onSelectTool }) {
                     background: '#212529',
                 }}
             >
-                {iconSrc ? (
+                {isImage ? (
                     <img
                         src={iconSrc}
                         alt=""
@@ -42,8 +51,8 @@ export default function Toolbar({ onSelectTool }) {
                             pointerEvents: 'none'
                         }}
                     />
-                ) : item.label === 'device' ? (
-                    <span className="pi pi-box" style={{ marginRight: '0.5rem' }}></span>
+                ) : iconSrc ? (
+                    <span className={iconSrc} style={{ marginRight: '0.5rem' }}></span>
                 ) : (
                     <span className="pi pi-question-circle" style={{ marginRight: '0.5rem' }}></span>
                 )}
@@ -52,15 +61,24 @@ export default function Toolbar({ onSelectTool }) {
         );
     };
 
-    const selectableItem = (item) => (
-        <div
-            onClick={() => onSelectTool(item.label)}
-            style={{ padding: '0.75rem 1.25rem', cursor: 'pointer' }}
-        >
-            <span className="pi pi-bars" style={{ marginRight: '0.5rem' }}></span>
-            {item.label}
-        </div>
-    );
+    const selectableItem = (item) => {
+        const iconClass = getIconFor(item.label);
+        const isPrimeIcon = iconClass && iconClass.startsWith('pi ');
+
+        return (
+            <div
+                onClick={() => onSelectTool(item.label)}
+                style={{ padding: '0.75rem 1.25rem', cursor: 'pointer' }}
+            >
+                {isPrimeIcon ? (
+                    <span className={iconClass} style={{ marginRight: '0.5rem' }}></span>
+                ) : (
+                    <span className="pi pi-bars" style={{ marginRight: '0.5rem' }}></span>
+                )}
+                {item.label}
+            </div>
+        );
+    };
 
     const items = [
         {
@@ -81,6 +99,17 @@ export default function Toolbar({ onSelectTool }) {
             items: [[
                 { items: [{ label: 'wall', template: selectableItem }] }
             ]]
+        },
+        {
+            label: 'Tools',
+            icon: 'pi pi-wrench',
+            items: [[
+                {
+                    items: [
+                        { label: 'measure', template: selectableItem }
+                    ]
+                }
+            ]]
         }
     ];
 
@@ -99,9 +128,8 @@ export default function Toolbar({ onSelectTool }) {
                 style={{ 
                     background: 'transparent', 
                     border: 'none',
-                    color: '#ffffff !inportant'
+                    color: '#ffffff !important'
                 }}
-                // You can add global css class hooks to style inner items cleanly
                 className="dark-dashboard-menu"
             />
         </div>

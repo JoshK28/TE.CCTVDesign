@@ -1,3 +1,4 @@
+import { Tooltip } from 'primereact/tooltip';
 import securityCameraIcon from '../assets/Icons/security-camera.png';
 import domeIcon from '../assets/Icons/Dome.png';
 import routerIcon from '../assets/Icons/Router.png';
@@ -23,7 +24,6 @@ const ICONS = {
 };
 
 const getIcon = (deviceInstance) => {
-  // Custom user-uploaded icon takes precedence over defaults.
   if (deviceInstance?.customIcon) {
     return renderImg(deviceInstance.customIcon);
   }
@@ -43,6 +43,21 @@ const getIcon = (deviceInstance) => {
 
 function Equipment({ deviceInstance, onSelect, onUpdatePlacement }) {
   const { id, x, y, rotation = 0 } = deviceInstance;
+
+  // Tooltip content
+  const name = deviceInstance.name || deviceInstance.attributes?.cameraModel || 'Unnamed device';
+  const type = deviceInstance.type || 'Unknown';
+  const model = deviceInstance.attributes?.cameraModel || deviceInstance.attributes?.modelName || '—';
+  const brand = deviceInstance.attributes?.brand || '';
+  const resolution = deviceInstance.attributes?.resolution || '';
+
+  const tooltipContent = `
+Name: ${name}
+Type: ${type}
+Model: ${model}
+${brand ? `Brand: ${brand}` : ''}
+${resolution ? `Resolution: ${resolution}` : ''}
+  `.trim();
 
   const handlePointerDown = (e) => {
     e.stopPropagation();
@@ -74,24 +89,29 @@ function Equipment({ deviceInstance, onSelect, onUpdatePlacement }) {
   };
 
   return (
-    <div
-      className="equipment"
-      onPointerDown={handlePointerDown}
-      onClick={(e) => {
-        e.stopPropagation();
-        onSelect(id);
-      }}
-      style={{
-        left: x,
-        top: y,
-        position: 'absolute',
-        transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-        userSelect: 'none',
-        cursor: 'grab',
-      }}
-    >
-      {getIcon(deviceInstance)}
-    </div>
+    <>
+      <Tooltip target={`#equip-${id}`} content={tooltipContent} position="top" />
+
+      <div
+        id={`equip-${id}`}
+        className="equipment"
+        onPointerDown={handlePointerDown}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect(id);
+        }}
+        style={{
+          left: x,
+          top: y,
+          position: 'absolute',
+          transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+          userSelect: 'none',
+          cursor: 'grab',
+        }}
+      >
+        {getIcon(deviceInstance)}
+      </div>
+    </>
   );
 }
 
