@@ -138,6 +138,7 @@ function AttributesBar({
 
   const attrs = selectedItem.attributes ?? {};
   const isCamera = selectedItem.type === 'camera';
+  const isDevice = !isCamera;
   const brandName = attrs.brand ?? '';
   const modelName = attrs.cameraModel ?? attrs.modelName ?? selectedItem.name ?? '';
   const costPerUnit = attrs.costPerUnit;
@@ -162,6 +163,7 @@ function AttributesBar({
 
         <TabView
           className="attributes-tabview"
+          scrollable
           activeIndex={activeTab}
           onTabChange={(e) => setActiveTab(e.index)}
         >
@@ -316,6 +318,14 @@ function AttributesBar({
               </>
             )}
           </TabPanel>
+
+          {isDevice && (
+            <TabPanel header="Specifications" leftIcon="pi pi-list-check mr-2">
+              <div className="section-box specifications-empty">
+                {/* Device specification fields will be added here later. */}
+              </div>
+            </TabPanel>
+          )}
 
           {/* =========================== */}
           {/*       APPEARANCE TAB        */}

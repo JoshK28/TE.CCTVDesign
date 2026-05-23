@@ -108,9 +108,18 @@
 /* -----------------------------
    TABS
 ----------------------------- */
+.attributes-tabview.p-tabview-scrollable .p-tabview-nav-container {
+  overflow: hidden;
+}
+
 .attributes-tabview .p-tabview-nav {
   border-bottom: 1px solid #e0e0e0;
   margin-bottom: 12px;
+}
+
+.attributes-tabview.p-tabview-scrollable .p-tabview-nav-content {
+  flex: 1;
+  overflow: hidden;
 }
 
 .attributes-tabview .p-tabview-panels {
@@ -133,6 +142,10 @@
   margin: 0;
   font-size: 13px;
   color: #777;
+}
+
+.specifications-empty {
+  min-height: 120px;
 }
 
 /* -----------------------------
