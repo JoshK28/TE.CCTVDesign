@@ -146,6 +146,17 @@ function AttributesBar({
   const propertiesTitle = rawType
     ? `${rawType.charAt(0).toUpperCase()}${rawType.slice(1)} properties`
     : 'Properties';
+  const deviceSpecifications = attrs.deviceSpecifications ?? {};
+
+  function updateDeviceSpecification(field, value) {
+    onUpdateSettings(selectedItem.id, 'attributes', {
+      ...attrs,
+      deviceSpecifications: {
+        ...deviceSpecifications,
+        [field]: value ?? 0,
+      },
+    });
+  }
 
   return (
     <Sidebar
@@ -321,8 +332,63 @@ function AttributesBar({
 
           {isDevice && (
             <TabPanel header="Specifications" leftIcon="pi pi-list-check mr-2">
-              <div className="section-box specifications-empty">
-                {/* Device specification fields will be added here later. */}
+              <div className="section-box device-specifications-card">
+                <div className="device-specifications-header">
+                  <i className="pi pi-cog device-specifications-icon" aria-hidden />
+                  <div>
+                    <h3>Basic Specifications</h3>
+                    <p>Core device specifications and capabilities</p>
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label>Max Resolution</label>
+                  <div className="specification-input-row">
+                    <InputNumber
+                      value={deviceSpecifications.maxResolutionMp ?? 0}
+                      onValueChange={(e) => updateDeviceSpecification('maxResolutionMp', e.value)}
+                      min={0}
+                      useGrouping={false}
+                    />
+                    <span className="specification-unit">MP</span>
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label>Number of Channels</label>
+                  <InputNumber
+                    value={deviceSpecifications.channelCount ?? 0}
+                    onValueChange={(e) => updateDeviceSpecification('channelCount', e.value)}
+                    min={0}
+                    useGrouping={false}
+                  />
+                </div>
+
+                <div className="field">
+                  <label>Input Bandwidth</label>
+                  <div className="specification-input-row">
+                    <InputNumber
+                      value={deviceSpecifications.inputBandwidthMbps ?? 0}
+                      onValueChange={(e) => updateDeviceSpecification('inputBandwidthMbps', e.value)}
+                      min={0}
+                      useGrouping={false}
+                    />
+                    <span className="specification-unit">Mbps</span>
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label>Output Bandwidth</label>
+                  <div className="specification-input-row">
+                    <InputNumber
+                      value={deviceSpecifications.outputBandwidthMbps ?? 0}
+                      onValueChange={(e) => updateDeviceSpecification('outputBandwidthMbps', e.value)}
+                      min={0}
+                      useGrouping={false}
+                    />
+                    <span className="specification-unit">Mbps</span>
+                  </div>
+                </div>
               </div>
             </TabPanel>
           )}
