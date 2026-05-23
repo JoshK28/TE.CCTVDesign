@@ -1,7 +1,6 @@
 ﻿import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Toast } from 'primereact/toast';
-import { Button } from 'primereact/button';
 
 import {
   Toolbar,
@@ -437,42 +436,42 @@ function Workspace({
         </p>
 
         <div className="workspace-actions" data-html2canvas-ignore="true">
-          <Button
+          <button
             type="button"
-            icon="pi pi-undo"
-            severity="secondary"
+            className="design-nav-btn"
             disabled={!canUndo}
-            tooltip="Undo (Ctrl+Z)"
-            tooltipOptions={{ position: 'bottom' }}
+            title="Undo (Ctrl+Z)"
             onClick={(e) => {
               e.stopPropagation();
               undo();
             }}
-          />
-          <Button
+          >
+            <i className="pi pi-undo" />
+          </button>
+          <button
             type="button"
-            icon="pi pi-refresh"
-            severity="secondary"
+            className="design-nav-btn"
             disabled={!canRedo}
-            tooltip="Redo (Ctrl+Y)"
-            tooltipOptions={{ position: 'bottom' }}
+            title="Redo (Ctrl+Y)"
             onClick={(e) => {
               e.stopPropagation();
               redo();
             }}
-          />
-          <Button
+          >
+            <i className="pi pi-refresh" />
+          </button>
+          <button
             type="button"
-            label="Save"
-            icon="pi pi-save"
-            severity="success"
-            loading={saving}
+            className="workspace-save-btn"
             disabled={saving}
             onClick={(e) => {
               e.stopPropagation();
               handleSave();
             }}
-          />
+          >
+            <i className={`pi ${saving ? 'pi-spin pi-spinner' : 'pi-save'}`} />
+            {saving ? 'Saving...' : 'Save'}
+          </button>
         </div>
       </div>
 
@@ -645,13 +644,14 @@ function DesignPage() {
       {floorLayouts.length > 1 && (
         <div className="design-layer-controls">
           {floorLayouts.map((layout, index) => (
-            <Button
+            <button
               key={layout.floorID}
               type="button"
-              label={`Layer ${layout.layer}`}
               className={`design-layer-btn${selectedLayer === index ? ' design-layer-btn--active' : ''}`}
               onClick={() => setSelectedLayer(index)}
-            />
+            >
+              Layer {layout.layer}
+            </button>
           ))}
         </div>
       )}

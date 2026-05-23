@@ -27,6 +27,11 @@
   font-weight: 500;
 }
 
+.design-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .design-back-btn {
   padding: 8px 15px;
   background-color: transparent;
@@ -112,6 +117,25 @@
   gap: 8px;
 }
 
+.workspace-save-btn {
+  padding: 8px 16px;
+  background-color: #198754;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workspace-save-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .floating-branding {
   position: absolute;
   top: 20px;
@@ -163,16 +187,18 @@
   z-index: 1000;
 }
 
-.design-layer-btn.p-button {
+.design-layer-btn {
   padding: 6px 16px;
   border-radius: 20px;
   background: #343a40;
   color: #ffffff;
   font-weight: normal;
+  font-size: 13.5px;
   border: none;
+  cursor: pointer;
 }
 
-.design-layer-btn--active.p-button {
+.design-layer-btn--active {
   background: #245d91;
   font-weight: bold;
 }
