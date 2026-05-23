@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getLocalPoint } from '../utils/points';
+import { getImagePoint } from '../utils/points';
 import {
   closestLinkIdAt,
   parsePixelsPerMeter,
@@ -28,9 +28,14 @@ function WallLengthLabel({ x1, y1, x2, y2, pixelsPerMeter, className = 'wall-len
   ) : null;
 }
 
-export function WallOverlay({ wallGraph, scale, selectedLinkId }) {
+const getViewBox = (imageSize) =>
+  imageSize?.naturalWidth && imageSize?.naturalHeight
+    ? `0 0 ${imageSize.naturalWidth} ${imageSize.naturalHeight}`
+    : undefined;
+
+export function WallOverlay({ wallGraph, scale, selectedLinkId, imageSize }) {
   return (
-    <svg className="wall-overlay">
+    <svg className="wall-overlay" viewBox={getViewBox(imageSize)} preserveAspectRatio="none">
       {wallToSegments(wallGraph).map((w) => (
         <g key={w.id}>
           <line
@@ -44,7 +49,7 @@ export function WallOverlay({ wallGraph, scale, selectedLinkId }) {
   );
 }
 
-export default function WallDrawingLayer({ wallGraph, scale, onWallGraphChange, onExitWallMode }) {
+export default function WallDrawingLayer({ wallGraph, scale, imageSize, onWallGraphChange, onExitWallMode }) {
   const [draft, setDraft] = useState(null);
   const [dragPostId, setDragPostId] = useState(null);
   const [selectedLinkId, setSelectedLinkId] = useState(null);
@@ -83,7 +88,7 @@ export default function WallDrawingLayer({ wallGraph, scale, onWallGraphChange, 
 
   const handlePointerDown = (e) => {
     if (mode !== 'edit') return;
-    const post = postAt(getLocalPoint(e, e.currentTarget));
+    const post = postAt(getImagePoint(e, e.currentTarget, imageSize));
     if (!post) return;
     e.preventDefault();
     e.stopPropagation();
@@ -91,7 +96,7 @@ export default function WallDrawingLayer({ wallGraph, scale, onWallGraphChange, 
   };
 
   const handlePointerMove = (e) => {
-    const point = getLocalPoint(e, e.currentTarget);
+    const point = getImagePoint(e, e.currentTarget, imageSize);
 
     if (mode === 'edit' && dragPostId) {
       onWallGraphChange?.((g) => ({
@@ -108,7 +113,7 @@ export default function WallDrawingLayer({ wallGraph, scale, onWallGraphChange, 
     e.preventDefault();
     e.stopPropagation();
 
-    const point = getLocalPoint(e, e.currentTarget);
+    const point = getImagePoint(e, e.currentTarget, imageSize);
     if (mode === 'edit') {
       const post = postAt(point);
       setSelectedPostId(post?.id ?? null);
@@ -140,8 +145,8 @@ export default function WallDrawingLayer({ wallGraph, scale, onWallGraphChange, 
 
   return (
     <>
-      <WallOverlay wallGraph={wallGraph} scale={scale} selectedLinkId={selectedLinkId} />
-      <svg className="wall-overlay">
+      <WallOverlay wallGraph={wallGraph} scale={scale} selectedLinkId={selectedLinkId} imageSize={imageSize} />
+      <svg className="wall-overlay" viewBox={getViewBox(imageSize)} preserveAspectRatio="none">
         {mode === 'edit' &&
           posts.map((p) => (
             <circle

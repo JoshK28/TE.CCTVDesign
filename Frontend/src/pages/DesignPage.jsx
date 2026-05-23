@@ -13,7 +13,7 @@ import {
 
 import api from '../services/api';
 import { calculateFovPolygon } from '../utils/fov';
-import { getLocalPoint } from '../utils/points';
+import { getImagePoint } from '../utils/points';
 import { empty_Walls, segmentsToWallGraph, wallToSegments } from '../utils/wallsConverter';
 import useUndoRedo from '../hooks/useUndoRedo';
 
@@ -72,6 +72,61 @@ function Workspace({
   const [saving, setSaving] = useState(false);
 
   const toastRef = useRef(null);
+  const imageRef = useRef(null);
+  const [imageSize, setImageSize] = useState(null);
+
+  const measureFloorImage = useCallback(() => {
+    const image = imageRef.current;
+    const wrapper = workspaceRef?.current;
+    if (!image || !wrapper || !image.naturalWidth || !image.naturalHeight) return;
+
+    const styles = window.getComputedStyle(wrapper);
+    const availableWidth =
+      wrapper.clientWidth - parseFloat(styles.paddingLeft || 0) - parseFloat(styles.paddingRight || 0);
+    const availableHeight =
+      wrapper.clientHeight - parseFloat(styles.paddingTop || 0) - parseFloat(styles.paddingBottom || 0);
+    const displayScale = Math.min(
+      availableWidth / image.naturalWidth,
+      availableHeight / image.naturalHeight,
+      1
+    );
+
+    const nextSize = {
+      naturalWidth: image.naturalWidth,
+      naturalHeight: image.naturalHeight,
+      displayWidth: image.naturalWidth * displayScale,
+      displayHeight: image.naturalHeight * displayScale,
+    };
+
+    setImageSize((prev) => (
+      prev &&
+      prev.naturalWidth === nextSize.naturalWidth &&
+      prev.naturalHeight === nextSize.naturalHeight &&
+      Math.round(prev.displayWidth) === Math.round(nextSize.displayWidth) &&
+      Math.round(prev.displayHeight) === Math.round(nextSize.displayHeight)
+        ? prev
+        : nextSize
+    ));
+  }, [workspaceRef]);
+
+  useEffect(() => {
+    setImageSize(null);
+  }, [imageSrc]);
+
+  useEffect(() => {
+    const wrapper = workspaceRef?.current;
+    if (!wrapper) return undefined;
+
+    const observer = new ResizeObserver(measureFloorImage);
+    observer.observe(wrapper);
+    window.addEventListener('resize', measureFloorImage);
+    measureFloorImage();
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', measureFloorImage);
+    };
+  }, [measureFloorImage, workspaceRef]);
 
   // UNDO / REDO
   const applyHistorySnapshot = useCallback(({ equipment: eq, wallGraphs: wg }) => {
@@ -198,11 +253,12 @@ function Workspace({
 
   // NEW ITEM PLACEMENT (click or drag/drop)
   const handleCanvasInteraction = (event) => {
+    event.stopPropagation();
     const droppedTool = event.dataTransfer ? event.dataTransfer.getData('tool') : '';
     const toolToPlace = droppedTool || activeTool;
 
     if (toolToPlace && toolToPlace !== 'wall') {
-      const { x, y } = getLocalPoint(event, event.currentTarget);
+      const { x, y } = getImagePoint(event, event.currentTarget, imageSize);
       openEquipmentSelector({ x, y, type: toolToPlace });
       return;
     }
@@ -349,6 +405,12 @@ function Workspace({
   const showWalls = showFov;
 
   const branding = exportOptions?.brandingActive && exportOptions?.brandingData;
+  const stageStyle = imageSize
+    ? { width: `${imageSize.displayWidth}px`, height: `${imageSize.displayHeight}px` }
+    : undefined;
+  const overlayViewBox = imageSize
+    ? `0 0 ${imageSize.naturalWidth} ${imageSize.naturalHeight}`
+    : undefined;
 
   // -----------------------------
   // RENDER
@@ -364,72 +426,87 @@ function Workspace({
       <div
         ref={workspaceRef}
         className="image-fullscreen-wrapper"
-        onClick={handleCanvasInteraction}
-        onDrop={(event) => {
-          event.preventDefault();
-          handleCanvasInteraction(event);
+        onClick={() => {
+          setSelectedItemId(null);
+          closeEquipmentSelector();
         }}
         onDragOver={(e) => e.preventDefault()}
       >
-        <img
-          src={imageSrc}
-          alt="Full-screen design layout"
-          className="fullscreen-image"
-          draggable="false"
-          crossOrigin="anonymous"
-        />
+        <div
+          className="floorplan-stage"
+          style={stageStyle}
+          onClick={handleCanvasInteraction}
+          onDrop={(event) => {
+            event.preventDefault();
+            handleCanvasInteraction(event);
+          }}
+          onDragOver={(e) => e.preventDefault()}
+        >
+          <img
+            ref={imageRef}
+            src={imageSrc}
+            alt="Full-screen design layout"
+            className="fullscreen-image"
+            draggable="false"
+            crossOrigin="anonymous"
+            onLoad={measureFloorImage}
+            style={imageSize ? { width: '100%', height: '100%' } : undefined}
+          />
 
-        {branding && (
-          <div className="floating-branding">
-            {branding.logo && (
-              <img src={branding.logo} alt="Logo" className="floating-branding__logo" />
-            )}
-            <div>
-              <h4 className="floating-branding__title">
-                {branding.projectTitle || 'Specification Layout'}
-              </h4>
-              <p className="floating-branding__company">{branding.companyName}</p>
+          {branding && (
+            <div className="floating-branding">
+              {branding.logo && (
+                <img src={branding.logo} alt="Logo" className="floating-branding__logo" />
+              )}
+              <div>
+                <h4 className="floating-branding__title">
+                  {branding.projectTitle || 'Specification Layout'}
+                </h4>
+                <p className="floating-branding__company">{branding.companyName}</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {showFov && (
-          <svg className="fov-overlay">
-            {equipment
-              .filter((item) => item.type === 'camera')
-              .map((item) => (
-                <polygon
-                  key={item.id}
-                  points={calculateFovPolygon(item, currentWalls)}
-                  fill={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
-                  stroke={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
-                  strokeWidth="2"
-                />
-              ))}
-          </svg>
-        )}
+          {showFov && (
+            <svg className="fov-overlay" viewBox={overlayViewBox} preserveAspectRatio="none">
+              {equipment
+                .filter((item) => item.type === 'camera')
+                .map((item) => (
+                  <polygon
+                    key={item.id}
+                    points={calculateFovPolygon(item, currentWalls)}
+                    fill={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
+                    stroke={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
+                    strokeWidth="2"
+                  />
+                ))}
+            </svg>
+          )}
 
-        {equipment.map((item) => (
-          <Equipment
-            key={item.id}
-            deviceInstance={item}
-            onSelect={setSelectedItemId}
-            onUpdatePlacement={updatePlacement}
-          />
-        ))}
+          {equipment.map((item) => (
+            <Equipment
+              key={item.id}
+              deviceInstance={item}
+              imageSize={imageSize}
+              onSelect={setSelectedItemId}
+              onUpdatePlacement={updatePlacement}
+            />
+          ))}
 
-        {showWalls && activeTool !== 'wall' && (
-          <WallOverlay wallGraph={currentWallGraph} scale={scale} />
-        )}
+          {showWalls && activeTool !== 'wall' && (
+            <WallOverlay wallGraph={currentWallGraph} scale={scale} imageSize={imageSize} />
+          )}
 
-        {activeTool === 'wall' && (
-          <WallDrawingLayer
-            wallGraph={currentWallGraph}
-            scale={scale}
-            onWallGraphChange={handleWallGraphChange}
-            onExitWallMode={() => armTool(null)}
-          />
-        )}
+          {activeTool === 'wall' && (
+            <WallDrawingLayer
+              wallGraph={currentWallGraph}
+              scale={scale}
+              imageSize={imageSize}
+              onWallGraphChange={handleWallGraphChange}
+              onExitWallMode={() => armTool(null)}
+            />
+          )}
+        </div>
 
         <p className="item-count" data-html2canvas-ignore="true">
           Items Placed: {equipment.length}
