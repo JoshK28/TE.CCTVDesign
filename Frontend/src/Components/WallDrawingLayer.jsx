@@ -14,19 +14,27 @@ const HIT_R = 10;
 const WALL_PICK = 14;
 const newId = () => `post-${Date.now()}`;
 const newLinkId = () => `link-${Date.now()}`;
+const WALL_HINTS = {
+  draw: 'Draw walls on the canvas. Press Enter or Esc when finished to continue to editing.',
+  edit: 'Wall editing mode — click a wall or post to select, Delete or Backspace to remove. Press Enter or Esc to exit.',
+};
 
-export default function WallDrawingLayer({
-  activeTool,
-  wallGraph,
-  scale,
-  onWallGraphChange,
-  onExitWallMode,
-}) {
+function WallLengthLabel({ x1, y1, x2, y2, pixelsPerMeter, className = 'wall-length-label' }) {
+  const label = segmentLengthText(x1, y1, x2, y2, pixelsPerMeter);
+  return label ? (
+    <text x={(x1 + x2) / 2} y={(y1 + y2) / 2} className={className}>
+      {label}
+    </text>
+  ) : null;
+}
+
+export default function WallDrawingLayer({ activeTool, wallGraph, scale, onWallGraphChange, onExitWallMode }) {
   const [draft, setDraft] = useState(null);
   const [dragPostId, setDragPostId] = useState(null);
   const [selectedLinkId, setSelectedLinkId] = useState(null);
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [mode, setMode] = useState('draw');
+  const isWallTool = activeTool === 'wall';
   const posts = wallGraph?.posts ?? [];
   const segments = wallToSegments(wallGraph);
   const pixelsPerMeter = parsePixelsPerMeter(scale);
@@ -34,174 +42,140 @@ export default function WallDrawingLayer({
   const postAt = (pt) => posts.find((p) => Math.hypot(p.x - pt.x, p.y - pt.y) <= HIT_R) ?? null;
 
   useEffect(() => {
-    if (activeTool !== 'wall') {
+    if (!isWallTool) {
       setDraft(null);
       setDragPostId(null);
-      setSelectedLinkId(null);
-      setSelectedPostId(null);
-      return;
-    }
-    setMode('draw');
+    } else setMode('draw');
     setSelectedLinkId(null);
     setSelectedPostId(null);
-  }, [activeTool]);
+  }, [isWallTool]);
 
   useEffect(() => {
-    if (activeTool !== 'wall') return;
-    const kd = (e) => {
+    if (!isWallTool) return;
+    const handleKeyDown = (e) => {
       if (mode === 'draw' && (e.key === 'Enter' || e.key === 'Escape')) {
         setDraft(null);
         setMode('edit');
         return;
       }
       if (mode !== 'edit') return;
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedLinkId) {
+
+      const isDeleteKey = e.key === 'Delete' || e.key === 'Backspace';
+      if (isDeleteKey && (selectedLinkId || selectedPostId)) {
         e.preventDefault();
-        onWallGraphChange?.((g) => removeWallLink(g, selectedLinkId));
+        onWallGraphChange?.((g) => (selectedLinkId ? removeWallLink(g, selectedLinkId) : removeWallPost(g, selectedPostId)));
         setSelectedLinkId(null);
-        return;
-      }
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedPostId) {
-        e.preventDefault();
-        onWallGraphChange?.((g) => removeWallPost(g, selectedPostId));
         setSelectedPostId(null);
         return;
       }
       if (e.key === 'Enter' || e.key === 'Escape') onExitWallMode?.();
     };
-    window.addEventListener('keydown', kd);
-    return () => window.removeEventListener('keydown', kd);
-  }, [activeTool, mode, onExitWallMode, onWallGraphChange, selectedLinkId, selectedPostId]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isWallTool, mode, onExitWallMode, onWallGraphChange, selectedLinkId, selectedPostId]);
 
   const chainStart = draft && byId.get(draft.startPostId);
   const endDrag = () => setDragPostId(null);
 
+  const handlePointerDown = (e) => {
+    if (!isWallTool || mode !== 'edit') return;
+    const post = postAt(getLocalPoint(e, e.currentTarget));
+    if (!post) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragPostId(post.id);
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isWallTool) return;
+    const point = getLocalPoint(e, e.currentTarget);
+
+    if (mode === 'edit' && dragPostId) {
+      onWallGraphChange?.((g) => ({
+        ...g,
+        posts: (g.posts ?? []).map((p) => (p.id === dragPostId ? { ...p, x: point.x, y: point.y } : p)),
+      }));
+      return;
+    }
+
+    if (mode === 'draw' && draft) setDraft((d) => ({ ...d, previewPoint: point }));
+  };
+
+  const handleClick = (e) => {
+    if (!isWallTool) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const point = getLocalPoint(e, e.currentTarget);
+    if (mode === 'edit') {
+      const post = postAt(point);
+      setSelectedPostId(post?.id ?? null);
+      setSelectedLinkId(post ? null : closestLinkIdAt(wallGraph, point.x, point.y, WALL_PICK));
+      return;
+    }
+
+    if (mode !== 'draw') return;
+    if (!draft) {
+      const id = newId();
+      onWallGraphChange?.((g) => ({ ...g, posts: [...(g.posts ?? []), { id, x: point.x, y: point.y }] }));
+      setDraft({ startPostId: id, previewPoint: point });
+      return;
+    }
+
+    const start = byId.get(draft.startPostId);
+    const snap = postAt(point);
+    const end = snap ?? point;
+    if (!start || Math.hypot(end.x - start.x, end.y - start.y) < MIN_LEN) return;
+
+    const nextId = snap?.id ?? newId();
+    onWallGraphChange?.((g) => ({
+      ...g,
+      posts: snap ? g.posts ?? [] : [...(g.posts ?? []), { id: nextId, x: end.x, y: end.y }],
+      links: [...(g.links ?? []), { id: newLinkId(), aPostId: draft.startPostId, bPostId: nextId }],
+    }));
+    setDraft({ startPostId: nextId, previewPoint: end });
+  };
+
   return (
     <>
       <svg className="wall-overlay">
-        {segments.map((w) => {
-          const midX = (w.x1 + w.x2) / 2;
-          const midY = (w.y1 + w.y2) / 2;
-          const label = segmentLengthText(w.x1, w.y1, w.x2, w.y2, pixelsPerMeter);
-          return (
-            <g key={w.id}>
-              <line
-                x1={w.x1}
-                y1={w.y1}
-                x2={w.x2}
-                y2={w.y2}
-                className={w.id === selectedLinkId ? 'wall-line wall-line--selected' : 'wall-line'}
-              />
-              {label ? (
-                <text x={midX} y={midY} className="wall-length-label">
-                  {label}
-                </text>
-              ) : null}
-            </g>
-          );
-        })}
+        {segments.map((w) => (
+          <g key={w.id}>
+            <line
+              x1={w.x1} y1={w.y1} x2={w.x2} y2={w.y2}
+              className={w.id === selectedLinkId ? 'wall-line wall-line--selected' : 'wall-line'}
+            />
+            <WallLengthLabel {...w} pixelsPerMeter={pixelsPerMeter} />
+          </g>
+        ))}
         {mode === 'edit' &&
           posts.map((p) => (
             <circle
-              key={p.id}
-              cx={p.x}
-              cy={p.y}
-              r="5"
+              key={p.id} cx={p.x} cy={p.y} r="5"
               className={p.id === selectedPostId ? 'wall-post-handle wall-post-handle--selected' : 'wall-post-handle'}
             />
           ))}
         {mode === 'draw' && chainStart && draft?.previewPoint && (
           <g>
             <line
-              x1={chainStart.x}
-              y1={chainStart.y}
-              x2={draft.previewPoint.x}
-              y2={draft.previewPoint.y}
+              x1={chainStart.x} y1={chainStart.y} x2={draft.previewPoint.x} y2={draft.previewPoint.y}
               className="wall-line wall-line--draft"
             />
-            {pixelsPerMeter ? (
-              <text
-                x={(chainStart.x + draft.previewPoint.x) / 2}
-                y={(chainStart.y + draft.previewPoint.y) / 2}
-                className="wall-length-label wall-length-label--draft"
-              >
-                {segmentLengthText(
-                  chainStart.x,
-                  chainStart.y,
-                  draft.previewPoint.x,
-                  draft.previewPoint.y,
-                  pixelsPerMeter
-                )}
-              </text>
-            ) : null}
+            <WallLengthLabel
+              x1={chainStart.x} y1={chainStart.y} x2={draft.previewPoint.x} y2={draft.previewPoint.y} pixelsPerMeter={pixelsPerMeter}
+              className="wall-length-label wall-length-label--draft"
+            />
           </g>
         )}
       </svg>
-      {activeTool === 'wall' ? (
+      {isWallTool ? (
         <p className="wall-mode-hint" role="status">
-          {mode === 'draw'
-            ? 'Draw walls on the canvas. Press Enter or Esc when finished to continue to editing.'
-            : 'Wall editing mode — click a wall or post to select, Delete or Backspace to remove. Press Enter or Esc to exit.'}
+          {WALL_HINTS[mode]}
         </p>
       ) : null}
       <div
-        className={`wall-draw-capture${activeTool === 'wall' ? ` is-active is-${mode}-phase` : ''}`}
-        onPointerDown={(e) => {
-          if (activeTool !== 'wall' || mode !== 'edit') return;
-          const h = postAt(getLocalPoint(e, e.currentTarget));
-          if (!h) return;
-          e.preventDefault();
-          e.stopPropagation();
-          setDragPostId(h.id);
-        }}
-        onPointerMove={(e) => {
-          if (activeTool !== 'wall') return;
-          const pt = getLocalPoint(e, e.currentTarget);
-          if (mode === 'edit' && dragPostId) {
-            onWallGraphChange?.((g) => ({
-              ...g,
-              posts: (g.posts ?? []).map((p) => (p.id === dragPostId ? { ...p, x: pt.x, y: pt.y } : p)),
-            }));
-          } else if (mode === 'draw' && draft) setDraft((d) => ({ ...d, previewPoint: pt }));
-        }}
-        onPointerUp={endDrag}
-        onPointerLeave={endDrag}
-        onClick={(e) => {
-          if (activeTool !== 'wall') return;
-          e.preventDefault();
-          e.stopPropagation();
-          const pt = getLocalPoint(e, e.currentTarget);
-          if (mode === 'edit') {
-            const post = postAt(pt);
-            if (post) {
-              setSelectedPostId(post.id);
-              setSelectedLinkId(null);
-            } else {
-              setSelectedPostId(null);
-              setSelectedLinkId(closestLinkIdAt(wallGraph, pt.x, pt.y, WALL_PICK));
-            }
-            return;
-          }
-          if (mode !== 'draw') return;
-          const snap = postAt(pt);
-          if (!draft) {
-            const id = newId();
-            onWallGraphChange?.((g) => ({ ...g, posts: [...(g.posts ?? []), { id, x: pt.x, y: pt.y }] }));
-            setDraft({ startPostId: id, previewPoint: pt });
-            return;
-          }
-          const sp = byId.get(draft.startPostId);
-          if (!sp) return;
-          const end = snap ? { x: snap.x, y: snap.y } : pt;
-          if (Math.hypot(end.x - sp.x, end.y - sp.y) < MIN_LEN) return;
-          const nextId = snap?.id ?? newId();
-          onWallGraphChange?.((g) => ({
-            ...g,
-            posts: snap ? g.posts ?? [] : [...(g.posts ?? []), { id: nextId, x: end.x, y: end.y }],
-            links: [...(g.links ?? []), { id: newLinkId(), aPostId: draft.startPostId, bPostId: nextId }],
-          }));
-          setDraft({ startPostId: nextId, previewPoint: end });
-        }}
+        className={`wall-draw-capture${isWallTool ? ` is-active is-${mode}-phase` : ''}`}
+        onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={endDrag} onPointerLeave={endDrag} onClick={handleClick}
       />
     </>
   );
