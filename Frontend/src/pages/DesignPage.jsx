@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Toast } from 'primereact/toast';
 import { Button } from 'primereact/button';
@@ -8,7 +8,8 @@ import {
   Equipment,
   EquipmentSelector,
   AttributesBar,
-  WallDrawingLayer
+  WallDrawingLayer,
+  WallOverlay
 } from '../Components/index';
 
 import api from '../services/api';
@@ -167,7 +168,8 @@ function Workspace({
       if (activeTool === 'wall') return;
 
       if (event.key === 'Escape' || event.key === 'Enter') {
-        armTool(null);
+        setPendingEquipment(null);
+        setActiveTool(null);
       }
     };
 
@@ -417,9 +419,12 @@ function Workspace({
           />
         ))}
 
-        {showWalls && (
+        {showWalls && activeTool !== 'wall' && (
+          <WallOverlay wallGraph={currentWallGraph} scale={scale} />
+        )}
+
+        {activeTool === 'wall' && (
           <WallDrawingLayer
-            activeTool={activeTool}
             wallGraph={currentWallGraph}
             scale={scale}
             onWallGraphChange={handleWallGraphChange}

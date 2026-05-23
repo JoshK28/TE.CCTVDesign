@@ -28,30 +28,34 @@ function WallLengthLabel({ x1, y1, x2, y2, pixelsPerMeter, className = 'wall-len
   ) : null;
 }
 
-export default function WallDrawingLayer({ activeTool, wallGraph, scale, onWallGraphChange, onExitWallMode }) {
+export function WallOverlay({ wallGraph, scale, selectedLinkId }) {
+  return (
+    <svg className="wall-overlay">
+      {wallToSegments(wallGraph).map((w) => (
+        <g key={w.id}>
+          <line
+            x1={w.x1} y1={w.y1} x2={w.x2} y2={w.y2}
+            className={w.id === selectedLinkId ? 'wall-line wall-line--selected' : 'wall-line'}
+          />
+          <WallLengthLabel {...w} pixelsPerMeter={parsePixelsPerMeter(scale)} />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+export default function WallDrawingLayer({ wallGraph, scale, onWallGraphChange, onExitWallMode }) {
   const [draft, setDraft] = useState(null);
   const [dragPostId, setDragPostId] = useState(null);
   const [selectedLinkId, setSelectedLinkId] = useState(null);
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [mode, setMode] = useState('draw');
-  const isWallTool = activeTool === 'wall';
   const posts = wallGraph?.posts ?? [];
-  const segments = wallToSegments(wallGraph);
   const pixelsPerMeter = parsePixelsPerMeter(scale);
   const byId = new Map(posts.map((p) => [p.id, p]));
   const postAt = (pt) => posts.find((p) => Math.hypot(p.x - pt.x, p.y - pt.y) <= HIT_R) ?? null;
 
   useEffect(() => {
-    if (!isWallTool) {
-      setDraft(null);
-      setDragPostId(null);
-    } else setMode('draw');
-    setSelectedLinkId(null);
-    setSelectedPostId(null);
-  }, [isWallTool]);
-
-  useEffect(() => {
-    if (!isWallTool) return;
     const handleKeyDown = (e) => {
       if (mode === 'draw' && (e.key === 'Enter' || e.key === 'Escape')) {
         setDraft(null);
@@ -72,13 +76,13 @@ export default function WallDrawingLayer({ activeTool, wallGraph, scale, onWallG
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isWallTool, mode, onExitWallMode, onWallGraphChange, selectedLinkId, selectedPostId]);
+  }, [mode, onExitWallMode, onWallGraphChange, selectedLinkId, selectedPostId]);
 
   const chainStart = draft && byId.get(draft.startPostId);
   const endDrag = () => setDragPostId(null);
 
   const handlePointerDown = (e) => {
-    if (!isWallTool || mode !== 'edit') return;
+    if (mode !== 'edit') return;
     const post = postAt(getLocalPoint(e, e.currentTarget));
     if (!post) return;
     e.preventDefault();
@@ -87,7 +91,6 @@ export default function WallDrawingLayer({ activeTool, wallGraph, scale, onWallG
   };
 
   const handlePointerMove = (e) => {
-    if (!isWallTool) return;
     const point = getLocalPoint(e, e.currentTarget);
 
     if (mode === 'edit' && dragPostId) {
@@ -102,7 +105,6 @@ export default function WallDrawingLayer({ activeTool, wallGraph, scale, onWallG
   };
 
   const handleClick = (e) => {
-    if (!isWallTool) return;
     e.preventDefault();
     e.stopPropagation();
 
@@ -138,16 +140,8 @@ export default function WallDrawingLayer({ activeTool, wallGraph, scale, onWallG
 
   return (
     <>
+      <WallOverlay wallGraph={wallGraph} scale={scale} selectedLinkId={selectedLinkId} />
       <svg className="wall-overlay">
-        {segments.map((w) => (
-          <g key={w.id}>
-            <line
-              x1={w.x1} y1={w.y1} x2={w.x2} y2={w.y2}
-              className={w.id === selectedLinkId ? 'wall-line wall-line--selected' : 'wall-line'}
-            />
-            <WallLengthLabel {...w} pixelsPerMeter={pixelsPerMeter} />
-          </g>
-        ))}
         {mode === 'edit' &&
           posts.map((p) => (
             <circle
@@ -168,13 +162,11 @@ export default function WallDrawingLayer({ activeTool, wallGraph, scale, onWallG
           </g>
         )}
       </svg>
-      {isWallTool ? (
-        <p className="wall-mode-hint" role="status">
-          {WALL_HINTS[mode]}
-        </p>
-      ) : null}
+      <p className="wall-mode-hint" role="status">
+        {WALL_HINTS[mode]}
+      </p>
       <div
-        className={`wall-draw-capture${isWallTool ? ` is-active is-${mode}-phase` : ''}`}
+        className={`wall-draw-capture is-active is-${mode}-phase`}
         onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={endDrag} onPointerLeave={endDrag} onClick={handleClick}
       />
     </>
