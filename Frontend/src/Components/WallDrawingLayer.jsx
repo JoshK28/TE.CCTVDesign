@@ -4,6 +4,7 @@ import {
   closestLinkIdAt,
   parsePixelsPerMeter,
   removeWallLink,
+  removeWallPost,
   segmentLengthText,
   wallToSegments,
 } from '../utils/wallsConverter';
@@ -24,6 +25,7 @@ export default function WallDrawingLayer({
   const [draft, setDraft] = useState(null);
   const [dragPostId, setDragPostId] = useState(null);
   const [selectedLinkId, setSelectedLinkId] = useState(null);
+  const [selectedPostId, setSelectedPostId] = useState(null);
   const [mode, setMode] = useState('draw');
   const posts = wallGraph?.posts ?? [];
   const segments = wallToSegments(wallGraph);
@@ -36,10 +38,12 @@ export default function WallDrawingLayer({
       setDraft(null);
       setDragPostId(null);
       setSelectedLinkId(null);
+      setSelectedPostId(null);
       return;
     }
     setMode('draw');
     setSelectedLinkId(null);
+    setSelectedPostId(null);
   }, [activeTool]);
 
   useEffect(() => {
@@ -57,8 +61,15 @@ export default function WallDrawingLayer({
         setSelectedLinkId(null);
         return;
       }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedPostId) {
+        e.preventDefault();
+        onWallGraphChange?.((g) => removeWallPost(g, selectedPostId));
+        setSelectedPostId(null);
+        return;
+      }
       if (e.key === 'Escape') {
         if (selectedLinkId) setSelectedLinkId(null);
+        else if (selectedPostId) setSelectedPostId(null);
         else onExitWallMode?.();
         return;
       }
@@ -66,7 +77,7 @@ export default function WallDrawingLayer({
     };
     window.addEventListener('keydown', kd);
     return () => window.removeEventListener('keydown', kd);
-  }, [activeTool, mode, onExitWallMode, onWallGraphChange, selectedLinkId]);
+  }, [activeTool, mode, onExitWallMode, onWallGraphChange, selectedLinkId, selectedPostId]);
 
   const chainStart = draft && byId.get(draft.startPostId);
   const endDrag = () => setDragPostId(null);
@@ -96,7 +107,15 @@ export default function WallDrawingLayer({
           );
         })}
         {mode === 'edit' &&
-          posts.map((p) => <circle key={p.id} cx={p.x} cy={p.y} r="5" className="wall-post-handle" />)}
+          posts.map((p) => (
+            <circle
+              key={p.id}
+              cx={p.x}
+              cy={p.y}
+              r="5"
+              className={p.id === selectedPostId ? 'wall-post-handle wall-post-handle--selected' : 'wall-post-handle'}
+            />
+          ))}
         {mode === 'draw' && chainStart && draft?.previewPoint && (
           <g>
             <line
@@ -128,7 +147,7 @@ export default function WallDrawingLayer({
         <p className="wall-mode-hint" role="status">
           {mode === 'draw'
             ? 'Draw walls on the canvas. Wall drawing mode — exit by pressing Enter.'
-            : 'Wall editing mode — click a wall to select, Delete or Backspace to remove. Esc deselects or exits; Enter exits.'}
+            : 'Wall editing mode — click a wall or post to select, Delete or Backspace to remove. Esc deselects or exits; Enter exits.'}
         </p>
       ) : null}
       <div
@@ -159,8 +178,14 @@ export default function WallDrawingLayer({
           e.stopPropagation();
           const pt = getLocalPoint(e, e.currentTarget);
           if (mode === 'edit') {
-            if (postAt(pt)) setSelectedLinkId(null);
-            else setSelectedLinkId(closestLinkIdAt(wallGraph, pt.x, pt.y, WALL_PICK));
+            const post = postAt(pt);
+            if (post) {
+              setSelectedPostId(post.id);
+              setSelectedLinkId(null);
+            } else {
+              setSelectedPostId(null);
+              setSelectedLinkId(closestLinkIdAt(wallGraph, pt.x, pt.y, WALL_PICK));
+            }
             return;
           }
           if (mode !== 'draw') return;

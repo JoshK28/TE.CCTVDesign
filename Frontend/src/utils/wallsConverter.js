@@ -60,6 +60,20 @@ export const removeWallLink = (graph, linkId) => {
   return { ...graph, links, posts: (graph?.posts ?? []).filter((p) => keep.has(p.id)) };
 };
 
+export const removeWallPost = (graph, postId) => {
+  const links = (graph?.links ?? []).filter((l) => l.aPostId !== postId && l.bPostId !== postId);
+  const keep = new Set();
+  for (const l of links) {
+    keep.add(l.aPostId);
+    keep.add(l.bPostId);
+  }
+  return {
+    ...graph,
+    links,
+    posts: (graph?.posts ?? []).filter((p) => p.id !== postId && keep.has(p.id)),
+  };
+};
+
 export const segmentsToWallGraph = (segments = []) => {
   const posts = [];
   const postIdByKey = new Map();

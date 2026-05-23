@@ -80,6 +80,12 @@
   stroke-width: 2;
 }
 
+.wall-post-handle--selected {
+  fill: #c45c26;
+  stroke: #ffffff;
+  stroke-width: 3;
+}
+
 .wall-length-label {
   fill: #ffffff;
   font-size: 12px;
