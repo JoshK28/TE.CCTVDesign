@@ -49,7 +49,7 @@ export default function WallDrawingLayer({
   useEffect(() => {
     if (activeTool !== 'wall') return;
     const kd = (e) => {
-      if (mode === 'draw' && e.key === 'Enter') {
+      if (mode === 'draw' && (e.key === 'Enter' || e.key === 'Escape')) {
         setDraft(null);
         setMode('edit');
         return;
@@ -67,13 +67,7 @@ export default function WallDrawingLayer({
         setSelectedPostId(null);
         return;
       }
-      if (e.key === 'Escape') {
-        if (selectedLinkId) setSelectedLinkId(null);
-        else if (selectedPostId) setSelectedPostId(null);
-        else onExitWallMode?.();
-        return;
-      }
-      if (e.key === 'Enter') onExitWallMode?.();
+      if (e.key === 'Enter' || e.key === 'Escape') onExitWallMode?.();
     };
     window.addEventListener('keydown', kd);
     return () => window.removeEventListener('keydown', kd);
@@ -146,8 +140,8 @@ export default function WallDrawingLayer({
       {activeTool === 'wall' ? (
         <p className="wall-mode-hint" role="status">
           {mode === 'draw'
-            ? 'Draw walls on the canvas. Wall drawing mode — exit by pressing Enter.'
-            : 'Wall editing mode — click a wall or post to select, Delete or Backspace to remove. Esc deselects or exits; Enter exits.'}
+            ? 'Draw walls on the canvas. Press Enter or Esc when finished to continue to editing.'
+            : 'Wall editing mode — click a wall or post to select, Delete or Backspace to remove. Press Enter or Esc to exit.'}
         </p>
       ) : null}
       <div
