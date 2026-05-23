@@ -9,13 +9,22 @@ export default function Toolbar({ onSelectTool }) {
         switch (label) {
             case 'camera':
                 return securityCameraIcon;
-            case 'measure':
-                // PrimeIcons ruler-ish icon
-                return 'pi pi-arrows-h';
-            case 'wall':
-                return 'pi pi-minus';
+
             case 'device':
                 return 'pi pi-box';
+
+            case 'wall':
+                return 'pi pi-minus';
+
+            case 'measure':
+                return 'pi pi-arrows-h';
+
+            case 'Scale Calibration':  
+                return 'pi pi-sliders-v';
+
+            case 'Image Settings':      
+                return 'pi pi-cog';
+
             default:
                 return null;
         }
@@ -36,6 +45,7 @@ export default function Toolbar({ onSelectTool }) {
                     display: 'flex',
                     alignItems: 'center',
                     background: '#212529',
+                    color: '#ffffff'
                 }}
             >
                 {isImage ? (
@@ -47,14 +57,13 @@ export default function Toolbar({ onSelectTool }) {
                             width: '22px',
                             height: '22px',
                             marginRight: '0.5rem',
-                            verticalAlign: 'middle',
                             pointerEvents: 'none'
                         }}
                     />
                 ) : iconSrc ? (
-                    <span className={iconSrc} style={{ marginRight: '0.5rem' }}></span>
+                    <span className={iconSrc} style={{ marginRight: '0.5rem', color: '#ffffff' }}></span>
                 ) : (
-                    <span className="pi pi-question-circle" style={{ marginRight: '0.5rem' }}></span>
+                    <span className="pi pi-question-circle" style={{ marginRight: '0.5rem', color: '#ffffff' }}></span>
                 )}
                 {item.label}
             </div>
@@ -68,12 +77,18 @@ export default function Toolbar({ onSelectTool }) {
         return (
             <div
                 onClick={() => onSelectTool(item.label)}
-                style={{ padding: '0.75rem 1.25rem', cursor: 'pointer' }}
+                style={{
+                    padding: '0.75rem 1.25rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: '#ffffff'
+                }}
             >
                 {isPrimeIcon ? (
-                    <span className={iconClass} style={{ marginRight: '0.5rem' }}></span>
+                    <span className={iconClass} style={{ marginRight: '0.5rem', color: '#ffffff' }}></span>
                 ) : (
-                    <span className="pi pi-bars" style={{ marginRight: '0.5rem' }}></span>
+                    <span className="pi pi-bars" style={{ marginRight: '0.5rem', color: '#ffffff' }}></span>
                 )}
                 {item.label}
             </div>
@@ -106,7 +121,19 @@ export default function Toolbar({ onSelectTool }) {
             items: [[
                 {
                     items: [
-                        { label: 'measure', template: selectableItem }
+                        { label: 'measure', template: selectableItem },
+                        { label: 'Scale Calibration', template: selectableItem } // NEW
+                    ]
+                }
+            ]]
+        },
+        {
+            label: 'Image',
+            icon: 'pi pi-image',
+            items: [[
+                {
+                    items: [
+                        { label: 'Image Settings', template: selectableItem } // NEW
                     ]
                 }
             ]]
@@ -128,7 +155,7 @@ export default function Toolbar({ onSelectTool }) {
                 style={{ 
                     background: 'transparent', 
                     border: 'none',
-                    color: '#ffffff !important'
+                    color: '#ffffff'
                 }}
                 className="dark-dashboard-menu"
             />

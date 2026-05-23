@@ -250,3 +250,96 @@
 .measure-label--preview {
   opacity: 0.85;
 }
+
+.scale-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 40; /* Above FOV and walls */
+}
+
+/* ------------------------------------------
+   IMAGE SETTINGS PANEL (Dialog)
+------------------------------------------- */
+
+.image-settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 10px 4px;
+  color: #e9ecef;
+}
+
+.image-settings-panel h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8f9fa;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #2d3238;
+}
+
+/* Row of buttons */
+.image-settings-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Grid layout for Up/Down/Left/Right */
+.image-settings-row--grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+/* PrimeReact button overrides inside dialog */
+.image-settings-panel .p-button {
+  flex: 1;
+  background: #343a40 !important;
+  border: 1px solid #495057 !important;
+  color: #ffffff !important;
+  font-size: 13px;
+  padding: 8px 0;
+  border-radius: 6px;
+}
+
+.image-settings-panel .p-button:hover {
+  background: #3f464d !important;
+}
+
+/* Danger button (Reset Image) */
+.image-settings-panel .p-button.p-button-danger {
+  background: #a83232 !important;
+  border-color: #c03939 !important;
+}
+
+.image-settings-panel .p-button.p-button-danger:hover {
+  background: #922b2b !important;
+}
+
+/* File input styling */
+.image-settings-panel input[type="file"] {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #ced4da;
+}
+
+/* Dialog container override */
+.p-dialog .p-dialog-content {
+  background: #212529 !important;
+  border: 1px solid #2d3238 !important;
+}
+
+.p-dialog .p-dialog-header {
+  background: #212529 !important;
+  border-bottom: 1px solid #2d3238 !important;
+  color: #ffffff !important;
+}
+
+.p-dialog .p-dialog-title {
+  font-size: 16px;
+  font-weight: 700;
+}

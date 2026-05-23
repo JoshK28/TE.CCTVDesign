@@ -33,3 +33,4 @@ namespace Backend.Models
         public AccessControlDevice? AccessControlDevice { get; set; }
     }
 }
+        
