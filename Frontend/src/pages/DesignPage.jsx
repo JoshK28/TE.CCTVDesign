@@ -72,61 +72,20 @@ function Workspace({
   const [saving, setSaving] = useState(false);
 
   const toastRef = useRef(null);
-  const imageRef = useRef(null);
   const [imageSize, setImageSize] = useState(null);
-
-  const measureFloorImage = useCallback(() => {
-    const image = imageRef.current;
-    const wrapper = workspaceRef?.current;
-    if (!image || !wrapper || !image.naturalWidth || !image.naturalHeight) return;
-
-    const styles = window.getComputedStyle(wrapper);
-    const availableWidth =
-      wrapper.clientWidth - parseFloat(styles.paddingLeft || 0) - parseFloat(styles.paddingRight || 0);
-    const availableHeight =
-      wrapper.clientHeight - parseFloat(styles.paddingTop || 0) - parseFloat(styles.paddingBottom || 0);
-    const displayScale = Math.min(
-      availableWidth / image.naturalWidth,
-      availableHeight / image.naturalHeight,
-      1
-    );
-
-    const nextSize = {
-      naturalWidth: image.naturalWidth,
-      naturalHeight: image.naturalHeight,
-      displayWidth: image.naturalWidth * displayScale,
-      displayHeight: image.naturalHeight * displayScale,
-    };
-
-    setImageSize((prev) => (
-      prev &&
-      prev.naturalWidth === nextSize.naturalWidth &&
-      prev.naturalHeight === nextSize.naturalHeight &&
-      Math.round(prev.displayWidth) === Math.round(nextSize.displayWidth) &&
-      Math.round(prev.displayHeight) === Math.round(nextSize.displayHeight)
-        ? prev
-        : nextSize
-    ));
-  }, [workspaceRef]);
 
   useEffect(() => {
     setImageSize(null);
   }, [imageSrc]);
 
-  useEffect(() => {
-    const wrapper = workspaceRef?.current;
-    if (!wrapper) return undefined;
-
-    const observer = new ResizeObserver(measureFloorImage);
-    observer.observe(wrapper);
-    window.addEventListener('resize', measureFloorImage);
-    measureFloorImage();
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('resize', measureFloorImage);
-    };
-  }, [measureFloorImage, workspaceRef]);
+  const handleImageLoad = ({ currentTarget: img }) => {
+    if (!img.naturalWidth || !img.naturalHeight) return;
+    setImageSize((prev) =>
+      prev?.naturalWidth === img.naturalWidth && prev?.naturalHeight === img.naturalHeight
+        ? prev
+        : { naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight }
+    );
+  };
 
   // UNDO / REDO
   const applyHistorySnapshot = useCallback(({ equipment: eq, wallGraphs: wg }) => {
@@ -405,9 +364,6 @@ function Workspace({
   const showWalls = showFov;
 
   const branding = exportOptions?.brandingActive && exportOptions?.brandingData;
-  const stageStyle = imageSize
-    ? { width: `${imageSize.displayWidth}px`, height: `${imageSize.displayHeight}px` }
-    : undefined;
   const overlayViewBox = imageSize
     ? `0 0 ${imageSize.naturalWidth} ${imageSize.naturalHeight}`
     : undefined;
@@ -434,7 +390,6 @@ function Workspace({
       >
         <div
           className="floorplan-stage"
-          style={stageStyle}
           onClick={handleCanvasInteraction}
           onDrop={(event) => {
             event.preventDefault();
@@ -443,14 +398,12 @@ function Workspace({
           onDragOver={(e) => e.preventDefault()}
         >
           <img
-            ref={imageRef}
             src={imageSrc}
             alt="Full-screen design layout"
             className="fullscreen-image"
             draggable="false"
             crossOrigin="anonymous"
-            onLoad={measureFloorImage}
-            style={imageSize ? { width: '100%', height: '100%' } : undefined}
+            onLoad={handleImageLoad}
           />
 
           {branding && (
