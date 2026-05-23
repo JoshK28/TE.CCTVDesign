@@ -8,6 +8,56 @@ import { TabView, TabPanel } from 'primereact/tabview';
 import { useState, useRef, useEffect } from 'react';
 import './AttributesBar.css';
 
+const DEFAULT_FOV_COLOR = 'rgba(0, 150, 255, 0.3)';
+const DEFAULT_FOV_OPACITY = 0.3;
+const MAX_ICON_BYTES = 1_000_000;
+const ALLOWED_ICON_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp', 'image/gif'];
+const PRESET_COLORS = [
+  'rgba(0, 150, 255, 0.3)',
+  'rgba(255, 0, 0, 0.3)',
+  'rgba(0, 255, 0, 0.3)',
+  'rgba(255, 165, 0, 0.3)',
+  'rgba(128, 0, 128, 0.3)',
+  'rgba(255, 255, 0, 0.3)',
+];
+const DEVICE_SPECIFICATION_FIELDS = [
+  { field: 'maxResolutionMp', label: 'Max Resolution', unit: 'MP' },
+  { field: 'channelCount', label: 'Number of Channels' },
+  { field: 'inputBandwidthMbps', label: 'Input Bandwidth', unit: 'Mbps' },
+  { field: 'outputBandwidthMbps', label: 'Output Bandwidth', unit: 'Mbps' },
+];
+
+function formatPropertiesTitle(type) {
+  return type ? `${type.charAt(0).toUpperCase()}${type.slice(1)} properties` : 'Properties';
+}
+
+function rgbaToHex(rgba) {
+  if (typeof rgba !== 'string') return '#0096ff';
+  const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!match) return '#0096ff';
+  const [, r, g, b] = match;
+  return (
+    '#' +
+    [r, g, b].map((x) => {
+      const hex = parseInt(x).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    }).join('')
+  );
+}
+
+function hexToRgba(hex, opacity) {
+  const normalizedHex = hex.replace('#', '');
+  const r = parseInt(normalizedHex.substring(0, 2), 16);
+  const g = parseInt(normalizedHex.substring(2, 4), 16);
+  const b = parseInt(normalizedHex.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
+function stripOpacity(rgba) {
+  if (typeof rgba !== 'string') return '';
+  return rgba.replace(/,?\s*[\d.]+\)$/, '') + ')';
+}
+
 function AttributesBar({
   selectedItem,
   onClose,
@@ -16,9 +66,6 @@ function AttributesBar({
   onDeleteEquipment,
 }) {
 
-  // -----------------------------
-  // HOOKS MUST ALWAYS RUN FIRST
-  // -----------------------------
   const [showPicker, setShowPicker] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [iconError, setIconError] = useState('');
@@ -37,8 +84,8 @@ function AttributesBar({
         setShowPicker(false);
       }
     }
-    if (showPicker) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    if (showPicker) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showPicker]);
 
   // Reset to first tab whenever a different item is selected
@@ -48,65 +95,13 @@ function AttributesBar({
     setIconError('');
   }, [selectedItem?.id]);
 
-  // -----------------------------
-  // CONDITIONAL RETURN MUST COME AFTER HOOKS
-  // -----------------------------
   if (!selectedItem) return null;
 
-  // -----------------------------
-  // STATIC DATA
-  // -----------------------------
-  const presetColors = [
-    "rgba(0, 150, 255, 0.3)",
-    "rgba(255, 0, 0, 0.3)",
-    "rgba(0, 255, 0, 0.3)",
-    "rgba(255, 165, 0, 0.3)",
-    "rgba(128, 0, 128, 0.3)",
-    "rgba(255, 255, 0, 0.3)"
-  ];
-
-  // -----------------------------
-  // COLOUR HELPERS
-  // -----------------------------
-  function rgbaToHex(rgba) {
-    if (typeof rgba !== 'string') return "#0096ff";
-    const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-    if (!match) return "#0096ff";
-    const [_, r, g, b] = match;
-    return (
-      "#" +
-      [r, g, b].map(x => {
-        const hex = parseInt(x).toString(16);
-        return hex.length === 1 ? "0" + hex : hex;
-      }).join("")
-    );
-  }
-
-  function hexToRgba(hex, opacity) {
-    hex = hex.replace("#", "");
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-  }
-
-  function stripOpacity(rgba) {
-    if (typeof rgba !== 'string') return '';
-    return rgba.replace(/,?\s*[\d.]+\)$/,'') + ')';
-  }
-
-  const currentOpacity = selectedItem.fovOpacity ?? 0.3;
-  const isPreset = selectedItem.fovColor
-    ? presetColors.some(
-        preset => stripOpacity(preset) === stripOpacity(selectedItem.fovColor)
-      )
-    : false;
-
-  // -----------------------------
-  // CUSTOM ICON UPLOAD
-  // -----------------------------
-  const MAX_ICON_BYTES = 1_000_000; // 1 MB cap to keep state/undo snapshots reasonable
-  const ALLOWED_ICON_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp', 'image/gif'];
+  const currentOpacity = selectedItem.fovOpacity ?? DEFAULT_FOV_OPACITY;
+  const currentFovColor = selectedItem.fovColor ?? DEFAULT_FOV_COLOR;
+  const isPreset = PRESET_COLORS.some(
+    (preset) => stripOpacity(preset) === stripOpacity(currentFovColor)
+  );
 
   function handleIconUpload(event) {
     const file = event.target.files?.[0];
@@ -125,7 +120,7 @@ function AttributesBar({
     const reader = new FileReader();
     reader.onload = () => {
       setIconError('');
-      onUpdateSettings(selectedItem.id, 'customIcon', reader.result);
+      updateSetting('customIcon', reader.result);
     };
     reader.onerror = () => setIconError('Failed to read the selected file.');
     reader.readAsDataURL(file);
@@ -133,7 +128,7 @@ function AttributesBar({
 
   function handleResetIcon() {
     setIconError('');
-    onUpdateSettings(selectedItem.id, 'customIcon', null);
+    updateSetting('customIcon', null);
   }
 
   const attrs = selectedItem.attributes ?? {};
@@ -143,19 +138,29 @@ function AttributesBar({
   const modelName = attrs.cameraModel ?? attrs.modelName ?? selectedItem.name ?? '';
   const costPerUnit = attrs.costPerUnit;
   const rawType = selectedItem.type ?? '';
-  const propertiesTitle = rawType
-    ? `${rawType.charAt(0).toUpperCase()}${rawType.slice(1)} properties`
-    : 'Properties';
+  const propertiesTitle = formatPropertiesTitle(rawType);
   const deviceSpecifications = attrs.deviceSpecifications ?? {};
 
+  function updateSetting(field, value) {
+    onUpdateSettings(selectedItem.id, field, value);
+  }
+
+  function updateAttributes(updates) {
+    updateSetting('attributes', { ...attrs, ...updates });
+  }
+
   function updateDeviceSpecification(field, value) {
-    onUpdateSettings(selectedItem.id, 'attributes', {
-      ...attrs,
+    updateAttributes({
       deviceSpecifications: {
         ...deviceSpecifications,
         [field]: value ?? 0,
       },
     });
+  }
+
+  function updateOpacity(newOpacity) {
+    updateSetting('fovOpacity', newOpacity);
+    updateSetting('fovColor', hexToRgba(rgbaToHex(currentFovColor), newOpacity));
   }
 
   return (
@@ -178,12 +183,8 @@ function AttributesBar({
           activeIndex={activeTab}
           onTabChange={(e) => setActiveTab(e.index)}
         >
-          {/* =========================== */}
-          {/*       SETTINGS TAB          */}
-          {/* =========================== */}
           <TabPanel header="Settings" leftIcon="pi pi-cog mr-2">
 
-            {/* Equipment details */}
             <h3 className="section-subtitle">Equipment details</h3>
             <div className="section-box">
               <div className="field">
@@ -231,14 +232,13 @@ function AttributesBar({
               </div>
             )}
 
-            {/* GENERAL */}
             <h3 className="section-subtitle">General</h3>
             <div className="section-box">
               <div className="field">
                 <label>Name</label>
                 <InputText
-                  value={selectedItem.name || ""}
-                  onChange={(e) => onUpdateSettings(selectedItem.id, "name", e.target.value)}
+                  value={selectedItem.name || ''}
+                  onChange={(e) => updateSetting('name', e.target.value)}
                 />
               </div>
 
@@ -247,12 +247,7 @@ function AttributesBar({
                   <label>Resolution</label>
                   <InputText
                     value={attrs.resolution ?? ''}
-                    onChange={(e) =>
-                      onUpdateSettings(selectedItem.id, 'attributes', {
-                        ...attrs,
-                        resolution: e.target.value,
-                      })
-                    }
+                    onChange={(e) => updateAttributes({ resolution: e.target.value })}
                   />
                 </div>
               )}
@@ -266,7 +261,7 @@ function AttributesBar({
                     <label>Rotation (°)</label>
                     <Slider
                       value={selectedItem.rotation || 0}
-                      onChange={(e) => onUpdateSettings(selectedItem.id, "rotation", e.value)}
+                      onChange={(e) => updateSetting('rotation', e.value)}
                       min={0}
                       max={360}
                     />
@@ -277,7 +272,7 @@ function AttributesBar({
                     <label>Camera Height (m)</label>
                     <InputNumber
                       value={selectedItem.height || 3}
-                      onValueChange={(e) => onUpdateSettings(selectedItem.id, "height", e.value)}
+                      onValueChange={(e) => updateSetting('height', e.value)}
                       min={1}
                       max={20}
                     />
@@ -287,40 +282,34 @@ function AttributesBar({
                     <label>Tilt (°)</label>
                     <Slider
                       value={selectedItem.tilt || 0}
-                      onChange={(e) => onUpdateSettings(selectedItem.id, "tilt", e.value)}
+                      onChange={(e) => updateSetting('tilt', e.value)}
                       min={-90}
                       max={90}
                     />
                     <span className="slider-value">{selectedItem.tilt || 0}°</span>
                   </div>
                 </div>
-              </>
-            )}
 
-            {isCamera && (
-              <>
-                {/* LENS */}
                 <h3 className="section-subtitle">Lens & Optics</h3>
                 <div className="section-box">
                   <div className="field">
                     <label>Focal Length (mm)</label>
                     <InputNumber
                       value={selectedItem.focalLength || 2.8}
-                      onValueChange={(e) => onUpdateSettings(selectedItem.id, "focalLength", e.value)}
+                      onValueChange={(e) => updateSetting('focalLength', e.value)}
                       min={1}
                       max={50}
                     />
                   </div>
                 </div>
 
-                {/* IR */}
                 <h3 className="section-subtitle">Infrared</h3>
                 <div className="section-box">
                   <div className="field">
                     <label>IR Range (m)</label>
                     <InputNumber
                       value={selectedItem.irRange || 30}
-                      onValueChange={(e) => onUpdateSettings(selectedItem.id, "irRange", e.value)}
+                      onValueChange={(e) => updateSetting('irRange', e.value)}
                       min={0}
                       max={200}
                     />
@@ -341,91 +330,60 @@ function AttributesBar({
                   </div>
                 </div>
 
-                <div className="field">
-                  <label>Max Resolution</label>
-                  <div className="specification-input-row">
-                    <InputNumber
-                      value={deviceSpecifications.maxResolutionMp ?? 0}
-                      onValueChange={(e) => updateDeviceSpecification('maxResolutionMp', e.value)}
-                      min={0}
-                      useGrouping={false}
-                    />
-                    <span className="specification-unit">MP</span>
+                {DEVICE_SPECIFICATION_FIELDS.map(({ field, label, unit }) => (
+                  <div className="field" key={field}>
+                    <label>{label}</label>
+                    {unit ? (
+                      <div className="specification-input-row">
+                        <InputNumber
+                          value={deviceSpecifications[field] ?? 0}
+                          onValueChange={(e) => updateDeviceSpecification(field, e.value)}
+                          min={0}
+                          useGrouping={false}
+                        />
+                        <span className="specification-unit">{unit}</span>
+                      </div>
+                    ) : (
+                      <InputNumber
+                        value={deviceSpecifications[field] ?? 0}
+                        onValueChange={(e) => updateDeviceSpecification(field, e.value)}
+                        min={0}
+                        useGrouping={false}
+                      />
+                    )}
                   </div>
-                </div>
-
-                <div className="field">
-                  <label>Number of Channels</label>
-                  <InputNumber
-                    value={deviceSpecifications.channelCount ?? 0}
-                    onValueChange={(e) => updateDeviceSpecification('channelCount', e.value)}
-                    min={0}
-                    useGrouping={false}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Input Bandwidth</label>
-                  <div className="specification-input-row">
-                    <InputNumber
-                      value={deviceSpecifications.inputBandwidthMbps ?? 0}
-                      onValueChange={(e) => updateDeviceSpecification('inputBandwidthMbps', e.value)}
-                      min={0}
-                      useGrouping={false}
-                    />
-                    <span className="specification-unit">Mbps</span>
-                  </div>
-                </div>
-
-                <div className="field">
-                  <label>Output Bandwidth</label>
-                  <div className="specification-input-row">
-                    <InputNumber
-                      value={deviceSpecifications.outputBandwidthMbps ?? 0}
-                      onValueChange={(e) => updateDeviceSpecification('outputBandwidthMbps', e.value)}
-                      min={0}
-                      useGrouping={false}
-                    />
-                    <span className="specification-unit">Mbps</span>
-                  </div>
-                </div>
+                ))}
               </div>
             </TabPanel>
           )}
 
-          {/* =========================== */}
-          {/*       APPEARANCE TAB        */}
-          {/* =========================== */}
           <TabPanel header="Appearance" leftIcon="pi pi-palette mr-2">
 
             {isCamera && (
               <>
                 <h3 className="section-subtitle">FOV Appearance</h3>
                 <div className="section-box">
-
-                  {/* PRESET COLOURS */}
                   <div className="field">
                     <label>Preset Colours</label>
                     <div className="fov-swatches">
-                      {presetColors.map((color, index) => (
+                      {PRESET_COLORS.map((color, index) => (
                         <div
                           key={index}
                           className={`fov-swatch ${
-                            stripOpacity(color) === stripOpacity(selectedItem.fovColor) ? "selected" : ""
+                            stripOpacity(color) === stripOpacity(currentFovColor) ? 'selected' : ''
                           }`}
                           style={{ backgroundColor: color }}
                           onClick={() => {
                             setShowPicker(false);
-                            onUpdateSettings(selectedItem.id, "fovColor", color);
+                            updateSetting('fovColor', color);
                           }}
                         />
                       ))}
 
-                      {/* CUSTOM COLOUR SWATCH */}
                       <div
                         ref={swatchRef}
-                        className={`fov-swatch custom ${!isPreset ? "selected" : ""}`}
-                        style={{ backgroundColor: selectedItem.fovColor }}
+                        className={`fov-swatch custom ${!isPreset ? 'selected' : ''}`}
+                        style={{ backgroundColor: currentFovColor }}
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowPicker(prev => !prev);
@@ -435,38 +393,29 @@ function AttributesBar({
                       </div>
                     </div>
 
-                    {/* INLINE PICKER */}
                     {showPicker && (
                       <div ref={pickerRef} className="picker-inline">
                         <ColorPicker
-                          value={rgbaToHex(selectedItem.fovColor)}
+                          value={rgbaToHex(currentFovColor)}
                           format="hex"
                           inline
                           onChange={(e) => {
                             const rgba = hexToRgba(e.value, currentOpacity);
-                            onUpdateSettings(selectedItem.id, "fovColor", rgba);
+                            updateSetting('fovColor', rgba);
                           }}
                         />
                       </div>
                     )}
                   </div>
 
-                  {/* OPACITY */}
                   <div className="field slider-field">
                     <label>Opacity</label>
                     <Slider
                       value={currentOpacity}
+                      onChange={(e) => updateOpacity(e.value)}
                       min={0.05}
                       max={1}
                       step={0.05}
-                      onChange={(e) => {
-                        const newOpacity = e.value;
-                        onUpdateSettings(selectedItem.id, "fovOpacity", newOpacity);
-
-                        const hex = rgbaToHex(selectedItem.fovColor);
-                        const rgba = hexToRgba(hex, newOpacity);
-                        onUpdateSettings(selectedItem.id, "fovColor", rgba);
-                      }}
                     />
                     <span className="slider-value">{currentOpacity.toFixed(2)}</span>
                   </div>
@@ -474,7 +423,6 @@ function AttributesBar({
               </>
             )}
 
-            {/* CUSTOM ICON */}
             <h3 className="section-subtitle">Custom Icon</h3>
             <div className="section-box">
               <div className="field">
