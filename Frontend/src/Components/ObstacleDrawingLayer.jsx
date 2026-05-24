@@ -1,5 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getLocalPoint } from '../utils/points';
+
+const HANDLE_SIZE = 8;
+
+const RESIZE_HANDLES = [
+  { id: 'nw', cx: 0,   cy: 0,   cursor: 'nw-resize' },
+  { id: 'n',  cx: 0.5, cy: 0,   cursor: 'n-resize'  },
+  { id: 'ne', cx: 1,   cy: 0,   cursor: 'ne-resize' },
+  { id: 'e',  cx: 1,   cy: 0.5, cursor: 'e-resize'  },
+  { id: 'se', cx: 1,   cy: 1,   cursor: 'se-resize' },
+  { id: 's',  cx: 0.5, cy: 1,   cursor: 's-resize'  },
+  { id: 'sw', cx: 0,   cy: 1,   cursor: 'sw-resize' },
+  { id: 'w',  cx: 0,   cy: 0.5, cursor: 'w-resize'  },
+];
+
+function applyResize(o, handleId, dx, dy) {
+  let { x, y, width, height } = o;
+  if (handleId.includes('e')) width  = Math.max(10, width  + dx);
+  if (handleId.includes('s')) height = Math.max(10, height + dy);
+  if (handleId.includes('w')) { x += dx; width  = Math.max(10, width  - dx); }
+  if (handleId.includes('n')) { y += dy; height = Math.max(10, height - dy); }
+  return { ...o, x, y, width, height };
+}
 
 export default function ObstacleDrawingLayer({
   activeTool,
@@ -13,6 +35,12 @@ export default function ObstacleDrawingLayer({
   const [mode, setMode] = useState('draw');
   const [pendingRect, setPendingRect] = useState(null);
   const [labelInput, setLabelInput] = useState('');
+
+  // ref so pointer move/up handlers always see latest dragging state
+  const draggingRef = useRef(null);
+  draggingRef.current = dragging;
+
+  const svgRef = useRef(null);
 
   useEffect(() => {
     if (activeTool !== 'obstacle') {
@@ -66,6 +94,9 @@ export default function ObstacleDrawingLayer({
 
   const MIN_SIZE = 10;
 
+  // Get point relative to the SVG element
+  const getSvgPoint = (e) => getLocalPoint(e, svgRef.current);
+
   const confirmLabel = () => {
     if (!pendingRect) return;
     onObstaclesChange((prev) => [
@@ -87,47 +118,170 @@ export default function ObstacleDrawingLayer({
     setLabelInput('');
   };
 
+  // ---- SVG-level pointer handlers ----
+
+  const handleSvgPointerDown = (e) => {
+    if (activeTool !== 'obstacle') return;
+    if (pendingRect) return;
+
+    const pt = getSvgPoint(e);
+
+    if (mode === 'draw') {
+      e.preventDefault();
+      setDraft({ startX: pt.x, startY: pt.y, currentX: pt.x, currentY: pt.y });
+      return;
+    }
+
+    // edit mode — check if we hit a resize handle of the selected obstacle first
+    if (mode === 'edit' && selectedObstacleId) {
+      const sel = obstacles.find((o) => o.id === selectedObstacleId);
+      if (sel) {
+        for (const h of RESIZE_HANDLES) {
+          const hx = sel.x + h.cx * sel.width;
+          const hy = sel.y + h.cy * sel.height;
+          if (Math.abs(pt.x - hx) <= HANDLE_SIZE && Math.abs(pt.y - hy) <= HANDLE_SIZE) {
+            e.preventDefault();
+            e.stopPropagation();
+            setDragging({ type: 'resize', obstacleId: sel.id, handleId: h.id, lastX: pt.x, lastY: pt.y });
+            return;
+          }
+        }
+      }
+    }
+
+    // edit mode — check if we hit an obstacle rect
+    if (mode === 'edit') {
+      const hit = [...obstacles].reverse().find(
+        (o) => pt.x >= o.x && pt.x <= o.x + o.width && pt.y >= o.y && pt.y <= o.y + o.height
+      );
+      if (hit) {
+        e.preventDefault();
+        e.stopPropagation();
+        setSelectedObstacleId(hit.id);
+        setDragging({ type: 'move', obstacleId: hit.id, offsetX: pt.x - hit.x, offsetY: pt.y - hit.y });
+        return;
+      }
+      // clicked empty space — deselect
+      setSelectedObstacleId(null);
+    }
+  };
+
+  const handleSvgPointerMove = (e) => {
+    if (activeTool !== 'obstacle') return;
+    const pt = getSvgPoint(e);
+
+    if (mode === 'draw' && draft) {
+      setDraft((d) => ({ ...d, currentX: pt.x, currentY: pt.y }));
+      return;
+    }
+
+    const drag = draggingRef.current;
+    if (mode === 'edit' && drag) {
+      if (drag.type === 'move') {
+        onObstaclesChange((prev) =>
+          prev.map((o) =>
+            o.id === drag.obstacleId
+              ? { ...o, x: pt.x - drag.offsetX, y: pt.y - drag.offsetY }
+              : o
+          )
+        );
+      } else if (drag.type === 'resize') {
+        const dx = pt.x - drag.lastX;
+        const dy = pt.y - drag.lastY;
+        onObstaclesChange((prev) =>
+          prev.map((o) =>
+            o.id === drag.obstacleId ? applyResize(o, drag.handleId, dx, dy) : o
+          )
+        );
+        setDragging((d) => ({ ...d, lastX: pt.x, lastY: pt.y }));
+      }
+    }
+  };
+
+  const handleSvgPointerUp = (e) => {
+    if (activeTool !== 'obstacle') return;
+
+    if (mode === 'draw' && draft) {
+      const rect = normaliseRect(draft.startX, draft.startY, draft.currentX, draft.currentY);
+      if (rect.width >= MIN_SIZE && rect.height >= MIN_SIZE) {
+        setPendingRect(rect);
+        setLabelInput('');
+      }
+      setDraft(null);
+      return;
+    }
+
+    setDragging(null);
+  };
+
+  const isActive = activeTool === 'obstacle';
+
   return (
     <>
       <svg
+        ref={svgRef}
         className="obstacle-overlay"
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          pointerEvents: isActive && !pendingRect ? 'all' : 'none',
+          cursor: mode === 'draw' ? 'crosshair' : 'default',
+        }}
+        onPointerDown={handleSvgPointerDown}
+        onPointerMove={handleSvgPointerMove}
+        onPointerUp={handleSvgPointerUp}
+        onPointerLeave={() => { setDraft(null); setDragging(null); }}
       >
-        {obstacles.map((o) => (
-          <g key={o.id}>
-            <rect
-              x={o.x}
-              y={o.y}
-              width={o.width}
-              height={o.height}
-              fill={o.color ?? '#FF000033'}
-              stroke={o.id === selectedObstacleId ? '#FFD700' : (o.color ?? '#FF0000')}
-              strokeWidth={o.id === selectedObstacleId ? 2.5 : 1.5}
-              strokeDasharray={o.id === selectedObstacleId ? '6 3' : 'none'}
-              style={{ pointerEvents: mode === 'edit' ? 'all' : 'none', cursor: 'move' }}
-              onClick={(e) => {
-                if (mode !== 'edit') return;
-                e.preventDefault();
-                e.stopPropagation();
-                setSelectedObstacleId(o.id);
-              }}
-            />
-            <text
-              x={o.x + o.width / 2}
-              y={o.y + o.height / 2}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fontSize="12"
-              fill="#fff"
-              stroke="#000"
-              strokeWidth="0.4"
-              style={{ pointerEvents: 'none', userSelect: 'none' }}
-            >
-              {o.label}
-            </text>
-          </g>
-        ))}
+        {obstacles.map((o) => {
+          const isSelected = o.id === selectedObstacleId;
+          return (
+            <g key={o.id}>
+              <rect
+                x={o.x}
+                y={o.y}
+                width={o.width}
+                height={o.height}
+                fill={o.color ?? '#FF000033'}
+                stroke={isSelected ? '#FFD700' : (o.color ?? '#FF0000')}
+                strokeWidth={isSelected ? 2.5 : 1.5}
+                strokeDasharray={isSelected ? '6 3' : 'none'}
+                style={{ cursor: mode === 'edit' ? 'move' : 'default', pointerEvents: 'none' }}
+              />
+              <text
+                x={o.x + o.width / 2}
+                y={o.y + o.height / 2}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize="12"
+                fill="#fff"
+                stroke="#000"
+                strokeWidth="0.4"
+                style={{ pointerEvents: 'none', userSelect: 'none' }}
+              >
+                {o.label}
+              </text>
 
+              {/* Resize handles — only when selected in edit mode */}
+              {isSelected && mode === 'edit' && RESIZE_HANDLES.map((h) => (
+                <rect
+                  key={h.id}
+                  x={o.x + h.cx * o.width - HANDLE_SIZE / 2}
+                  y={o.y + h.cy * o.height - HANDLE_SIZE / 2}
+                  width={HANDLE_SIZE}
+                  height={HANDLE_SIZE}
+                  fill="#fff"
+                  stroke="#245d91"
+                  strokeWidth="1.5"
+                  style={{ pointerEvents: 'none', cursor: h.cursor }}
+                />
+              ))}
+            </g>
+          );
+        })}
+
+        {/* Draft rectangle while drawing */}
         {draft && (
           <rect
             {...normaliseRect(draft.startX, draft.startY, draft.currentX, draft.currentY)}
@@ -139,74 +293,15 @@ export default function ObstacleDrawingLayer({
         )}
       </svg>
 
-      {activeTool === 'obstacle' && (
+      {isActive && (
         <p className="wall-mode-hint" role="status">
           {mode === 'draw'
             ? 'Click and drag to draw an obstacle box. Press Enter to switch to edit mode.'
-            : 'Obstacle edit mode — click an obstacle to select, Delete to remove. Esc deselects or exits; Enter exits.'}
+            : 'Obstacle edit mode — click to select, drag to move, drag handles to resize, Delete to remove. Esc deselects or exits; Enter exits.'}
         </p>
       )}
 
-      <div
-        className={`wall-draw-capture${activeTool === 'obstacle' ? ` is-active is-${mode}-phase` : ''}`}
-        style={{ pointerEvents: pendingRect ? 'none' : undefined }}
-        onClick={(e) => {
-          if (activeTool !== 'obstacle') return;
-          e.preventDefault();
-          e.stopPropagation();
-        }}
-        onPointerDown={(e) => {
-          if (activeTool !== 'obstacle') return;
-          if (mode !== 'draw') return;
-          if (pendingRect) return;
-          e.preventDefault();
-          e.stopPropagation();
-          const pt = getLocalPoint(e, e.currentTarget);
-          setDraft({ startX: pt.x, startY: pt.y, currentX: pt.x, currentY: pt.y });
-        }}
-        onPointerMove={(e) => {
-          if (activeTool !== 'obstacle') return;
-          const pt = getLocalPoint(e, e.currentTarget);
-
-          if (mode === 'draw' && draft) {
-            setDraft((d) => ({ ...d, currentX: pt.x, currentY: pt.y }));
-            return;
-          }
-
-          if (mode === 'edit' && dragging) {
-            onObstaclesChange((prev) =>
-              prev.map((o) =>
-                o.id === dragging.obstacleId
-                  ? { ...o, x: pt.x - dragging.offsetX, y: pt.y - dragging.offsetY }
-                  : o
-              )
-            );
-          }
-        }}
-        onPointerUp={(e) => {
-          if (activeTool !== 'obstacle') return;
-          e.preventDefault();
-          e.stopPropagation();
-
-          if (mode === 'draw' && draft) {
-            const rect = normaliseRect(draft.startX, draft.startY, draft.currentX, draft.currentY);
-            if (rect.width >= MIN_SIZE && rect.height >= MIN_SIZE) {
-              setPendingRect(rect);
-              setLabelInput('');
-            }
-            setDraft(null);
-            return;
-          }
-
-          setDragging(null);
-        }}
-        onPointerLeave={() => {
-          setDraft(null);
-          setDragging(null);
-        }}
-      />
-
-      {/* popup is AFTER the capture div so it sits on top in DOM order */}
+      {/* Popup label input */}
       {pendingRect && (
         <div
           style={{

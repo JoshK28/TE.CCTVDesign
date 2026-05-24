@@ -181,6 +181,7 @@ function Workspace({
     const handleKeyDown = (event) => {
       if (!activeTool) return;
       if (activeTool === 'wall') return;
+      if (activeTool === 'obstacle') return;
 
       if (event.key === 'Escape' || event.key === 'Enter') {
         armTool(null);
@@ -216,7 +217,7 @@ function Workspace({
     const droppedTool = event.dataTransfer ? event.dataTransfer.getData('tool') : '';
     const toolToPlace = droppedTool || activeTool;
 
-    if (toolToPlace && toolToPlace !== 'wall') {
+    if (toolToPlace && toolToPlace !== 'wall' && toolToPlace !== 'obstacle') {
       const { x, y } = getLocalPoint(event, event.currentTarget);
       openEquipmentSelector({ x, y, type: toolToPlace });
       return;
