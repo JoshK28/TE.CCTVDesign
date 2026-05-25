@@ -2,16 +2,10 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Toast } from 'primereact/toast';
 
-import {
-  Toolbar,
-  Equipment,
-  EquipmentSelector,
-  AttributesBar,
-  WallDrawingLayer,
-  WallOverlay
-} from '../Components/index';
+import {Toolbar, Equipment, EquipmentSelector, AttributesBar, WallDrawingLayer, WallOverlay} from '../Components/index';
 
 import api from '../services/api';
+import { getSaveErrorMessage, saveDesign } from '../utils/designSave';
 import { calculateFovPolygon } from '../utils/fov';
 import { getImagePoint } from '../utils/points';
 import { empty_Walls, segmentsToWallGraph, wallToSegments } from '../utils/wallsConverter';
@@ -200,9 +194,7 @@ function Workspace({
       prev.map((item) => {
         if (item.id !== id) return item;
         const patch =
-          typeof patchOrBuilder === 'function'
-            ? patchOrBuilder(item)
-            : patchOrBuilder;
+          typeof patchOrBuilder === 'function' ? patchOrBuilder(item) : patchOrBuilder;
         return { ...item, ...patch };
       })
     );
@@ -305,35 +297,7 @@ function Workspace({
     setSaving(true);
 
     try {
-      const placements = equipment.map((item) => ({
-        floorID: floorId,
-        cameraId: item.attributes?.cameraId ?? null,
-        networkingId: item.attributes?.networkingId ?? null,
-        accessControlId: item.attributes?.accessControlId ?? null,
-        x: item.x,
-        y: item.y,
-        rotation: item.rotation || 0,
-        type: item.type || 'camera',
-        cameraModel: item.attributes?.cameraModel ?? '',
-        brand: item.attributes?.brand ?? '',
-        resolution: item.attributes?.resolution ?? ''
-      }));
-
-      await api.post(`/api/camerplacements/save/${floorId}`, placements);
-
-      const wallsToSave = currentWalls.map((wall) => ({
-        floorID: floorId,
-        x1: wall.x1,
-        y1: wall.y1,
-        x2: wall.x2,
-        y2: wall.y2,
-        length:
-          wall.length ?? Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1),
-        realWorldLength: wall.realWorldLength ?? 0,
-        realWorldHeight: wall.realWorldHeight ?? 0,
-      }));
-
-      await api.post(`/api/walls/save/${floorId}`, wallsToSave);
+      await saveDesign({ floorId, equipment, walls: currentWalls });
 
       toastRef.current?.show({
         severity: 'success',
@@ -342,16 +306,10 @@ function Workspace({
 
       onUnsavedChanges(false);
     } catch (err) {
-      const apiMessage = err?.response?.data;
-      const errorText =
-        typeof apiMessage === 'string'
-          ? apiMessage
-          : apiMessage?.message || err?.message || 'Failed to save';
-
       toastRef.current?.show({
         severity: 'error',
         summary: 'Save failed',
-        detail: errorText,
+        detail: getSaveErrorMessage(err),
       });
 
       console.error('Failed to save', err);
