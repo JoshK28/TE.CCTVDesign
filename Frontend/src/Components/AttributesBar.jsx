@@ -121,10 +121,6 @@ function AttributesBar({
     });
   }
 
-  function updateOpacity(newOpacity) {
-    updateSetting('fovOpacity', newOpacity);
-  }
-
   return (
     <Sidebar
       visible={!!selectedItem}
@@ -371,7 +367,7 @@ function AttributesBar({
                     <label>Opacity</label>
                     <Slider
                       value={currentOpacity}
-                      onChange={(e) => updateOpacity(e.value)}
+                      onChange={(e) => updateSetting('fovOpacity', e.value)}
                       min={0.05}
                       max={1}
                       step={0.05}

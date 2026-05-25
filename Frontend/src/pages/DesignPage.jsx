@@ -567,19 +567,6 @@ function DesignPage() {
     fetchFloorLayouts();
   }, [projectId, imageSrcFromState, navigate]);
 
-  // Switch to a layer with the given export config, wait for paint, then rasterise.
-  const renderLayer = async (idx, settings, scale, delay) => {
-    setSelectedLayer(idx);
-    setExportWorkspaceConfig({
-      showFov: settings.showFov,
-      brandingActive: true, brandingData: settings.branding,
-    });
-    await new Promise((r) => setTimeout(r, delay));
-    if (!workspaceRef.current) return null;
-    try { return await html2canvas(workspaceRef.current, { useCORS: true, scale }); }
-    catch (err) { console.error(err); return null; }
-  };
-
   const handleExecuteExport = async (settings) => {
     setExportModalOpen(false);
     const filename = settings.branding.projectTitle.replace(/\s+/g, '_');
@@ -588,28 +575,31 @@ function DesignPage() {
       : [selectedLayer];
     const original = selectedLayer;
 
-    if (settings.exportType === 'png') {
-      for (const i of layers) {
-        const canvas = await renderLayer(i, settings, 2, 350);
-        if (!canvas) continue;
-        Object.assign(document.createElement('a'), {
-          download: `${filename}_Layer_${floorLayouts[i]?.layer || i + 1}.png`,
-          href: canvas.toDataURL('image/png'),
-        }).click();
-      }
-    } else if (settings.exportType === 'pdf') {
-      const orient = settings.orientation === 'portrait' ? 'p' : 'l';
-      let pdf = null;
-      for (const i of layers) {
-        const canvas = await renderLayer(i, settings, 1.5, 400);
-        if (!canvas) continue;
-        const { width: w, height: h } = canvas;
-        if (!pdf) pdf = new jsPDF({ orientation: orient, unit: 'px', format: [w, h] });
-        else pdf.addPage([w, h], orient);
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, w, h);
-      }
-      pdf?.save(`${filename}_Report.pdf`);
+    const captureLayer = async (idx) => {
+      setSelectedLayer(idx);
+      setExportWorkspaceConfig({
+        showFov: settings.showFov,
+        brandingActive: true, brandingData: settings.branding,
+      });
+      await new Promise((r) => setTimeout(r, 400));
+      if (!workspaceRef.current) return null;
+      try { return await html2canvas(workspaceRef.current, { useCORS: true, scale: 1.5 }); }
+      catch (err) { console.error(err); return null; }
+    };
+
+    const orientation = settings.orientation === 'portrait' ? 'p' : 'l';
+    let pdf = null;
+
+    for (const i of layers) {
+      const canvas = await captureLayer(i);
+      if (!canvas) continue;
+
+      const { width, height } = canvas;
+      if (!pdf) pdf = new jsPDF({ orientation, unit: 'px', format: [width, height] });
+      else pdf.addPage([width, height], orientation);
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, width, height);
     }
+    pdf?.save(`${filename}_Report.pdf`);
 
     setSelectedLayer(original);
     setExportWorkspaceConfig({ showFov: true, brandingActive: false, brandingData: null });
@@ -617,36 +607,36 @@ function DesignPage() {
 
   if (loading) return <p className="design-message">Loading floor layouts...</p>;
 
+  const currentLayout = floorLayouts[selectedLayer] ?? null;
   const currentImageSrc = imageSrcFromState
     ? imageSrcFromState
-    : floorLayouts.length > 0
-    ? `http://localhost:5113/api/floorlayouts/image/${floorLayouts[selectedLayer]?.floorID}`
+    : currentLayout
+    ? `http://localhost:5113/api/floorlayouts/image/${currentLayout.floorID}`
     : null;
 
   if (!currentImageSrc) {
     return <p className="design-message">No floor layouts found for this project.</p>;
   }
 
-  const currentFloorId =
-    floorLayouts.length > 0 ? floorLayouts[selectedLayer]?.floorID : null;
-  const currentScale =
-    floorLayouts.length > 0 ? floorLayouts[selectedLayer]?.scale ?? '' : '';
+  const currentFloorId = currentLayout?.floorID ?? null;
+  const currentScale = currentLayout?.scale ?? '';
 
   const handleBackButton = () => {
-    if (hasUnsavedChanges) {
-      const confirmLeave = window.confirm(
-        'You have unsaved changes. Do you want to leave without saving?'
-      );
-      if (confirmLeave) navigate('/app/projects');
-    } else {
-      navigate('/app/projects');
+    if (
+      hasUnsavedChanges &&
+      !window.confirm('You have unsaved changes. Do you want to leave without saving?')
+    ) {
+      return;
     }
+    navigate('/app/projects');
   };
 
   const handleBomButton = () => {
-    if (hasUnsavedChanges) {
-      const ok = window.confirm('You have unsaved changes. Please save before viewing the Bill of Materials.');
-      if (!ok) return;
+    if (
+      hasUnsavedChanges &&
+      !window.confirm('You have unsaved changes. Please save before viewing the Bill of Materials.')
+) {
+      return;
     }
     navigate('/app/bom', { state: { projectId } });
   };

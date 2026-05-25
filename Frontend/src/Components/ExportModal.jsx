@@ -8,7 +8,6 @@ import { Checkbox } from 'primereact/checkbox';
 import defaultLogo from '../assets/logo.png';
 
 const defaultExportSettings = {
-  exportType: 'pdf',
   orientation: 'landscape',
   showFov: true,
   selectedLayerIds: [],
@@ -22,7 +21,6 @@ const defaultExportSettings = {
 export default function ExportModal({ visible, floorLayouts = [], currentLayerId, onHide, onConfirmExport }) {
   const [exportSettings, setExportSettings] = useState(defaultExportSettings);
   const {
-    exportType,
     orientation,
     showFov,
     selectedLayerIds,
@@ -86,18 +84,16 @@ export default function ExportModal({ visible, floorLayouts = [], currentLayerId
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         
-        {/* Export Target Type Selection */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        {/* PDF Layout Selection */}
+        <div>
           <div>
             <label style={labelStyle}>Export Format</label>
-            <SelectButton value={exportType} options={[{ label: 'PDF Report', value: 'pdf' }, { label: 'PNG Image', value: 'png' }]} onChange={(e) => e.value && updateExportSetting('exportType', e.value)} />
+            <div style={{ color: '#343a40', fontSize: '14px', fontWeight: '600' }}>PDF Report</div>
           </div>
-          {exportType === 'pdf' && (
-            <div>
-              <label style={labelStyle}>Orientation</label>
-              <SelectButton value={orientation} options={[{ label: 'Landscape', value: 'landscape' }, { label: 'Portrait', value: 'portrait' }]} onChange={(e) => e.value && updateExportSetting('orientation', e.value)} />
-            </div>
-          )}
+          <div style={{ marginTop: '1rem' }}>
+            <label style={labelStyle}>Orientation</label>
+            <SelectButton value={orientation} options={[{ label: 'Landscape', value: 'landscape' }, { label: 'Portrait', value: 'portrait' }]} onChange={(e) => e.value && updateExportSetting('orientation', e.value)} />
+          </div>
         </div>
 
         {/* TARGET LAYERS FILTER SELECTION BOX */}
