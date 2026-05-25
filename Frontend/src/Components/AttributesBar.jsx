@@ -8,18 +8,11 @@ import { TabView, TabPanel } from 'primereact/tabview';
 import { useState, useRef, useEffect } from 'react';
 import './AttributesBar.css';
 
-const DEFAULT_FOV_COLOR = 'rgba(0, 150, 255, 0.3)';
+const DEFAULT_FOV_COLOR = '#0096ff';
 const DEFAULT_FOV_OPACITY = 0.3;
 const MAX_ICON_BYTES = 1_000_000;
 const ALLOWED_ICON_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp', 'image/gif'];
-const PRESET_COLORS = [
-  'rgba(0, 150, 255, 0.3)',
-  'rgba(255, 0, 0, 0.3)',
-  'rgba(0, 255, 0, 0.3)',
-  'rgba(255, 165, 0, 0.3)',
-  'rgba(128, 0, 128, 0.3)',
-  'rgba(255, 255, 0, 0.3)',
-];
+const PRESET_COLORS = ['#0096ff', '#ff0000', '#00ff00', '#ffa500', '#800080', '#ffff00'];
 const DEVICE_SPECIFICATION_FIELDS = [
   { field: 'maxResolutionMp', label: 'Max Resolution', unit: 'MP' },
   { field: 'channelCount', label: 'Number of Channels' },
@@ -29,33 +22,6 @@ const DEVICE_SPECIFICATION_FIELDS = [
 
 function formatPropertiesTitle(type) {
   return type ? `${type.charAt(0).toUpperCase()}${type.slice(1)} properties` : 'Properties';
-}
-
-function rgbaToHex(rgba) {
-  if (typeof rgba !== 'string') return '#0096ff';
-  const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  if (!match) return '#0096ff';
-  const [, r, g, b] = match;
-  return (
-    '#' +
-    [r, g, b].map((x) => {
-      const hex = parseInt(x).toString(16);
-      return hex.length === 1 ? '0' + hex : hex;
-    }).join('')
-  );
-}
-
-function hexToRgba(hex, opacity) {
-  const normalizedHex = hex.replace('#', '');
-  const r = parseInt(normalizedHex.substring(0, 2), 16);
-  const g = parseInt(normalizedHex.substring(2, 4), 16);
-  const b = parseInt(normalizedHex.substring(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-}
-
-function stripOpacity(rgba) {
-  if (typeof rgba !== 'string') return '';
-  return rgba.replace(/,?\s*[\d.]+\)$/, '') + ')';
 }
 
 function AttributesBar({
@@ -97,11 +63,9 @@ function AttributesBar({
 
   if (!selectedItem) return null;
 
-  const currentOpacity = selectedItem.fovOpacity ?? DEFAULT_FOV_OPACITY;
   const currentFovColor = selectedItem.fovColor ?? DEFAULT_FOV_COLOR;
-  const isPreset = PRESET_COLORS.some(
-    (preset) => stripOpacity(preset) === stripOpacity(currentFovColor)
-  );
+  const currentOpacity = selectedItem.fovOpacity ?? DEFAULT_FOV_OPACITY;
+  const isPreset = PRESET_COLORS.includes(currentFovColor);
 
   function handleIconUpload(event) {
     const file = event.target.files?.[0];
@@ -137,8 +101,7 @@ function AttributesBar({
   const brandName = attrs.brand ?? '';
   const modelName = attrs.cameraModel ?? attrs.modelName ?? selectedItem.name ?? '';
   const costPerUnit = attrs.costPerUnit;
-  const rawType = selectedItem.type ?? '';
-  const propertiesTitle = formatPropertiesTitle(rawType);
+  const propertiesTitle = formatPropertiesTitle(selectedItem.type ?? '');
   const deviceSpecifications = attrs.deviceSpecifications ?? {};
 
   function updateSetting(field, value) {
@@ -160,7 +123,6 @@ function AttributesBar({
 
   function updateOpacity(newOpacity) {
     updateSetting('fovOpacity', newOpacity);
-    updateSetting('fovColor', hexToRgba(rgbaToHex(currentFovColor), newOpacity));
   }
 
   return (
@@ -369,9 +331,7 @@ function AttributesBar({
                       {PRESET_COLORS.map((color, index) => (
                         <div
                           key={index}
-                          className={`fov-swatch ${
-                            stripOpacity(color) === stripOpacity(currentFovColor) ? 'selected' : ''
-                          }`}
+                          className={`fov-swatch ${color === currentFovColor ? 'selected' : ''}`}
                           style={{ backgroundColor: color }}
                           onClick={() => {
                             setShowPicker(false);
@@ -396,12 +356,11 @@ function AttributesBar({
                     {showPicker && (
                       <div ref={pickerRef} className="picker-inline">
                         <ColorPicker
-                          value={rgbaToHex(currentFovColor)}
+                          value={currentFovColor}
                           format="hex"
                           inline
                           onChange={(e) => {
-                            const rgba = hexToRgba(e.value, currentOpacity);
-                            updateSetting('fovColor', rgba);
+                            updateSetting('fovColor', `#${e.value.replace('#', '')}`);
                           }}
                         />
                       </div>

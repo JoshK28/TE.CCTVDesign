@@ -21,7 +21,7 @@ const EMPTY_MANUAL = { subtype: '', manufacturer: '', modelName: '', costPerUnit
 
 const CAMERA_TYPE_OPTIONS = ['Bullet', 'Dome', 'PTZ', 'Box'];
 const CAMERA_RESOLUTION_OPTIONS = Array.from({ length: 16 }, (_, i) => `${i + 1}MP`);
-const DEVICE_TYPE_OPTIONS = ['Router', 'Sensor', 'Alarm', 'NVR', 'Switch', 'Access Point'];
+const DEVICE_TYPE_OPTIONS = ['Access Point', 'Alarm', 'NVR', 'Router', 'Sensor', 'Server', 'Switch'];
 
 export default function EquipmentSelector({ visible, placementType, onHide, onConfirmSelection }) {
   const isCamera = placementType === 'camera';

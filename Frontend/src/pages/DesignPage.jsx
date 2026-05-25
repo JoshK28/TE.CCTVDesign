@@ -31,8 +31,8 @@ const CAMERA_DEFAULTS = {
   resolution: '1080p',
   irRange: 30,
   notes: '',
+  fovColor: '#0096ff',
   fovOpacity: 0.3,
-  fovColor: 'rgba(0, 150, 255, 0.3)',
 };
 
 const createCamera = ({ x, y, name = '', attributes = {}, rotation = 0, id = Date.now() }) => ({
@@ -428,8 +428,10 @@ function Workspace({
                   <polygon
                     key={item.id}
                     points={calculateFovPolygon(item, currentWalls)}
-                    fill={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
-                    stroke={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
+                    fill={item.fovColor ?? '#0096ff'}
+                    stroke={item.fovColor ?? '#0096ff'}
+                    fillOpacity={item.fovOpacity ?? 0.3}
+                    strokeOpacity={item.fovOpacity ?? 0.3}
                     strokeWidth="2"
                   />
                 ))}
