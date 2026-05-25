@@ -1,14 +1,8 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import AppLayout from "../Components/AppLayout";
 import "../page_styling/storageCalculator.css";
 import api from "../services/api";
-
-const NAV = [
-  { label: "⬅ Back to Dashboard", to: "/app/dashboard" },
-  { label: "📂 View Projects", to: "/app/projects" },
-  { label: "📊 Storage Calculator", to: "/app/calculator" },
-];
 
 const DEFAULT_CHANNEL = {
   standard: "PAL",
@@ -20,9 +14,20 @@ const DEFAULT_CHANNEL = {
 
 function StorageNetworkCalculator({ onLogout }) {
   const location = useLocation();
+  const navigate = useNavigate();
 
   // get projectId if coming from design page
   const projectId = location.state?.projectId;
+  const nav = [
+    projectId
+      ? {
+          label: "← Back to Project",
+          onClick: () => navigate("/app/design", { state: { projectId } }),
+        }
+      : { label: "⬅ Back to Dashboard", to: "/app/dashboard" },
+    { label: "📂 View Projects", to: "/app/projects" },
+    { label: "📊 Storage Calculator", to: "/app/calculator" },
+  ];
 
   const [channels, setChannels] = useState([
     { id: 1, name: "Channel 1", ...DEFAULT_CHANNEL },
@@ -87,7 +92,7 @@ function StorageNetworkCalculator({ onLogout }) {
   return (
     <AppLayout
       className="calc-page"
-      nav={NAV}
+      nav={nav}
       onLogout={onLogout}
       mainClassName="calc-main"
     >
