@@ -48,7 +48,7 @@ SQL Server Express should start automatically on boot. If it doesn't:
    - Restore backend packages
    - Create the database and tables
    - Seed the 21 HikVision cameras
-   - Install all frontend dependencies
+   - Install all frontend dependencies and build the frontend
 
 ---
 
@@ -56,9 +56,19 @@ SQL Server Express should start automatically on boot. If it doesn't:
 
 1. Double-click **`run.bat`**
 2. A CMD window will open and start the application
-3. The browser will open automatically at `http://localhost:5173`
+3. The browser will open automatically at `http://localhost:5113`
 
-To shut down, press **`Ctrl + C`** in the CMD window then press **`Y`** to confirm.
+To shut down, press **`Ctrl + C`** in the CMD window, press **`Y`** to confirm, then press any key to close the window.
+
+---
+
+## Receiving Updates
+
+When a new version of the application is provided:
+
+1. Replace the project files with the updated version
+2. Double-click **`install.bat`** again to apply any database changes and rebuild the frontend
+3. Double-click **`run.bat`** to start the application
 
 ---
 
@@ -72,5 +82,5 @@ To shut down, press **`Ctrl + C`** in the CMD window then press **`Y`** to confi
 ## Important Notes
 - Never commit `appsettings.json` — it contains your server details and is excluded from Git
 - Make sure SQL Server Express is running before starting the application
-- Backend runs on `http://localhost:5113` — Swagger available at `http://localhost:5113/swagger`
-- Frontend runs on `http://localhost:5173` and launches automatically when the backend starts
+- The application runs on `http://localhost:5113`
+- Swagger API documentation available at `http://localhost:5113/swagger`

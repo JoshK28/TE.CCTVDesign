@@ -6,28 +6,29 @@ echo.
 
 cd /d "%~dp0"
 
-echo [1/5] Installing EF Core tools...
+echo [1/4] Installing EF Core tools...
 dotnet tool install --global dotnet-ef
 echo.
 
-echo [2/5] Restoring backend packages...
-cd Backend
+echo [2/4] Restoring backend packages...
+cd /d "%~dp0Backend"
 dotnet restore
 echo.
 
-echo [3/5] Running database migrations + seeding cameras...
+echo [3/4] Running database migrations + seeding cameras...
 dotnet ef database update
 echo.
 
-echo [4/5] Installing frontend dependencies...
-cd ..\Frontend
-npm install
-npm install axios
-npm install primereact
-npm install primeicons
+echo [4/4] Installing and building frontend...
+cd /d "%~dp0Frontend"
+call npm install
+call npm install axios
+call npm install primereact
+call npm install primeicons
+call npm run build
 echo.
 
-echo [5/5] Setup complete!
+echo Setup complete!
 echo.
 echo IMPORTANT: Before running the app, make sure you have:
 echo   1. Renamed appsettings.example.json to appsettings.json

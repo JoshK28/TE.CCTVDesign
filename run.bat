@@ -4,12 +4,14 @@ echo    TE.CCTVDesign - Starting Application
 echo ========================================
 echo.
 
-cd /d "%~dp0"
-
-set ASPNETCORE_ENVIRONMENT=Development
+cd /d "%~dp0Backend"
 
 echo Starting TE.CCTVDesign...
-cd Backend
-dotnet run
+start "TE.CCTVDesign" cmd /k "dotnet run & pause & exit"
 
-pause
+echo Waiting for application to start...
+timeout /t 6 /nobreak > nul
+
+start "" "http://localhost:5113"
+
+exit
