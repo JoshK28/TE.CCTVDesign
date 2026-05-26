@@ -3,6 +3,7 @@ import domeIcon from '../assets/Icons/Dome.png';
 import routerIcon from '../assets/Icons/Router.png';
 import sensorIcon from '../assets/Icons/Sensor.png';
 import alarmIcon from '../assets/Icons/Alarm.png';
+import nvrIcon from '../assets/Icons/NVR.png';
 import { getImagePoint } from '../utils/points';
 
 const renderImg = (src) => (
@@ -18,7 +19,7 @@ const ICONS = {
   router: renderImg(routerIcon),
   sensor: renderImg(sensorIcon),
   alarm: renderImg(alarmIcon),
-  nvr: <span className="equipment-icon equipment-icon--emoji">💾</span>,
+  nvr: renderImg(nvrIcon),
   switch: <span className="equipment-icon equipment-icon--emoji">🔀</span>,
   'access point': <span className="equipment-icon equipment-icon--emoji">📡</span>,
 };
