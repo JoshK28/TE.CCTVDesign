@@ -560,13 +560,11 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-<<<<<<< HEAD
                     b.Property<bool>("CorridorMode")
                         .HasColumnType("bit");
-=======
+                        
                     b.Property<int?>("CustomCameraId")
                         .HasColumnType("int");
->>>>>>> origin/DemoMerging
 
                     b.Property<int>("FloorID")
                         .HasColumnType("int");
