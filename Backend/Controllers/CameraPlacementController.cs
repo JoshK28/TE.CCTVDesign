@@ -42,7 +42,10 @@ namespace Backend.Controllers
                     Type = placement.Type,
                     CameraModel = placement.CameraModel,
                     Brand = placement.Brand,
-                    Resolution = placement.Resolution
+                    Resolution = placement.Resolution,
+                    ModelName = placement.ModelName ?? string.Empty,
+                    Subtype = placement.Subtype ?? string.Empty,
+                    CostPerUnit = placement.CostPerUnit
                 });
             }
 

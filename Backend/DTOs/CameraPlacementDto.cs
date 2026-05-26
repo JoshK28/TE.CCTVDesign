@@ -13,5 +13,8 @@ namespace Backend.DTOs
         public string CameraModel { get; set; } = string.Empty;
         public string Brand { get; set; } = string.Empty;
         public string Resolution { get; set; } = string.Empty;
+        public string ModelName { get; set; } = string.Empty;
+        public string Subtype { get; set; } = string.Empty;
+        public double? CostPerUnit { get; set; }
     }
 }

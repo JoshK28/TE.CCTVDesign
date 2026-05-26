@@ -118,21 +118,27 @@ function Workspace({
       try {
         const res = await api.get(`/api/camerplacements/${floorId}`);
         const loaded = (res.data ?? []).map((p) => {
+          const type = p.type || 'camera';
+          const modelName = p.modelName ?? '';
+          const subtype = p.subtype ?? '';
+
           const attributes = {
             cameraId: p.cameraId ?? 0,
-            cameraModel: p.cameraModel ?? '',
             brand: p.brand ?? '',
             resolution: p.resolution ?? '',
+            ...(p.cameraModel ? { cameraModel: p.cameraModel } : {}),
+            ...(modelName ? { modelName } : {}),
+            ...(type === 'camera' && subtype ? { cameraType: subtype } : {}),
+            ...(p.costPerUnit != null ? { costPerUnit: p.costPerUnit } : {}),
           };
           const args = {
             x: p.x,
             y: p.y,
             id: p.placementID ?? Date.now(),
             rotation: p.rotation ?? 0,
-            name: p.cameraModel ?? '',
+            name: p.cameraModel || modelName || '',
             attributes,
           };
-          const type = p.type || 'camera';
           return type === 'camera' ? createCamera(args) : createDevice({ ...args, type });
         });
         setEquipment(loaded);

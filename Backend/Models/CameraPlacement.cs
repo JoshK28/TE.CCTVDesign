@@ -20,6 +20,12 @@ namespace Backend.Models
         public string Brand { get; set; } = string.Empty;
         public string Resolution { get; set; } = string.Empty;
 
+        // additional fields for user-defined ("custom") equipment that
+        // does not reference a catalog Camera / NetworkingDevice / AccessControlDevice row.
+        public string ModelName { get; set; } = string.Empty;
+        public string Subtype { get; set; } = string.Empty;
+        public double? CostPerUnit { get; set; }
+
         public FloorLayout? FloorLayout { get; set; }
         public Camera? Camera { get; set; }
         public NetworkingDevice? NetworkingDevice { get; set; }

@@ -99,7 +99,7 @@ function AttributesBar({
   const isCamera = selectedItem.type === 'camera';
   const isDevice = !isCamera;
   const brandName = attrs.brand ?? '';
-  const modelName = attrs.cameraModel ?? attrs.modelName ?? selectedItem.name ?? '';
+  const modelName = attrs.cameraModel || attrs.modelName || selectedItem.name || '';
   const costPerUnit = attrs.costPerUnit;
   const propertiesTitle = formatPropertiesTitle(selectedItem.type ?? '');
   const deviceSpecifications = attrs.deviceSpecifications ?? {};

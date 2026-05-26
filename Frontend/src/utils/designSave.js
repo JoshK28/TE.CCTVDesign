@@ -1,18 +1,41 @@
 import api from '../services/api';
 
-const toPlacementPayload = (item, floorId) => ({
-  floorID: floorId,
-  cameraId: item.attributes?.cameraId ?? null,
-  networkingId: item.attributes?.networkingId ?? null,
-  accessControlId: item.attributes?.accessControlId ?? null,
-  x: item.x,
-  y: item.y,
-  rotation: item.rotation || 0,
-  type: item.type || 'camera',
-  cameraModel: item.attributes?.cameraModel ?? '',
-  brand: item.attributes?.brand ?? '',
-  resolution: item.attributes?.resolution ?? '',
-});
+const toPlacementPayload = (item, floorId) => {
+  const attrs = item.attributes ?? {};
+  const isCatalogItem =
+    attrs.cameraId != null || attrs.networkingId != null || attrs.accessControlId != null;
+
+  // Subtype carries the camera type (Bullet/Dome/PTZ/…) for cameras or the
+  // original-cased device subtype (Router/Switch/…) for devices. For catalog
+  // items we leave it empty since the FK lookup recovers the real type.
+  const subtype = isCatalogItem
+    ? ''
+    : item.type === 'camera'
+      ? attrs.cameraType ?? ''
+      : item.type ?? '';
+
+  const costPerUnit =
+    typeof attrs.costPerUnit === 'number' && Number.isFinite(attrs.costPerUnit)
+      ? attrs.costPerUnit
+      : null;
+
+  return {
+    floorID: floorId,
+    cameraId: attrs.cameraId ?? null,
+    networkingId: attrs.networkingId ?? null,
+    accessControlId: attrs.accessControlId ?? null,
+    x: item.x,
+    y: item.y,
+    rotation: item.rotation || 0,
+    type: item.type || 'camera',
+    cameraModel: attrs.cameraModel ?? '',
+    brand: attrs.brand ?? '',
+    resolution: attrs.resolution ?? '',
+    modelName: attrs.modelName ?? '',
+    subtype,
+    costPerUnit,
+  };
+};
 
 const toWallPayload = (wall, floorId) => ({
   floorID: floorId,
