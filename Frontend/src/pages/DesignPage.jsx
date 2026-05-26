@@ -41,6 +41,7 @@ const CAMERA_DEFAULTS = {
   iconBackgroundColor: DEFAULT_ICON_BACKGROUND_COLOR,
 };
 
+// Build a fresh camera placement object with all FOV/appearance defaults.
 const createCamera = ({ x, y, name = '', attributes = {}, rotation = 0, id = Date.now() }) => ({
   id,
   type: 'camera',
@@ -53,6 +54,7 @@ const createCamera = ({ x, y, name = '', attributes = {}, rotation = 0, id = Dat
   attributes,
 });
 
+// Build a fresh non-camera device placement (NVR, switch, sensor, etc.).
 const createDevice = ({ x, y, type, name = '', attributes = {}, id = Date.now() }) => ({
   id,
   type,
@@ -63,6 +65,13 @@ const createDevice = ({ x, y, type, name = '', attributes = {}, id = Date.now() 
   attributes,
 });
 
+/*
+The Workspace component is the interactive canvas for a single floor layout.
+It owns equipment placements, the wall graph and obstacles for the active
+floor, wires up the toolbar/equipment-selector/attributes-bar/draw layers,
+and exposes save + undo/redo. The parent DesignPage decides which floor image
+and ID to display.
+*/
 function Workspace({
   imageSrc,
   floorId,
@@ -113,6 +122,10 @@ function Workspace({
   const currentWalls = wallToSegments(currentWallGraph);
 
   // LOAD FLOOR DATA
+  // Whenever the active floor changes, fetch placements, walls and obstacles
+  // for that floor from the backend and hydrate the workspace state. The
+  // placement loader unpacks the per-placement SettingsJson blob into the
+  // shape used by the UI (see utils/designSave.js → buildSettingsJson).
   useEffect(() => {
     if (!floorId) return;
 
@@ -212,6 +225,8 @@ function Workspace({
   // EQUIPMENT SELECTOR HELPERS
   const closeEquipmentSelector = () => setPendingEquipment(null);
 
+  // Open the EquipmentSelector sidebar for either a new placement at (x, y)
+  // or to replace the model on an existing item (when `replaceItemId` is set).
   const openEquipmentSelector = ({ x, y, type, replaceItemId }) => {
     setPendingEquipment(
       replaceItemId != null ? { x, y, type, replaceItemId } : { x, y, type }
@@ -220,6 +235,8 @@ function Workspace({
     setActiveTool(null);
   };
 
+  // Activate a toolbar tool (camera, device, wall, obstacle), clearing any
+  // in-progress selector so only one tool/dialog is active at a time.
   const armTool = (tool) => {
     closeEquipmentSelector();
     setActiveTool(tool);
@@ -262,6 +279,10 @@ function Workspace({
   };
 
   // NEW ITEM PLACEMENT (click or drag/drop)
+  // Translates a click or drop on the floor plan into either opening the
+  // equipment selector at the clicked point, or deselecting the current item.
+  // Wall and obstacle tools have their own drawing layers, so they are ignored
+  // here.
   const handleCanvasInteraction = (event) => {
     event.stopPropagation();
     const droppedTool = event.dataTransfer ? event.dataTransfer.getData('tool') : '';
@@ -277,6 +298,9 @@ function Workspace({
     closeEquipmentSelector();
   };
 
+  // Called from the EquipmentSelector once the user picks a catalog item or
+  // confirms a manual entry. Either creates a new placement or, when
+  // `replaceItemId` is set, swaps the model on an existing one.
   const handleConfirmPlacement = ({ subtype, name, attributes = {} } = {}) => {
     if (!pendingEquipment) return;
 
@@ -343,6 +367,9 @@ function Workspace({
   // -----------------------------
   // SAVE
   // -----------------------------
+  // Persist the current floor's placements, walls and obstacles to the
+  // backend, showing a toast for success/failure. Save is disabled when no
+  // floor is selected.
   const handleSave = async () => {
     if (!floorId) {
       toastRef.current?.show({
@@ -576,6 +603,12 @@ function Workspace({
   );
 }
 
+/*
+The DesignPage component is the top-level page for editing a project's CCTV
+layout. It loads the floor layouts for the active project, lets the user
+switch between layers, and hosts the Workspace component plus the PDF export
+flow (ExportModal + html2canvas/jsPDF).
+*/
 function DesignPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -612,6 +645,9 @@ function DesignPage() {
     fetchFloorLayouts();
   }, [projectId, imageSrcFromState, navigate]);
 
+  // Runs the export pipeline from the ExportModal: for each selected layer it
+  // applies branding/FOV visibility options, captures the workspace with
+  // html2canvas, and appends the image to a multi-page jsPDF document.
   const handleExecuteExport = async (settings) => {
     setExportModalOpen(false);
     const filename = settings.branding.projectTitle.replace(/\s+/g, '_');

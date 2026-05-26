@@ -29,6 +29,15 @@ function formatPropertiesTitle(type) {
   return type ? `${type.charAt(0).toUpperCase()}${type.slice(1)} properties` : 'Properties';
 }
 
+/*
+The AttributesBar is the right-hand sidebar shown when a placement is
+selected. It groups every editable property of that placement into tabs:
+  - Settings    : brand/model, rotation, height, focal length, IR range, etc.
+  - Specifications (devices only): channel count, bandwidth, max resolution.
+  - Appearance  : FOV colour/opacity, icon background, optional custom icon
+Edits are forwarded one field at a time via onUpdateSettings(id, field, value)
+so the parent can apply them through the undo/redo-aware updatePlacement().
+*/
 function AttributesBar({
   selectedItem,
   onClose,
@@ -59,6 +68,9 @@ function AttributesBar({
   const swatchOpenHandler = (id) => (next) =>
     setOpenSwatch(next ? id : (current) => (current === id ? null : current));
 
+  // Validate, read and store a user-uploaded icon as a data URL on the
+  // placement's `customIcon` field. Rejects unsupported types and files
+  // larger than MAX_ICON_BYTES.
   function handleIconUpload(event) {
     const file = event.target.files?.[0];
     event.target.value = '';
@@ -96,14 +108,18 @@ function AttributesBar({
   const propertiesTitle = formatPropertiesTitle(selectedItem.type ?? '');
   const deviceSpecifications = attrs.deviceSpecifications ?? {};
 
+  // Forward a single top-level field update for the selected placement.
   function updateSetting(field, value) {
     onUpdateSettings(selectedItem.id, field, value);
   }
 
+  // Merge into the placement's `attributes` blob (brand, resolution, etc.).
   function updateAttributes(updates) {
     updateSetting('attributes', { ...attrs, ...updates });
   }
 
+  // Update a single field inside `attributes.deviceSpecifications` (used by
+  // non-camera devices for things like channel count or bandwidth).
   function updateDeviceSpecification(field, value) {
     updateAttributes({
       deviceSpecifications: {

@@ -12,6 +12,17 @@ const DEFAULT_CHANNEL = {
   bitrate: 20480,
 };
 
+/*
+The StorageNetworkCalculator page lets the user estimate CCTV storage and
+bandwidth requirements. Channels (one per camera) define resolution, encoding
+and frame rate; the page then calculates one of three things depending on the
+selected mode:
+  - "saving":    how long a given disk lasts at the configured channel bitrates
+  - "disk":      how much disk is needed for a given retention period
+  - "bandwidth": total Mbps/Gbps and a recommended switch capacity (+20%)
+If opened with a projectId in router state, channels are pre-populated from
+the project's placed cameras.
+*/
 function StorageNetworkCalculator({ onLogout }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -84,6 +95,9 @@ function StorageNetworkCalculator({ onLogout }) {
   const deleteChannel = (id) =>
     setChannels((prev) => prev.filter((ch) => ch.id !== id));
 
+  // Patch one channel row. When resolution/encoding/fps changes the channel
+  // bitrate is recomputed from the resolution baseline (H.265 halves the
+  // bitrate vs H.264, and fps scales linearly relative to 25 fps).
   const updateChannel = (index, patch) => {
     setChannels((prev) =>
       prev.map((ch, i) => {
@@ -91,7 +105,6 @@ function StorageNetworkCalculator({ onLogout }) {
 
         const updated = { ...ch, ...patch };
 
-        // recalculate bitrate if any affecting field changed
         if (patch.resolution || patch.encoding || patch.fps) {
           const base = BASE_BITRATES[updated.resolution] ?? 20480;
           const encodingMultiplier = updated.encoding === "H.265" ? 0.5 : 1;
@@ -104,6 +117,8 @@ function StorageNetworkCalculator({ onLogout }) {
     );
   };
 
+  // Runs the calculation for the currently selected mode and writes the
+  // result into state for display.
   const calculate = () => {
     const totalBitrateKbps = channels.reduce((acc, ch) => acc + Number(ch.bitrate), 0);
     const bytesPerSecond = (totalBitrateKbps * 1000) / 8;

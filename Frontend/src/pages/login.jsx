@@ -4,6 +4,11 @@ import api from "../services/api";
 import '../page_styling/login.css';
 import tePNGLogo from '../assets/logo.png';
 
+/*
+The Login component renders the login form, authenticates the user against the
+backend, stores the returned token/username in localStorage, and notifies the
+parent (App) so it can flip the app into the logged-in state.
+*/
 function Login({ onLogin }) {
   const [formData, setFormData] = useState({
     email: "",
@@ -13,10 +18,14 @@ function Login({ onLogin }) {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  // Keep the form state in sync with the controlled email/password inputs.
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Submits credentials to /api/auth/login, persists the JWT token on success
+  // and navigates the user to the dashboard. Any error from the API is shown
+  // beneath the form.
   const handleLogin = async (e) => {
     e.preventDefault();
     try {

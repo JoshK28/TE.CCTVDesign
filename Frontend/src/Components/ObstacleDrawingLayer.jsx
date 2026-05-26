@@ -16,6 +16,9 @@ const OBSTACLE_HINTS = {
   edit: 'Obstacle edit mode — click to select, drag to move, drag handles to resize, Delete to remove. Esc deselects or exits; Enter exits.',
 };
 
+// Non-interactive SVG overlay that paints every obstacle rectangle plus its
+// label. Used outside of obstacle-edit mode (the editor renders its own copy
+// with handles on top).
 export function ObstacleOverlay({ obstacles, imageSize, selectedId = null }) {
   return (
     <svg className="obstacle-overlay" viewBox={getViewBox(imageSize)} preserveAspectRatio="none">
@@ -34,6 +37,17 @@ export function ObstacleOverlay({ obstacles, imageSize, selectedId = null }) {
   );
 }
 
+/*
+ObstacleDrawingLayer is the interactive overlay used while the "obstacle"
+tool is active. It works in two phases controlled by `mode`:
+  - "draw" : click-and-drag to define a rectangle, then enter a label in the
+             popup. Enter switches to edit mode.
+  - "edit" : click to select, drag the body to move, drag the 8 handles to
+             resize, Delete/Backspace to remove. Esc deselects or exits;
+             Enter exits the tool entirely.
+All changes are forwarded via onObstaclesChange so the parent stays the
+single source of truth and can persist obstacles on save.
+*/
 export default function ObstacleDrawingLayer({
   obstacles,
   imageSize,
@@ -75,6 +89,8 @@ export default function ObstacleDrawingLayer({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [mode, selectedObstacleId, pendingRect, onObstaclesChange, onExitObstacleMode]);
 
+  // Commit a freshly drawn rectangle as a new obstacle, defaulting the label
+  // to "Obstacle" if the user did not type one.
   const confirmLabel = () => {
     if (!pendingRect) return;
     onObstaclesChange((prev) => [
@@ -96,6 +112,9 @@ export default function ObstacleDrawingLayer({
     setLabelInput('');
   };
 
+  // Pointer-down dispatcher: start a draw rectangle, begin a resize from a
+  // selected obstacle's handle, start a move of an obstacle, or clear the
+  // current selection if the click landed on empty space.
   const handlePointerDown = (e) => {
     if (pendingRect) return;
     const pt = getImagePoint(e, e.currentTarget, imageSize);
@@ -126,6 +145,8 @@ export default function ObstacleDrawingLayer({
     setSelectedObstacleId(null);
   };
 
+  // Drive the live preview while drawing, or apply a move/resize to the
+  // selected obstacle while editing.
   const handlePointerMove = (e) => {
     const pt = getImagePoint(e, e.currentTarget, imageSize);
 
@@ -155,6 +176,8 @@ export default function ObstacleDrawingLayer({
     setDragging((d) => ({ ...d, lastX: pt.x, lastY: pt.y }));
   };
 
+  // Pointer-up: finalise a drawn rectangle (only if it meets the minimum
+  // size) by opening the label popup, or simply end any move/resize drag.
   const handlePointerUp = () => {
     if (mode === 'draw' && draft) {
       const rect = normaliseRect(draft.startX, draft.startY, draft.currentX, draft.currentY);

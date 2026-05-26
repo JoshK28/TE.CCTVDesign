@@ -18,6 +18,14 @@ const defaultExportSettings = {
   },
 };
 
+/*
+ExportModal is the configuration dialog for exporting the current design to
+a PDF report. It lets the user pick orientation, choose which floor layers to
+include, toggle FOV/wall visibility, and customise the branding strip
+(company name, project title, logo). When the user clicks "Run Export
+Processing" the chosen settings are handed to onConfirmExport so the parent
+(DesignPage) can run the actual html2canvas/jsPDF pipeline.
+*/
 export default function ExportModal({ visible, floorLayouts = [], currentLayerId, onHide, onConfirmExport }) {
   const [exportSettings, setExportSettings] = useState(defaultExportSettings);
   const {
@@ -50,6 +58,8 @@ export default function ExportModal({ visible, floorLayouts = [], currentLayerId
     }));
   };
 
+  // Read the user-selected logo file as a data URL so it can be embedded
+  // directly into the captured PDF without needing a network round-trip.
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -59,6 +69,8 @@ export default function ExportModal({ visible, floorLayouts = [], currentLayerId
     }
   };
 
+  // Toggle a floor layer's ID in the selectedLayerIds list (used to decide
+  // which floors get rendered as pages in the exported PDF).
   const handleLayerCheckboxChange = (id, checked) => {
     setExportSettings((prev) => ({
       ...prev,

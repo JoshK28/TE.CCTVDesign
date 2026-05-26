@@ -1,3 +1,7 @@
+// Geometry helpers for drawing, hit-testing and resizing obstacle rectangles
+// on the floor plan. An "obstacle" is an axis-aligned rectangle that the FOV
+// ray-cast treats as opaque (see utils/fov.js).
+
 export const HANDLE_SIZE = 8;
 export const MIN_SIZE = 10;
 
@@ -12,6 +16,8 @@ export const RESIZE_HANDLES = [
   { id: 'w',  cx: 0,   cy: 0.5, cursor: 'w-resize'  },
 ];
 
+// Convert two arbitrary corner points into a top-left + width/height rect
+// (so dragging in any direction always yields positive width/height).
 export const normaliseRect = (x1, y1, x2, y2) => ({
   x: Math.min(x1, x2),
   y: Math.min(y1, y2),
@@ -19,6 +25,9 @@ export const normaliseRect = (x1, y1, x2, y2) => ({
   height: Math.abs(y2 - y1),
 });
 
+// Apply an (dx, dy) pointer delta to an obstacle by adjusting only the
+// edges implied by the handle id (e.g. "nw" moves north + west edges).
+// Width/height are clamped to MIN_SIZE so the rectangle can't collapse.
 export const applyResize = (o, handleId, dx, dy) => {
   let { x, y, width, height } = o;
   if (handleId.includes('e')) width  = Math.max(MIN_SIZE, width  + dx);
@@ -28,11 +37,16 @@ export const applyResize = (o, handleId, dx, dy) => {
   return { ...o, x, y, width, height };
 };
 
+// Find the topmost obstacle containing the point, or null. The list is
+// reversed so the visually-on-top obstacle (last drawn) wins.
 export const findObstacleAt = (obstacles, pt) =>
   [...obstacles].reverse().find(
     (o) => pt.x >= o.x && pt.x <= o.x + o.width && pt.y >= o.y && pt.y <= o.y + o.height
   ) ?? null;
 
+// Return the resize handle (nw/n/ne/...) under the point for the given
+// obstacle, or null when the point isn't near any handle. Used by the editor
+// to decide whether a pointer-down should start a resize.
 export const findResizeHandleAt = (obstacle, pt) => {
   if (!obstacle) return null;
   for (const h of RESIZE_HANDLES) {

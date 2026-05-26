@@ -4,6 +4,12 @@ import AppLayout from "../Components/AppLayout";
 import "../page_styling/upsCalculator.css";
 import api from "../services/api";
 
+/*
+The UPSCalculator page estimates how long a UPS will keep the CCTV system
+running. The user lists devices (or auto-loads them from a project) with their
+power draw and unit count, then specifies a battery size in Ah. Predicted
+uptime is calculated as: (Ah × 12V × 0.8 efficiency) / total watts.
+*/
 function UPSCalculator({ onLogout }) {
   const location = useLocation();
   const navigate = useNavigate();

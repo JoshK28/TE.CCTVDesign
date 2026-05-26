@@ -26,8 +26,10 @@ const ICONS = {
   'access point': <span className="equipment-icon equipment-icon--emoji">📡</span>,
 };
 
+// Resolves the icon to render for a placement: a user-uploaded custom icon
+// wins, otherwise the icon is chosen from the type (or camera subtype) with
+// a generic "?" emoji as a last-resort fallback.
 const getIcon = (deviceInstance) => {
-  // Custom user-uploaded icon takes precedence over defaults.
   if (deviceInstance?.customIcon) {
     return renderImg(deviceInstance.customIcon);
   }
@@ -45,11 +47,21 @@ const getIcon = (deviceInstance) => {
   return ICONS[type] ?? <span className="equipment-icon equipment-icon--emoji">❓</span>;
 };
 
+/*
+Equipment renders a single placed item (camera or device) on top of the
+floor-plan image. It positions itself in image-coordinate space (percentages
+of the image's natural size so placements stay correct on resize), supports
+click-to-select and drag-to-move, and delegates state updates back to the
+parent via onSelect / onUpdatePlacement.
+*/
 function Equipment({ deviceInstance, imageSize, onSelect, onUpdatePlacement }) {
   const { id, x, y, rotation = 0 } = deviceInstance;
   const iconBackgroundColor =
     deviceInstance.iconBackgroundColor ?? DEFAULT_ICON_BACKGROUND_COLOR;
 
+  // Start a drag: select this item, then track pointer movement against the
+  // parent stage and patch x/y as the user drags. Only the first patch is
+  // committed to the undo stack so an entire drag becomes one undo step.
   const handlePointerDown = (e) => {
     e.stopPropagation();
     onSelect(id);

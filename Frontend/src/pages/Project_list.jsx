@@ -9,6 +9,11 @@ const NAV = [
   { label: "📁 New Project", to: "/app/upload" },
 ];
 
+/*
+The ProjectList component fetches the current user's projects from the backend
+and renders them in a table. From here a user can open a project in the design
+page, edit project metadata via a popup, or delete a project after confirmation.
+*/
 function ProjectList({ onLogout }) {
   const navigate = useNavigate();
 
@@ -32,6 +37,8 @@ function ProjectList({ onLogout }) {
     void fetchProjects();
   }, []);
 
+  // Loads the list of projects belonging to the authenticated user. Called on
+  // first render and whenever the project list needs to be refreshed.
   const fetchProjects = async () => {
     try {
       const res = await api.get("/api/projects");
@@ -43,6 +50,7 @@ function ProjectList({ onLogout }) {
     }
   };
 
+  // Opens the edit modal pre-populated with the selected project's details.
   const handleEditClick = (project) => {
     setEditProject(project);
     setEditForm({
@@ -62,6 +70,8 @@ function ProjectList({ onLogout }) {
     setEditSuccess("");
   };
 
+  // Validates required fields, PUTs the updated project to the backend and
+  // patches the local list so the UI reflects the change without a full reload.
   const handleEditSave = async () => {
     if (!editForm.title) return setEditError("Project name is required");
     if (!editForm.clientName) return setEditError("Client name is required");
@@ -81,6 +91,8 @@ function ProjectList({ onLogout }) {
     }
   };
 
+  // Deletes the project identified by `deleteProjectId` after the user
+  // confirms in the delete-confirmation popup, then removes it from local state.
   const handleDeleteConfirm = async () => {
     try {
       await api.delete(`/api/projects/${deleteProjectId}`);

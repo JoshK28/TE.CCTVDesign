@@ -23,6 +23,16 @@ const CAMERA_TYPE_OPTIONS = ['Bullet', 'Dome', 'PTZ', 'Box'];
 const CAMERA_RESOLUTION_OPTIONS = Array.from({ length: 16 }, (_, i) => `${i + 1}MP`);
 const DEVICE_TYPE_OPTIONS = ['Access Point', 'Alarm', 'NVR', 'Router', 'Sensor', 'Server', 'Switch'];
 
+/*
+EquipmentSelector is the sidebar dialog that appears after the user picks a
+spot on the floor plan. It has two tabs:
+  1) Search — query the catalog (cameras or devices) by manufacturer, type,
+     resolution and free-text model search, then pick a result.
+  2) Add new — record a manual entry (type, manufacturer, model name, cost)
+     for items that are not in the catalog.
+Either path resolves to onConfirmSelection({ subtype, name, attributes }) which
+the parent uses to create or replace a placement.
+*/
 export default function EquipmentSelector({ visible, placementType, onHide, onConfirmSelection }) {
   const isCamera = placementType === 'camera';
   const isDevice = placementType === 'device';
@@ -64,6 +74,9 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     };
   }, [visible, isCamera, isDevice]);
 
+  // Calls the appropriate catalog endpoint (/api/cameras or /api/devices),
+  // forwarding the current filters as query-string parameters. Up to 500 rows
+  // are fetched; the UI does not paginate yet.
   const runSearch = async () => {
     if (!isCamera && !isDevice) return;
 
@@ -93,6 +106,8 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     }
   };
 
+  // Confirm a camera picked from the catalog: passes the catalog cameraId so
+  // the backend can store a FK reference instead of a free-text record.
   const confirmCatalog = (camera) => {
     onConfirmSelection?.({
       subtype: 'Camera',
@@ -108,6 +123,9 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     onHide();
   };
 
+  // Confirm a non-camera device from the catalog. The catalog returns rows
+  // from two underlying tables (networking + access control); the `source`
+  // field tells us which FK to populate.
   const confirmDeviceCatalog = (device) => {
     const source = (device.source ?? '').toLowerCase();
     onConfirmSelection?.({
@@ -124,6 +142,8 @@ export default function EquipmentSelector({ visible, placementType, onHide, onCo
     onHide();
   };
 
+  // Confirm a manual ("not in catalog") entry. Empty fields are stripped so
+  // the placement only carries the attributes the user actually filled in.
   const confirmManual = () => {
     const manufacturer = manual.manufacturer.trim();
     const modelName = manual.modelName.trim();

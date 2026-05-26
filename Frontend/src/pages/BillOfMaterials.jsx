@@ -15,6 +15,13 @@ const CATEGORY_COLORS = {
 };
 const DEFAULT_CATEGORY_COLOR = "#7b1fa2";
 
+/*
+The BillOfMaterials page summarises every placed item for the active project
+as a quote-style document. It pulls placements from the backend, lets the
+user switch currency (AUD ↔ PGK via live exchange rates), computes subtotal,
+10% tax and 5% services, and supports exporting the BOM to PDF (jsPDF +
+jspdf-autotable) or Excel (SheetJS).
+*/
 function BillOfMaterials({ onLogout }) {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -58,6 +65,8 @@ function BillOfMaterials({ onLogout }) {
     new Intl.NumberFormat("en-AU", { style: "currency", currency }).format(v);
   const fixed = (v) => v.toFixed(2);
 
+  // Builds a styled PDF report (header + product table + totals block) using
+  // jsPDF/autoTable and triggers a download.
   const handleExportPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(18);
@@ -89,6 +98,8 @@ function BillOfMaterials({ onLogout }) {
     doc.save(`BOM_Export_${Date.now()}.pdf`);
   };
 
+  // Writes the same product list to a single-sheet .xlsx workbook so users
+  // can edit or import the BOM elsewhere.
   const handleExportExcel = () => {
     const ws = XLSX.utils.json_to_sheet(
       products.map((p) => ({

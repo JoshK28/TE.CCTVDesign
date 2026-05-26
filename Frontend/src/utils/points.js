@@ -1,3 +1,7 @@
+// Convert a pointer/click event into a point in the floor image's natural
+// coordinate space. The DOM image is scaled to fit its container, so we
+// rescale (event.clientX/Y − target offset) by naturalSize / renderedSize so
+// placements/walls/obstacles are stored in image pixels regardless of zoom.
 export const getImagePoint = (event, target = event.currentTarget, imageSize) => {
   if (!target) return { x: 0, y: 0 };
 

@@ -1,9 +1,20 @@
+// Field-of-view helpers used by the design canvas.
+//
+// Each camera renders a triangular/pie-slice polygon representing the area it
+// can see. The polygon is built by ray-casting from the camera's origin
+// across its horizontal FOV (derived from focal length and a default sensor
+// width), and each ray is stopped at the nearest wall or obstacle edge so
+// the FOV is correctly occluded by the layout.
+
 const DEFAULT_SENSOR_WIDTH = 6.4;
 const DEFAULT_MAX_DISTANCE = 300;
 const DEFAULT_RAY_COUNT = 48;
 const DEFAULT_FOCAL_LENGTH = 2.8;
 const RAY_EPSILON = 1e-6;
 
+// Solve the parametric intersection between a ray (origin + t·direction)
+// and a wall segment, returning the hit point and ray distance, or null if
+// the ray misses or hits past maxDistance.
 const getRayWallIntersection = (origin, direction, maxDistance, wall) => {
   const sx = wall.x2 - wall.x1;
   const sy = wall.y2 - wall.y1;
@@ -24,6 +35,8 @@ const getRayWallIntersection = (origin, direction, maxDistance, wall) => {
   };
 };
 
+// Cast a single ray from `origin` at `angle` and return its first hit (or
+// the point at maxDistance if the ray hits nothing).
 const castRayWithWalls = (origin, angle, maxDistance, walls) => {
   const direction = { x: Math.cos(angle), y: Math.sin(angle) };
   let closest = {
@@ -53,6 +66,10 @@ const obstacleToWalls = (obstacle) => {
   ];
 };
 
+// Build the SVG `points` string for a camera's FOV polygon. The polygon
+// starts at the camera origin, fans rayCount+1 rays across the camera's
+// horizontal FOV (computed from sensorWidth and focalLength), and each ray
+// is clipped against the supplied walls and obstacle edges.
 export const calculateFovPolygon = (item, walls, options = {}, obstacles = []) => {
   const {
     sensorWidth = DEFAULT_SENSOR_WIDTH,

@@ -1,5 +1,15 @@
+// Helpers for the wall graph used on the design page.
+//
+// A wall graph is `{ posts: [{id,x,y}], links: [{id, aPostId, bPostId}] }`
+// — a shared-vertex representation that makes editing (drag a post to move
+// every wall touching it) trivial. The backend stores walls as flat
+// segments, so segmentsToWallGraph / wallToSegments translate between the
+// two shapes.
+
 export const empty_Walls = { posts: [], links: [] };
 
+// Parse a "1:N" scale string into pixels-per-metre. Returns null if the
+// string is missing or malformed.
 export const parsePixelsPerMeter = (scaleText) => {
   if (typeof scaleText !== 'string') return null;
   const match = scaleText.trim().match(/^1\s*:\s*([\d.]+)$/);
@@ -8,6 +18,8 @@ export const parsePixelsPerMeter = (scaleText) => {
   return Number.isFinite(value) && value > 0 ? value : null;
 };
 
+// Format a segment's length as a metre value for on-canvas labels. Returns
+// null when no pixels-per-metre scale is configured.
 export const segmentLengthText = (x1, y1, x2, y2, pixelsPerMeter) => {
   if (!pixelsPerMeter) return null;
   const pixels = Math.hypot(x2 - x1, y2 - y1);
@@ -15,6 +27,8 @@ export const segmentLengthText = (x1, y1, x2, y2, pixelsPerMeter) => {
   return `${meters.toFixed(2)} m`;
 };
 
+// Flatten a wall graph into a list of {id, x1, y1, x2, y2} segments for
+// rendering and ray-casting. Links that reference a missing post are skipped.
 export const wallToSegments = (wallGraph) => {
   const posts = wallGraph?.posts ?? [];
   const links = wallGraph?.links ?? [];
@@ -28,6 +42,8 @@ export const wallToSegments = (wallGraph) => {
     .filter(Boolean);
 };
 
+// Shortest distance from a point (px, py) to a line segment, used for the
+// click-to-select threshold in edit mode.
 const distanceToSegment = (s, px, py) => {
   const dx = s.x2 - s.x1;
   const dy = s.y2 - s.y1;
@@ -38,6 +54,8 @@ const distanceToSegment = (s, px, py) => {
   return Math.hypot(px - s.x1 - t * dx, py - s.y1 - t * dy);
 };
 
+// Return the id of the wall link closest to (px, py) within maxDist pixels,
+// or null if no segment is close enough.
 export const closestLinkIdAt = (wallGraph, px, py, maxDist = 14) => {
   let bestId = null;
   let bestD = Infinity;
@@ -51,6 +69,9 @@ export const closestLinkIdAt = (wallGraph, px, py, maxDist = 14) => {
   return bestId;
 };
 
+// Replace the graph's links and prune any posts that are no longer
+// referenced (and optionally drop a specific post id). Used after deleting
+// a link or post to keep the graph compact.
 const withLinks = (graph, links, excludePostId = null) => {
   const keep = new Set(links.flatMap((link) => [link.aPostId, link.bPostId]));
   return {
@@ -60,8 +81,10 @@ const withLinks = (graph, links, excludePostId = null) => {
   };
 };
 
+// Remove a single wall segment by link id; orphaned posts are dropped.
 export const removeWallLink = (graph, linkId) => withLinks(graph, (graph?.links ?? []).filter((l) => l.id !== linkId));
 
+// Remove a post and every link that touched it.
 export const removeWallPost = (graph, postId) =>
   withLinks(
     graph,
@@ -69,6 +92,9 @@ export const removeWallPost = (graph, postId) =>
     postId
   );
 
+// Build a wall graph from a flat list of segments coming from the backend.
+// Coincident endpoints are merged into a single shared post so that dragging
+// a post in edit mode moves every wall meeting at that vertex together.
 export const segmentsToWallGraph = (segments = []) => {
   const posts = [];
   const postIdByKey = new Map();

@@ -20,6 +20,9 @@ const WALL_HINTS = {
   edit: 'Wall editing mode — click a wall or post to select, Delete or Backspace to remove. Press Enter or Esc to exit.',
 };
 
+// SVG <text> label rendered at the midpoint of a wall segment showing the
+// length in metres (computed from the project scale). Returns null if no
+// pixels-per-metre value is configured.
 function WallLengthLabel({ x1, y1, x2, y2, pixelsPerMeter, className = 'wall-length-label' }) {
   const label = segmentLengthText(x1, y1, x2, y2, pixelsPerMeter);
   return label ? (
@@ -29,6 +32,9 @@ function WallLengthLabel({ x1, y1, x2, y2, pixelsPerMeter, className = 'wall-len
   ) : null;
 }
 
+// Non-interactive SVG overlay that paints every wall segment from the wall
+// graph plus its length label. Used both inside the drawing layer and in the
+// normal (non-editing) view on the design page.
 export function WallOverlay({ wallGraph, scale, selectedLinkId, imageSize }) {
   return (
     <svg className="wall-overlay" viewBox={getViewBox(imageSize)} preserveAspectRatio="none">
@@ -45,6 +51,17 @@ export function WallOverlay({ wallGraph, scale, selectedLinkId, imageSize }) {
   );
 }
 
+/*
+WallDrawingLayer is the interactive overlay used while the "wall" tool is
+active. It supports two phases controlled by `mode`:
+  - "draw" : click to chain wall segments together. Enter/Esc switches to
+             edit mode.
+  - "edit" : click a wall or post to select it, drag posts to move them, and
+             Delete/Backspace to remove the selection. Enter/Esc leaves wall
+             mode entirely.
+All changes flow back through onWallGraphChange so the parent owns the wall
+graph and can route the change through its undo/redo stack.
+*/
 export default function WallDrawingLayer({ wallGraph, scale, imageSize, onWallGraphChange, onExitWallMode }) {
   const [draft, setDraft] = useState(null);
   const [dragPostId, setDragPostId] = useState(null);
@@ -82,6 +99,7 @@ export default function WallDrawingLayer({ wallGraph, scale, imageSize, onWallGr
   const chainStart = draft && byId.get(draft.startPostId);
   const endDrag = () => setDragPostId(null);
 
+  // In edit mode, start dragging a post if the pointer landed on one.
   const handlePointerDown = (e) => {
     if (mode !== 'edit') return;
     const post = postAt(getImagePoint(e, e.currentTarget, imageSize));
@@ -91,6 +109,7 @@ export default function WallDrawingLayer({ wallGraph, scale, imageSize, onWallGr
     setDragPostId(post.id);
   };
 
+  // Drive the live preview while drawing, or move a dragged post while editing.
   const handlePointerMove = (e) => {
     const point = getImagePoint(e, e.currentTarget, imageSize);
 
@@ -105,6 +124,9 @@ export default function WallDrawingLayer({ wallGraph, scale, imageSize, onWallGr
     if (mode === 'draw' && draft) setDraft((d) => ({ ...d, previewPoint: point }));
   };
 
+  // In edit mode: select the post under the click, or otherwise the closest
+  // nearby wall link. In draw mode: drop a new post and either start a fresh
+  // chain or close the segment back to a snapped existing post.
   const handleClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
