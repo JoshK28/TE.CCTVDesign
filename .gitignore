@@ -17,6 +17,7 @@ dist-ssr
 Backend/appsettings.json
 Backend/bin/
 Backend/obj/
+Backend/wwwroot
 
 # Editor directories and files
 .vscode/*

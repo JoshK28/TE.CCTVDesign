@@ -7,7 +7,11 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
@@ -45,23 +49,22 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
-
-app.UseCors("AllowReact");
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseStaticFiles();
-app.MapControllers();
+// automatically apply any pending migrations on startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
 
 if (app.Environment.IsDevelopment())
 {
+    app.UseSwagger();
+    app.UseSwaggerUI();
+
     var frontendPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "Frontend");
 
-    // start frontend after a short delay to allow previous process to close
     _ = Task.Run(async () =>
     {
-        // wait for any previous frontend process to fully close
         await Task.Delay(1000);
 
         var npmProcess = new System.Diagnostics.Process
@@ -77,7 +80,6 @@ if (app.Environment.IsDevelopment())
         };
         npmProcess.Start();
 
-        // stop the frontend when the backend stops
         var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
         lifetime.ApplicationStopping.Register(() =>
         {
@@ -95,7 +97,6 @@ if (app.Environment.IsDevelopment())
             }
         });
 
-        // open browser after frontend has had time to start
         await Task.Delay(3000);
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
         {
@@ -103,6 +104,17 @@ if (app.Environment.IsDevelopment())
             UseShellExecute = true
         });
     });
+}
+
+app.UseCors("AllowReact");
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseStaticFiles();
+app.MapControllers();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.MapFallbackToFile("index.html");
 }
 
 app.Run();

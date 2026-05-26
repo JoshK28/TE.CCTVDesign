@@ -42,7 +42,18 @@ const castRayWithWalls = (origin, angle, maxDistance, walls) => {
   return closest;
 };
 
-export const calculateFovPolygon = (item, walls, options = {}) => {
+// converts an obstacle rectangle into 4 wall segments for ray casting
+const obstacleToWalls = (obstacle) => {
+  const { x, y, width, height } = obstacle;
+  return [
+    { x1: x,         y1: y,          x2: x + width, y2: y          }, // top
+    { x1: x + width, y1: y,          x2: x + width, y2: y + height }, // right
+    { x1: x + width, y1: y + height, x2: x,         y2: y + height }, // bottom
+    { x1: x,         y1: y + height, x2: x,         y2: y          }, // left
+  ];
+};
+
+export const calculateFovPolygon = (item, walls, options = {}, obstacles = []) => {
   const {
     sensorWidth = DEFAULT_SENSOR_WIDTH,
     maxDistance = DEFAULT_MAX_DISTANCE,
@@ -57,9 +68,15 @@ export const calculateFovPolygon = (item, walls, options = {}) => {
   const step = (halfFov * 2) / rayCount;
   const origin = { x, y };
 
+  // combine walls and obstacle edges into one list for ray casting
+  const allWalls = [
+    ...walls,
+    ...obstacles.flatMap(obstacleToWalls),
+  ];
+
   const points = [`${x},${y}`];
   for (let i = 0; i <= rayCount; i += 1) {
-    const { x: hitX, y: hitY } = castRayWithWalls(origin, startAngle + step * i, maxDistance, walls);
+    const { x: hitX, y: hitY } = castRayWithWalls(origin, startAngle + step * i, maxDistance, allWalls);
     points.push(`${hitX},${hitY}`);
   }
 
