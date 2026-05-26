@@ -12,11 +12,6 @@ export const RESIZE_HANDLES = [
   { id: 'w',  cx: 0,   cy: 0.5, cursor: 'w-resize'  },
 ];
 
-export const getViewBox = (imageSize) =>
-  imageSize?.naturalWidth && imageSize?.naturalHeight
-    ? `0 0 ${imageSize.naturalWidth} ${imageSize.naturalHeight}`
-    : undefined;
-
 export const normaliseRect = (x1, y1, x2, y2) => ({
   x: Math.min(x1, x2),
   y: Math.min(y1, y2),

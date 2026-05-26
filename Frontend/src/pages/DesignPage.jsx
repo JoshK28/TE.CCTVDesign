@@ -10,6 +10,7 @@ import {
   WallDrawingLayer,
   WallOverlay,
   ObstacleDrawingLayer,
+  ObstacleOverlay,
 } from '../Components/index';
 
 import api from '../services/api';
@@ -446,16 +447,21 @@ function Workspace({
             />
           )}
 
-          <ObstacleDrawingLayer
-            activeTool={activeTool}
-            obstacles={obstacles}
-            imageSize={imageSize}
-            onObstaclesChange={(updater) => {
-              setObstacles((prev) => (typeof updater === 'function' ? updater(prev) : updater));
-              onUnsavedChanges(true);
-            }}
-            onExitObstacleMode={() => armTool(null)}
-          />
+          {activeTool !== 'obstacle' && (
+            <ObstacleOverlay obstacles={obstacles} imageSize={imageSize} />
+          )}
+
+          {activeTool === 'obstacle' && (
+            <ObstacleDrawingLayer
+              obstacles={obstacles}
+              imageSize={imageSize}
+              onObstaclesChange={(updater) => {
+                setObstacles((prev) => (typeof updater === 'function' ? updater(prev) : updater));
+                onUnsavedChanges(true);
+              }}
+              onExitObstacleMode={() => armTool(null)}
+            />
+          )}
 
           {equipment.map((item) => (
             <Equipment

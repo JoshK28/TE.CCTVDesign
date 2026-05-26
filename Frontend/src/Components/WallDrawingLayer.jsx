@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getImagePoint } from '../utils/points';
+import { getViewBox } from '../utils/overlayUtils';
 import {
   closestLinkIdAt,
   parsePixelsPerMeter,
@@ -27,11 +28,6 @@ function WallLengthLabel({ x1, y1, x2, y2, pixelsPerMeter, className = 'wall-len
     </text>
   ) : null;
 }
-
-const getViewBox = (imageSize) =>
-  imageSize?.naturalWidth && imageSize?.naturalHeight
-    ? `0 0 ${imageSize.naturalWidth} ${imageSize.naturalHeight}`
-    : undefined;
 
 export function WallOverlay({ wallGraph, scale, selectedLinkId, imageSize }) {
   return (
@@ -167,7 +163,7 @@ export default function WallDrawingLayer({ wallGraph, scale, imageSize, onWallGr
           </g>
         )}
       </svg>
-      <p className="wall-mode-hint" role="status">
+      <p className="draw-mode-hint" role="status">
         {WALL_HINTS[mode]}
       </p>
       <div

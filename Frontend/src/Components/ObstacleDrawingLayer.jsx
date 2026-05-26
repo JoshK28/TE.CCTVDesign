@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getImagePoint } from '../utils/points';
+import { getViewBox } from '../utils/overlayUtils';
 import {
   HANDLE_SIZE,
   MIN_SIZE,
@@ -7,7 +8,6 @@ import {
   applyResize,
   findObstacleAt,
   findResizeHandleAt,
-  getViewBox,
   normaliseRect,
 } from '../utils/obstaclesUtil';
 
@@ -16,8 +16,25 @@ const OBSTACLE_HINTS = {
   edit: 'Obstacle edit mode — click to select, drag to move, drag handles to resize, Delete to remove. Esc deselects or exits; Enter exits.',
 };
 
+export function ObstacleOverlay({ obstacles, imageSize, selectedId = null }) {
+  return (
+    <svg className="obstacle-overlay" viewBox={getViewBox(imageSize)} preserveAspectRatio="none">
+      {obstacles.map((o) => (
+        <g key={o.id}>
+          <rect
+            x={o.x} y={o.y} width={o.width} height={o.height}
+            className={o.id === selectedId ? 'obstacle-rect obstacle-rect--selected' : 'obstacle-rect'}
+          />
+          <text x={o.x + o.width / 2} y={o.y + o.height / 2} className="obstacle-label">
+            {o.label}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 export default function ObstacleDrawingLayer({
-  activeTool,
   obstacles,
   imageSize,
   onObstaclesChange,
@@ -30,24 +47,7 @@ export default function ObstacleDrawingLayer({
   const [pendingRect, setPendingRect] = useState(null);
   const [labelInput, setLabelInput] = useState('');
 
-  const isActive = activeTool === 'obstacle';
-
   useEffect(() => {
-    if (!isActive) {
-      setDraft(null);
-      setSelectedObstacleId(null);
-      setDragging(null);
-      setPendingRect(null);
-      setLabelInput('');
-      return;
-    }
-    setMode('draw');
-    setSelectedObstacleId(null);
-  }, [isActive]);
-
-  useEffect(() => {
-    if (!isActive) return;
-
     const handleKeyDown = (e) => {
       if (pendingRect) return;
 
@@ -73,7 +73,7 @@ export default function ObstacleDrawingLayer({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isActive, mode, selectedObstacleId, pendingRect, onObstaclesChange, onExitObstacleMode]);
+  }, [mode, selectedObstacleId, pendingRect, onObstaclesChange, onExitObstacleMode]);
 
   const confirmLabel = () => {
     if (!pendingRect) return;
@@ -97,7 +97,7 @@ export default function ObstacleDrawingLayer({
   };
 
   const handlePointerDown = (e) => {
-    if (!isActive || pendingRect) return;
+    if (pendingRect) return;
     const pt = getImagePoint(e, e.currentTarget, imageSize);
 
     if (mode === 'draw') {
@@ -127,7 +127,6 @@ export default function ObstacleDrawingLayer({
   };
 
   const handlePointerMove = (e) => {
-    if (!isActive) return;
     const pt = getImagePoint(e, e.currentTarget, imageSize);
 
     if (mode === 'draw' && draft) {
@@ -157,8 +156,6 @@ export default function ObstacleDrawingLayer({
   };
 
   const handlePointerUp = () => {
-    if (!isActive) return;
-
     if (mode === 'draw' && draft) {
       const rect = normaliseRect(draft.startX, draft.startY, draft.currentX, draft.currentY);
       if (rect.width >= MIN_SIZE && rect.height >= MIN_SIZE) {
@@ -178,12 +175,13 @@ export default function ObstacleDrawingLayer({
 
   return (
     <>
+      <ObstacleOverlay obstacles={obstacles} imageSize={imageSize} selectedId={selectedObstacleId} />
       <svg
         className="obstacle-overlay"
         viewBox={getViewBox(imageSize)}
         preserveAspectRatio="none"
         style={{
-          pointerEvents: isActive && !pendingRect ? 'all' : 'none',
+          pointerEvents: pendingRect ? 'none' : 'all',
           cursor: mode === 'draw' ? 'crosshair' : 'default',
         }}
         onPointerDown={handlePointerDown}
@@ -191,35 +189,18 @@ export default function ObstacleDrawingLayer({
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerLeave}
       >
-        {obstacles.map((o) => {
-          const isSelected = o.id === selectedObstacleId;
-          return (
-            <g key={o.id}>
-              <rect
-                x={o.x} y={o.y} width={o.width} height={o.height}
-                className={isSelected ? 'obstacle-rect obstacle-rect--selected' : 'obstacle-rect'}
-              />
-              <text
-                x={o.x + o.width / 2}
-                y={o.y + o.height / 2}
-                className="obstacle-label"
-              >
-                {o.label}
-              </text>
-
-              {isSelected && mode === 'edit' && RESIZE_HANDLES.map((h) => (
-                <rect
-                  key={h.id}
-                  x={o.x + h.cx * o.width - HANDLE_SIZE / 2}
-                  y={o.y + h.cy * o.height - HANDLE_SIZE / 2}
-                  width={HANDLE_SIZE} height={HANDLE_SIZE}
-                  className="obstacle-handle"
-                  style={{ cursor: h.cursor }}
-                />
-              ))}
-            </g>
-          );
-        })}
+        {mode === 'edit' && selectedObstacleId && obstacles
+          .filter((o) => o.id === selectedObstacleId)
+          .flatMap((o) => RESIZE_HANDLES.map((h) => (
+            <rect
+              key={`${o.id}-${h.id}`}
+              x={o.x + h.cx * o.width - HANDLE_SIZE / 2}
+              y={o.y + h.cy * o.height - HANDLE_SIZE / 2}
+              width={HANDLE_SIZE} height={HANDLE_SIZE}
+              className="obstacle-handle"
+              style={{ cursor: h.cursor }}
+            />
+          )))}
 
         {draft && (
           <rect
@@ -229,11 +210,9 @@ export default function ObstacleDrawingLayer({
         )}
       </svg>
 
-      {isActive && (
-        <p className="wall-mode-hint" role="status">
-          {OBSTACLE_HINTS[mode]}
-        </p>
-      )}
+      <p className="draw-mode-hint" role="status">
+        {OBSTACLE_HINTS[mode]}
+      </p>
 
       {pendingRect && (
         <div
