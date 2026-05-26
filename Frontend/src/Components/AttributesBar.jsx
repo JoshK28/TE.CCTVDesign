@@ -3,9 +3,9 @@ import { Button } from 'primereact/button';
 import { Slider } from 'primereact/slider';
 import { InputNumber } from 'primereact/inputnumber';
 import { InputText } from 'primereact/inputtext';
-import { ColorPicker } from 'primereact/colorpicker';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { useState, useRef, useEffect } from 'react';
+import ColorSwatchPicker from './ColorSwatchPicker';
 import './AttributesBar.css';
 
 const DEFAULT_FOV_COLOR = '#0096ff';
@@ -13,7 +13,11 @@ const DEFAULT_FOV_OPACITY = 0.3;
 const DEFAULT_ICON_BACKGROUND_COLOR = '#ffffff';
 const MAX_ICON_BYTES = 1_000_000;
 const ALLOWED_ICON_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp', 'image/gif'];
-const PRESET_COLORS = ['#0096ff', '#ff0000', '#00ff00', '#ffa500', '#800080', '#ffff00'];
+const FOV_PRESET_COLORS = ['#0096ff', '#ff0000', '#00ff00', '#ffa500', '#800080', '#ffff00'];
+
+// IDs for the appearance color swatches. Only one popup can be open at a time.
+const FOV_SWATCH = 'fov';
+const ICON_BG_SWATCH = 'iconBg';
 const DEVICE_SPECIFICATION_FIELDS = [
   { field: 'maxResolutionMp', label: 'Max Resolution', unit: 'MP' },
   { field: 'channelCount', label: 'Number of Channels' },
@@ -33,48 +37,15 @@ function AttributesBar({
   onDeleteEquipment,
 }) {
 
-  const [showPicker, setShowPicker] = useState(false);
-  const [showIconBackgroundPicker, setShowIconBackgroundPicker] = useState(false);
+  const [openSwatch, setOpenSwatch] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
   const [iconError, setIconError] = useState('');
-  const pickerRef = useRef(null);
-  const swatchRef = useRef(null);
-  const iconBackgroundPickerRef = useRef(null);
-  const iconBackgroundSwatchRef = useRef(null);
   const iconInputRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (
-        showPicker &&
-        pickerRef.current &&
-        !pickerRef.current.contains(e.target) &&
-        swatchRef.current &&
-        !swatchRef.current.contains(e.target)
-      ) {
-        setShowPicker(false);
-      }
-      if (
-        showIconBackgroundPicker &&
-        iconBackgroundPickerRef.current &&
-        !iconBackgroundPickerRef.current.contains(e.target) &&
-        iconBackgroundSwatchRef.current &&
-        !iconBackgroundSwatchRef.current.contains(e.target)
-      ) {
-        setShowIconBackgroundPicker(false);
-      }
-    }
-    if (showPicker || showIconBackgroundPicker) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showPicker, showIconBackgroundPicker]);
 
   // Reset to first tab whenever a different item is selected
   useEffect(() => {
     setActiveTab(0);
-    setShowPicker(false);
-    setShowIconBackgroundPicker(false);
+    setOpenSwatch(null);
     setIconError('');
   }, [selectedItem?.id]);
 
@@ -84,7 +55,9 @@ function AttributesBar({
   const currentOpacity = selectedItem.fovOpacity ?? DEFAULT_FOV_OPACITY;
   const currentIconBackgroundColor =
     selectedItem.iconBackgroundColor ?? DEFAULT_ICON_BACKGROUND_COLOR;
-  const isPreset = PRESET_COLORS.includes(currentFovColor);
+
+  const swatchOpenHandler = (id) => (next) =>
+    setOpenSwatch(next ? id : (current) => (current === id ? null : current));
 
   function handleIconUpload(event) {
     const file = event.target.files?.[0];
@@ -340,49 +313,14 @@ function AttributesBar({
               <>
                 <h3 className="section-subtitle">FOV Appearance</h3>
                 <div className="section-box">
-                  <div className="field">
-                    <label>Preset Colours</label>
-                    <div className="fov-swatches">
-                      {PRESET_COLORS.map((color, index) => (
-                        <div
-                          key={index}
-                          className={`fov-swatch ${color === currentFovColor ? 'selected' : ''}`}
-                          style={{ backgroundColor: color }}
-                          onClick={() => {
-                            setShowPicker(false);
-                            setShowIconBackgroundPicker(false);
-                            updateSetting('fovColor', color);
-                          }}
-                        />
-                      ))}
-
-                      <div
-                        ref={swatchRef}
-                        className={`fov-swatch custom ${!isPreset ? 'selected' : ''}`}
-                        style={{ backgroundColor: currentFovColor }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowIconBackgroundPicker(false);
-                          setShowPicker(prev => !prev);
-                        }}
-                      >
-                        <span className="edit-indicator">✎</span>
-                      </div>
-                    </div>
-
-                    {showPicker && (
-                      <div ref={pickerRef} className="picker-inline">
-                        <ColorPicker
-                          value={currentFovColor}
-                          format="hex"
-                          inline
-                          onChange={(e) => {
-                            updateSetting('fovColor', `#${e.value.replace('#', '')}`);
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
+                  <ColorSwatchPicker
+                    label="Preset Colours"
+                    value={currentFovColor}
+                    onChange={(color) => updateSetting('fovColor', color)}
+                    presets={FOV_PRESET_COLORS}
+                    open={openSwatch === FOV_SWATCH}
+                    onOpenChange={swatchOpenHandler(FOV_SWATCH)}
+                  />
 
                   <div className="field slider-field">
                     <label>Opacity</label>
@@ -401,36 +339,13 @@ function AttributesBar({
 
             <h3 className="section-subtitle">Icon Background</h3>
             <div className="section-box">
-              <div className="field">
-                <label>Colour</label>
-                <div className="fov-swatches">
-                  <div
-                    ref={iconBackgroundSwatchRef}
-                    className="fov-swatch custom selected"
-                    style={{ backgroundColor: currentIconBackgroundColor }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowPicker(false);
-                      setShowIconBackgroundPicker(prev => !prev);
-                    }}
-                  >
-                    <span className="edit-indicator">✎</span>
-                  </div>
-                </div>
-
-                {showIconBackgroundPicker && (
-                  <div ref={iconBackgroundPickerRef} className="picker-inline">
-                    <ColorPicker
-                      value={currentIconBackgroundColor}
-                      format="hex"
-                      inline
-                      onChange={(e) => {
-                        updateSetting('iconBackgroundColor', `#${e.value.replace('#', '')}`);
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
+              <ColorSwatchPicker
+                label="Colour"
+                value={currentIconBackgroundColor}
+                onChange={(color) => updateSetting('iconBackgroundColor', color)}
+                open={openSwatch === ICON_BG_SWATCH}
+                onOpenChange={swatchOpenHandler(ICON_BG_SWATCH)}
+              />
             </div>
 
             <h3 className="section-subtitle">Custom Icon</h3>
