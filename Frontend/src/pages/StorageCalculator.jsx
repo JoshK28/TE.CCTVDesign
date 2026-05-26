@@ -19,14 +19,17 @@ function StorageNetworkCalculator({ onLogout }) {
   const projectId = location.state?.projectId;
   const fromDesign = !!projectId;
 
-  const NAV = fromDesign
-  ? [{ label: "⬅ Back to Design", onClick: () => navigate(-1) }]
-  : [
-      { label: "⬅ Back to Dashboard", to: "/app/dashboard" },
-      { label: "📂 View Projects", to: "/app/projects" },
-      { label: "📊 Storage Calculator", to: "/app/calculator" },
-      { label: "🔋 UPS Calculator", to: "/app/ups" },
-    ];
+  const nav = [
+    fromDesign
+      ? {
+          label: "⬅ Back to Design",
+          onClick: () => navigate("/app/design", { state: { projectId } }),
+        }
+      : { label: "⬅ Back to Dashboard", to: "/app/dashboard" },
+    { label: "📂 View Projects", to: "/app/projects" },
+    { label: "📊 Storage Calculator", to: "/app/calculator" },
+    { label: "🔋 UPS Calculator", to: "/app/ups" },
+  ];
 
   const [channels, setChannels] = useState([
     { id: 1, name: "Channel 1", ...DEFAULT_CHANNEL },
@@ -132,7 +135,7 @@ function StorageNetworkCalculator({ onLogout }) {
   return (
     <AppLayout
       className="calc-page"
-      nav={NAV}
+      nav={nav}
       onLogout={onLogout}
       mainClassName="calc-main"
     >

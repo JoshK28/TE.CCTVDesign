@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getLocalPoint } from '../utils/points';
+import { getImagePoint } from '../utils/points';
 
 const HANDLE_SIZE = 8;
 
@@ -14,6 +14,11 @@ const RESIZE_HANDLES = [
   { id: 'w',  cx: 0,   cy: 0.5, cursor: 'w-resize'  },
 ];
 
+const getViewBox = (imageSize) =>
+  imageSize?.naturalWidth && imageSize?.naturalHeight
+    ? `0 0 ${imageSize.naturalWidth} ${imageSize.naturalHeight}`
+    : undefined;
+
 function applyResize(o, handleId, dx, dy) {
   let { x, y, width, height } = o;
   if (handleId.includes('e')) width  = Math.max(10, width  + dx);
@@ -26,6 +31,7 @@ function applyResize(o, handleId, dx, dy) {
 export default function ObstacleDrawingLayer({
   activeTool,
   obstacles,
+  imageSize,
   onObstaclesChange,
   onExitObstacleMode,
 }) {
@@ -95,7 +101,7 @@ export default function ObstacleDrawingLayer({
   const MIN_SIZE = 10;
 
   // Get point relative to the SVG element
-  const getSvgPoint = (e) => getLocalPoint(e, svgRef.current);
+  const getSvgPoint = (e) => getImagePoint(e, svgRef.current, imageSize);
 
   const confirmLabel = () => {
     if (!pendingRect) return;
@@ -198,7 +204,7 @@ export default function ObstacleDrawingLayer({
     }
   };
 
-  const handleSvgPointerUp = (e) => {
+  const handleSvgPointerUp = () => {
     if (activeTool !== 'obstacle') return;
 
     if (mode === 'draw' && draft) {
@@ -221,6 +227,8 @@ export default function ObstacleDrawingLayer({
       <svg
         ref={svgRef}
         className="obstacle-overlay"
+        viewBox={getViewBox(imageSize)}
+        preserveAspectRatio="none"
         style={{
           position: 'absolute',
           inset: 0,

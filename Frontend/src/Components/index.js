@@ -5,3 +5,4 @@ export { default as EquipmentSelector } from './EquipmentSelector';
 export { default as AttributesBar } from './AttributesBar';
 export { default as WallDrawingLayer } from './WallDrawingLayer';
 export { default as ObstacleDrawingLayer } from './ObstacleDrawingLayer';
+export { WallOverlay } from './WallDrawingLayer';

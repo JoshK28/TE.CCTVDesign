@@ -64,7 +64,7 @@ function BillOfMaterials({ onLogout }) {
         const res = await api.get(`/api/camerplacements/project/${projectId}`);
         setProducts(res.data);
         setLoading(false);
-      } catch (err) {
+      } catch {
         setError("Failed to load project data");
         setLoading(false);
       }

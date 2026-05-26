@@ -80,6 +80,12 @@
   stroke-width: 2;
 }
 
+.wall-post-handle--selected {
+  fill: #c45c26;
+  stroke: #ffffff;
+  stroke-width: 3;
+}
+
 .wall-length-label {
   fill: #ffffff;
   font-size: 12px;
@@ -119,18 +125,18 @@
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 44px;
+  top: 16px;
   max-width: min(560px, 90vw);
   margin: 0;
   text-align: center;
   color: #fff;
   background: rgba(0, 0, 0, 0.65);
-  padding: 8px 14px;
+  padding: 10px 16px;
   border-radius: 6px;
   z-index: 1003;
   pointer-events: none;
-  font-size: 0.95rem;
-  line-height: 1.35;
+  font-size: 1.1rem;
+  line-height: 1.4;
 }
 
 html, body, #root {

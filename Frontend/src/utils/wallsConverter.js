@@ -18,30 +18,31 @@ export const segmentLengthText = (x1, y1, x2, y2, pixelsPerMeter) => {
 export const wallToSegments = (wallGraph) => {
   const posts = wallGraph?.posts ?? [];
   const links = wallGraph?.links ?? [];
-  const postID = new Map(posts.map((post) => [post.id, post]));
+  const byId = new Map(posts.map((post) => [post.id, post]));
   return links
     .map((link) => {
-      const a = postID.get(link.aPostId);
-      const b = postID.get(link.bPostId);
+      const a = byId.get(link.aPostId);
+      const b = byId.get(link.bPostId);
       return a && b ? { id: link.id, x1: a.x, y1: a.y, x2: b.x, y2: b.y } : null;
     })
     .filter(Boolean);
+};
+
+const distanceToSegment = (s, px, py) => {
+  const dx = s.x2 - s.x1;
+  const dy = s.y2 - s.y1;
+  const l2 = dx * dx + dy * dy;
+  if (l2 < 1e-12) return Math.hypot(px - s.x1, py - s.y1);
+
+  const t = Math.max(0, Math.min(1, ((px - s.x1) * dx + (py - s.y1) * dy) / l2));
+  return Math.hypot(px - s.x1 - t * dx, py - s.y1 - t * dy);
 };
 
 export const closestLinkIdAt = (wallGraph, px, py, maxDist = 14) => {
   let bestId = null;
   let bestD = Infinity;
   for (const s of wallToSegments(wallGraph)) {
-    let d;
-    const { x1, y1, x2, y2 } = s;
-    const dx = x2 - x1,
-      dy = y2 - y1,
-      l2 = dx * dx + dy * dy;
-    if (l2 < 1e-12) d = Math.hypot(px - x1, py - y1);
-    else {
-      const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / l2));
-      d = Math.hypot(px - x1 - t * dx, py - y1 - t * dy);
-    }
+    const d = distanceToSegment(s, px, py);
     if (d <= maxDist && d < bestD) {
       bestD = d;
       bestId = s.id;
@@ -50,15 +51,23 @@ export const closestLinkIdAt = (wallGraph, px, py, maxDist = 14) => {
   return bestId;
 };
 
-export const removeWallLink = (graph, linkId) => {
-  const links = (graph?.links ?? []).filter((l) => l.id !== linkId);
-  const keep = new Set();
-  for (const l of links) {
-    keep.add(l.aPostId);
-    keep.add(l.bPostId);
-  }
-  return { ...graph, links, posts: (graph?.posts ?? []).filter((p) => keep.has(p.id)) };
+const withLinks = (graph, links, excludePostId = null) => {
+  const keep = new Set(links.flatMap((link) => [link.aPostId, link.bPostId]));
+  return {
+    ...graph,
+    links,
+    posts: (graph?.posts ?? []).filter((post) => post.id !== excludePostId && keep.has(post.id)),
+  };
 };
+
+export const removeWallLink = (graph, linkId) => withLinks(graph, (graph?.links ?? []).filter((l) => l.id !== linkId));
+
+export const removeWallPost = (graph, postId) =>
+  withLinks(
+    graph,
+    (graph?.links ?? []).filter((l) => l.aPostId !== postId && l.bPostId !== postId),
+    postId
+  );
 
 export const segmentsToWallGraph = (segments = []) => {
   const posts = [];

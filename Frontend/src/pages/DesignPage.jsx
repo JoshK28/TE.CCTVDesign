@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Toast } from 'primereact/toast';
-import { Button } from 'primereact/button';
 
 import {
   Toolbar,
@@ -9,12 +8,14 @@ import {
   EquipmentSelector,
   AttributesBar,
   WallDrawingLayer,
-  ObstacleDrawingLayer
+  WallOverlay,
+  ObstacleDrawingLayer,
 } from '../Components/index';
 
 import api from '../services/api';
+import { getSaveErrorMessage, saveDesign } from '../utils/designSave';
 import { calculateFovPolygon } from '../utils/fov';
-import { getLocalPoint } from '../utils/points';
+import { getImagePoint } from '../utils/points';
 import { empty_Walls, segmentsToWallGraph, wallToSegments } from '../utils/wallsConverter';
 import useUndoRedo from '../hooks/useUndoRedo';
 
@@ -32,8 +33,8 @@ const CAMERA_DEFAULTS = {
   resolution: '1080p',
   irRange: 30,
   notes: '',
+  fovColor: '#0096ff',
   fovOpacity: 0.3,
-  fovColor: 'rgba(0, 150, 255, 0.3)',
 };
 
 const createCamera = ({ x, y, name = '', attributes = {}, rotation = 0, id = Date.now() }) => ({
@@ -74,6 +75,20 @@ function Workspace({
   const [saving, setSaving] = useState(false);
 
   const toastRef = useRef(null);
+  const [imageSize, setImageSize] = useState(null);
+
+  useEffect(() => {
+    setImageSize(null);
+  }, [imageSrc]);
+
+  const handleImageLoad = ({ currentTarget: img }) => {
+    if (!img.naturalWidth || !img.naturalHeight) return;
+    setImageSize((prev) =>
+      prev?.naturalWidth === img.naturalWidth && prev?.naturalHeight === img.naturalHeight
+        ? prev
+        : { naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight }
+    );
+  };
 
   // UNDO / REDO
   const applyHistorySnapshot = useCallback(({ equipment: eq, wallGraphs: wg }) => {
@@ -184,7 +199,8 @@ function Workspace({
       if (activeTool === 'obstacle') return;
 
       if (event.key === 'Escape' || event.key === 'Enter') {
-        armTool(null);
+        setPendingEquipment(null);
+        setActiveTool(null);
       }
     };
 
@@ -202,9 +218,7 @@ function Workspace({
       prev.map((item) => {
         if (item.id !== id) return item;
         const patch =
-          typeof patchOrBuilder === 'function'
-            ? patchOrBuilder(item)
-            : patchOrBuilder;
+          typeof patchOrBuilder === 'function' ? patchOrBuilder(item) : patchOrBuilder;
         return { ...item, ...patch };
       })
     );
@@ -214,11 +228,12 @@ function Workspace({
 
   // NEW ITEM PLACEMENT (click or drag/drop)
   const handleCanvasInteraction = (event) => {
+    event.stopPropagation();
     const droppedTool = event.dataTransfer ? event.dataTransfer.getData('tool') : '';
     const toolToPlace = droppedTool || activeTool;
 
     if (toolToPlace && toolToPlace !== 'wall' && toolToPlace !== 'obstacle') {
-      const { x, y } = getLocalPoint(event, event.currentTarget);
+      const { x, y } = getImagePoint(event, event.currentTarget, imageSize);
       openEquipmentSelector({ x, y, type: toolToPlace });
       return;
     }
@@ -306,35 +321,7 @@ function Workspace({
     setSaving(true);
 
     try {
-      const placements = equipment.map((item) => ({
-        floorID: floorId,
-        cameraId: item.attributes?.cameraId ?? null,
-        networkingId: item.attributes?.networkingId ?? null,
-        accessControlId: item.attributes?.accessControlId ?? null,
-        x: item.x,
-        y: item.y,
-        rotation: item.rotation || 0,
-        type: item.type || 'camera',
-        cameraModel: item.attributes?.cameraModel ?? '',
-        brand: item.attributes?.brand ?? '',
-        resolution: item.attributes?.resolution ?? ''
-      }));
-
-      await api.post(`/api/camerplacements/save/${floorId}`, placements);
-
-      const wallsToSave = currentWalls.map((wall) => ({
-        floorID: floorId,
-        x1: wall.x1,
-        y1: wall.y1,
-        x2: wall.x2,
-        y2: wall.y2,
-        length:
-          wall.length ?? Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1),
-        realWorldLength: wall.realWorldLength ?? 0,
-        realWorldHeight: wall.realWorldHeight ?? 0,
-      }));
-
-      await api.post(`/api/walls/save/${floorId}`, wallsToSave);
+      await saveDesign({ floorId, equipment, walls: currentWalls });
 
       toastRef.current?.show({
         severity: 'success',
@@ -343,16 +330,10 @@ function Workspace({
 
       onUnsavedChanges(false);
     } catch (err) {
-      const apiMessage = err?.response?.data;
-      const errorText =
-        typeof apiMessage === 'string'
-          ? apiMessage
-          : apiMessage?.message || err?.message || 'Failed to save';
-
       toastRef.current?.show({
         severity: 'error',
         summary: 'Save failed',
-        detail: errorText,
+        detail: getSaveErrorMessage(err),
       });
 
       console.error('Failed to save', err);
@@ -377,6 +358,9 @@ function Workspace({
   const showWalls = showFov;
 
   const branding = exportOptions?.brandingActive && exportOptions?.brandingData;
+  const overlayViewBox = imageSize
+    ? `0 0 ${imageSize.naturalWidth} ${imageSize.naturalHeight}`
+    : undefined;
 
   // -----------------------------
   // RENDER
@@ -392,121 +376,139 @@ function Workspace({
       <div
         ref={workspaceRef}
         className="image-fullscreen-wrapper"
-        onClick={handleCanvasInteraction}
-        onDrop={(event) => {
-          event.preventDefault();
-          handleCanvasInteraction(event);
+        onClick={() => {
+          setSelectedItemId(null);
+          closeEquipmentSelector();
         }}
         onDragOver={(e) => e.preventDefault()}
       >
-        <img
-          src={imageSrc}
-          alt="Full-screen design layout"
-          className="fullscreen-image"
-          draggable="false"
-          crossOrigin="anonymous"
-        />
-
-        {branding && (
-          <div className="floating-branding">
-            {branding.logo && (
-              <img src={branding.logo} alt="Logo" className="floating-branding__logo" />
-            )}
-            <div>
-              <h4 className="floating-branding__title">
-                {branding.projectTitle || 'Specification Layout'}
-              </h4>
-              <p className="floating-branding__company">{branding.companyName}</p>
-            </div>
-          </div>
-        )}
-
-        {showFov && (
-          <svg className="fov-overlay">
-            {equipment
-              .filter((item) => item.type === 'camera')
-              .map((item) => (
-                <polygon
-                  key={item.id}
-                  points={calculateFovPolygon(item, currentWalls, {}, obstacles)}
-                  fill={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
-                  stroke={item.fovColor ?? 'rgba(0, 150, 255, 0.3)'}
-                  strokeWidth="2"
-                />
-              ))}
-          </svg>
-        )}
-
-        {showWalls && (
-          <WallDrawingLayer
-            activeTool={activeTool}
-            wallGraph={currentWallGraph}
-            scale={scale}
-            onWallGraphChange={handleWallGraphChange}
-            onExitWallMode={() => armTool(null)}
-          />
-        )}
-
-        <ObstacleDrawingLayer
-          activeTool={activeTool}
-          obstacles={obstacles}
-          onObstaclesChange={(updater) => {
-            setObstacles(typeof updater === 'function' ? updater(obstacles) : updater);
-            onUnsavedChanges(true);
+        <div
+          className="floorplan-stage"
+          onClick={handleCanvasInteraction}
+          onDrop={(event) => {
+            event.preventDefault();
+            handleCanvasInteraction(event);
           }}
-          onExitObstacleMode={() => armTool(null)}
-        />
-        
-        {equipment.map((item) => (
-          <Equipment
-            key={item.id}
-            deviceInstance={item}
-            onSelect={setSelectedItemId}
-            onUpdatePlacement={updatePlacement}
+          onDragOver={(e) => e.preventDefault()}
+        >
+          <img
+            src={imageSrc}
+            alt="Full-screen design layout"
+            className="fullscreen-image"
+            draggable="false"
+            crossOrigin="anonymous"
+            onLoad={handleImageLoad}
           />
-        ))}
+
+          {branding && (
+            <div className="floating-branding">
+              {branding.logo && (
+                <img src={branding.logo} alt="Logo" className="floating-branding__logo" />
+              )}
+              <div>
+                <h4 className="floating-branding__title">
+                  {branding.projectTitle || 'Specification Layout'}
+                </h4>
+                <p className="floating-branding__company">{branding.companyName}</p>
+              </div>
+            </div>
+          )}
+
+          {showFov && (
+            <svg className="fov-overlay" viewBox={overlayViewBox} preserveAspectRatio="none">
+              {equipment
+                .filter((item) => item.type === 'camera')
+                .map((item) => (
+                  <polygon
+                    key={item.id}
+                    points={calculateFovPolygon(item, currentWalls, {}, obstacles)}
+                    fill={item.fovColor ?? '#0096ff'}
+                    stroke={item.fovColor ?? '#0096ff'}
+                    fillOpacity={item.fovOpacity ?? 0.3}
+                    strokeOpacity={item.fovOpacity ?? 0.3}
+                    strokeWidth="2"
+                  />
+                ))}
+            </svg>
+          )}
+
+          {showWalls && activeTool !== 'wall' && (
+            <WallOverlay wallGraph={currentWallGraph} scale={scale} imageSize={imageSize} />
+          )}
+
+          {activeTool === 'wall' && (
+            <WallDrawingLayer
+              wallGraph={currentWallGraph}
+              scale={scale}
+              imageSize={imageSize}
+              onWallGraphChange={handleWallGraphChange}
+              onExitWallMode={() => armTool(null)}
+            />
+          )}
+
+          <ObstacleDrawingLayer
+            activeTool={activeTool}
+            obstacles={obstacles}
+            imageSize={imageSize}
+            onObstaclesChange={(updater) => {
+              setObstacles((prev) => (typeof updater === 'function' ? updater(prev) : updater));
+              onUnsavedChanges(true);
+            }}
+            onExitObstacleMode={() => armTool(null)}
+          />
+
+          {equipment.map((item) => (
+            <Equipment
+              key={item.id}
+              deviceInstance={item}
+              imageSize={imageSize}
+              onSelect={setSelectedItemId}
+              onUpdatePlacement={updatePlacement}
+            />
+          ))}
+        </div>
 
         <p className="item-count" data-html2canvas-ignore="true">
           Items Placed: {equipment.length}
         </p>
 
         <div className="workspace-actions" data-html2canvas-ignore="true">
-          <Button
+          <button
             type="button"
-            icon="pi pi-undo"
-            severity="secondary"
+            className="design-nav-btn"
             disabled={!canUndo}
-            tooltip="Undo (Ctrl+Z)"
-            tooltipOptions={{ position: 'bottom' }}
+            title="Undo (Ctrl+Z)"
             onClick={(e) => {
               e.stopPropagation();
               undo();
             }}
-          />
-          <Button
+          >
+            <i className="pi pi-undo" />
+          </button>
+          <button
             type="button"
-            icon="pi pi-refresh"
-            severity="secondary"
+            className="design-nav-btn"
             disabled={!canRedo}
-            tooltip="Redo (Ctrl+Y)"
-            tooltipOptions={{ position: 'bottom' }}
+            title="Redo (Ctrl+Y)"
             onClick={(e) => {
               e.stopPropagation();
               redo();
             }}
-          />
-          <Button
+          >
+            <i className="pi pi-refresh" />
+          </button>
+          <button
             type="button"
-            label="Save"
-            icon="pi pi-save"
-            severity="success"
-            loading={saving}
+            className="workspace-save-btn"
             disabled={saving}
             onClick={(e) => {
               e.stopPropagation();
               handleSave();
             }}
-          />
+          >
+            <i className={`pi ${saving ? 'pi-spin pi-spinner' : 'pi-save'}`} />
+            {saving ? 'Saving...' : 'Save'}
+          </button>
         </div>
       </div>
 
@@ -570,19 +572,6 @@ function DesignPage() {
     fetchFloorLayouts();
   }, [projectId, imageSrcFromState, navigate]);
 
-  // Switch to a layer with the given export config, wait for paint, then rasterise.
-  const renderLayer = async (idx, settings, scale, delay) => {
-    setSelectedLayer(idx);
-    setExportWorkspaceConfig({
-      showFov: settings.showFov,
-      brandingActive: true, brandingData: settings.branding,
-    });
-    await new Promise((r) => setTimeout(r, delay));
-    if (!workspaceRef.current) return null;
-    try { return await html2canvas(workspaceRef.current, { useCORS: true, scale }); }
-    catch (err) { console.error(err); return null; }
-  };
-
   const handleExecuteExport = async (settings) => {
     setExportModalOpen(false);
     const filename = settings.branding.projectTitle.replace(/\s+/g, '_');
@@ -591,28 +580,31 @@ function DesignPage() {
       : [selectedLayer];
     const original = selectedLayer;
 
-    if (settings.exportType === 'png') {
-      for (const i of layers) {
-        const canvas = await renderLayer(i, settings, 2, 350);
-        if (!canvas) continue;
-        Object.assign(document.createElement('a'), {
-          download: `${filename}_Layer_${floorLayouts[i]?.layer || i + 1}.png`,
-          href: canvas.toDataURL('image/png'),
-        }).click();
-      }
-    } else if (settings.exportType === 'pdf') {
-      const orient = settings.orientation === 'portrait' ? 'p' : 'l';
-      let pdf = null;
-      for (const i of layers) {
-        const canvas = await renderLayer(i, settings, 1.5, 400);
-        if (!canvas) continue;
-        const { width: w, height: h } = canvas;
-        if (!pdf) pdf = new jsPDF({ orientation: orient, unit: 'px', format: [w, h] });
-        else pdf.addPage([w, h], orient);
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, w, h);
-      }
-      pdf?.save(`${filename}_Report.pdf`);
+    const captureLayer = async (idx) => {
+      setSelectedLayer(idx);
+      setExportWorkspaceConfig({
+        showFov: settings.showFov,
+        brandingActive: true, brandingData: settings.branding,
+      });
+      await new Promise((r) => setTimeout(r, 400));
+      if (!workspaceRef.current) return null;
+      try { return await html2canvas(workspaceRef.current, { useCORS: true, scale: 1.5 }); }
+      catch (err) { console.error(err); return null; }
+    };
+
+    const orientation = settings.orientation === 'portrait' ? 'p' : 'l';
+    let pdf = null;
+
+    for (const i of layers) {
+      const canvas = await captureLayer(i);
+      if (!canvas) continue;
+
+      const { width, height } = canvas;
+      if (!pdf) pdf = new jsPDF({ orientation, unit: 'px', format: [width, height] });
+      else pdf.addPage([width, height], orientation);
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, width, height);
     }
+    pdf?.save(`${filename}_Report.pdf`);
 
     setSelectedLayer(original);
     setExportWorkspaceConfig({ showFov: true, brandingActive: false, brandingData: null });
@@ -620,36 +612,36 @@ function DesignPage() {
 
   if (loading) return <p className="design-message">Loading floor layouts...</p>;
 
+  const currentLayout = floorLayouts[selectedLayer] ?? null;
   const currentImageSrc = imageSrcFromState
     ? imageSrcFromState
-    : floorLayouts.length > 0
-    ? `http://localhost:5113/api/floorlayouts/image/${floorLayouts[selectedLayer]?.floorID}`
+    : currentLayout
+    ? `http://localhost:5113/api/floorlayouts/image/${currentLayout.floorID}`
     : null;
 
   if (!currentImageSrc) {
     return <p className="design-message">No floor layouts found for this project.</p>;
   }
 
-  const currentFloorId =
-    floorLayouts.length > 0 ? floorLayouts[selectedLayer]?.floorID : null;
-  const currentScale =
-    floorLayouts.length > 0 ? floorLayouts[selectedLayer]?.scale ?? '' : '';
+  const currentFloorId = currentLayout?.floorID ?? null;
+  const currentScale = currentLayout?.scale ?? '';
 
   const handleBackButton = () => {
-    if (hasUnsavedChanges) {
-      const confirmLeave = window.confirm(
-        'You have unsaved changes. Do you want to leave without saving?'
-      );
-      if (confirmLeave) navigate('/app/projects');
-    } else {
-      navigate('/app/projects');
+    if (
+      hasUnsavedChanges &&
+      !window.confirm('You have unsaved changes. Do you want to leave without saving?')
+    ) {
+      return;
     }
+    navigate('/app/projects');
   };
 
   const handleBomButton = () => {
-    if (hasUnsavedChanges) {
-      const ok = window.confirm('You have unsaved changes. Please save before viewing the Bill of Materials.');
-      if (!ok) return;
+    if (
+      hasUnsavedChanges &&
+      !window.confirm('You have unsaved changes. Please save before viewing the Bill of Materials.')
+) {
+      return;
     }
     navigate('/app/bom', { state: { projectId } });
   };
@@ -679,13 +671,14 @@ function DesignPage() {
       {floorLayouts.length > 1 && (
         <div className="design-layer-controls">
           {floorLayouts.map((layout, index) => (
-            <Button
+            <button
               key={layout.floorID}
               type="button"
-              label={`Layer ${layout.layer}`}
               className={`design-layer-btn${selectedLayer === index ? ' design-layer-btn--active' : ''}`}
               onClick={() => setSelectedLayer(index)}
-            />
+            >
+              Layer {layout.layer}
+            </button>
           ))}
         </div>
       )}
