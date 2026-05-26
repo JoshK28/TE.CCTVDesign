@@ -45,7 +45,8 @@ namespace Backend.Controllers
                     Resolution = placement.Resolution,
                     ModelName = placement.ModelName ?? string.Empty,
                     Subtype = placement.Subtype ?? string.Empty,
-                    CostPerUnit = placement.CostPerUnit
+                    CostPerUnit = placement.CostPerUnit,
+                    SettingsJson = placement.SettingsJson
                 });
             }
 

@@ -16,5 +16,6 @@ namespace Backend.DTOs
         public string ModelName { get; set; } = string.Empty;
         public string Subtype { get; set; } = string.Empty;
         public double? CostPerUnit { get; set; }
+        public string? SettingsJson { get; set; }
     }
 }

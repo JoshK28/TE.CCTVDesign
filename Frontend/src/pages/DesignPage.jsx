@@ -122,6 +122,19 @@ function Workspace({
           const modelName = p.modelName ?? '';
           const subtype = p.subtype ?? '';
 
+          // SettingsJson holds per-placement settings that don't have dedicated
+          // columns (name, FOV color/opacity, focal length, height, tilt, IR
+          // range, notes, custom icon, deviceSpecifications). Unpacking happens
+          // here; packing happens in utils/designSave.js → buildSettingsJson.
+          let settings = {};
+          if (p.settingsJson) {
+            try {
+              settings = JSON.parse(p.settingsJson) ?? {};
+            } catch (err) {
+              console.warn('Failed to parse settingsJson for placement', p.placementID, err);
+            }
+          }
+
           const attributes = {
             cameraId: p.cameraId ?? 0,
             brand: p.brand ?? '',
@@ -130,7 +143,11 @@ function Workspace({
             ...(modelName ? { modelName } : {}),
             ...(type === 'camera' && subtype ? { cameraType: subtype } : {}),
             ...(p.costPerUnit != null ? { costPerUnit: p.costPerUnit } : {}),
+            ...(settings.deviceSpecifications
+              ? { deviceSpecifications: settings.deviceSpecifications }
+              : {}),
           };
+
           const args = {
             x: p.x,
             y: p.y,
@@ -139,7 +156,14 @@ function Workspace({
             name: p.cameraModel || modelName || '',
             attributes,
           };
-          return type === 'camera' ? createCamera(args) : createDevice({ ...args, type });
+
+          const base = type === 'camera' ? createCamera(args) : createDevice({ ...args, type });
+
+          // Apply the rest of the settings (FOV, focal length, tilt, IR range,
+          // custom icon, etc.). deviceSpecifications was already merged into
+          // attributes above so drop it from the override spread.
+          const { deviceSpecifications: _ignored, ...overrides } = settings;
+          return { ...base, ...overrides };
         });
         setEquipment(loaded);
       } catch (err) {

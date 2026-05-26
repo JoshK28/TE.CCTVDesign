@@ -26,6 +26,12 @@ namespace Backend.Models
         public string Subtype { get; set; } = string.Empty;
         public double? CostPerUnit { get; set; }
 
+        // serialized JSON blob holding all non-catalog placement settings:
+        // editable name, FOV color/opacity, focal length, height, tilt, IR range,
+        // notes, custom icon, device specifications, etc. Anything the design UI
+        // can mutate per-placement that does not have its own column lives here.
+        public string? SettingsJson { get; set; }
+
         public FloorLayout? FloorLayout { get; set; }
         public Camera? Camera { get; set; }
         public NetworkingDevice? NetworkingDevice { get; set; }

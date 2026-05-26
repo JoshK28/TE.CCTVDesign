@@ -1,5 +1,43 @@
 import api from '../services/api';
 
+// Picks only defined keys from `source` into a fresh object. Used to keep the
+// SettingsJson blob compact and to avoid persisting `undefined`s as `null`s.
+const pickDefined = (source) => {
+  const out = {};
+  for (const [k, v] of Object.entries(source)) {
+    if (v !== undefined) out[k] = v;
+  }
+  return out;
+};
+
+// Build the JSON blob holding everything the design UI can edit per placement
+// that does not have a dedicated column on the backend. Loader in DesignPage
+// reverses this.
+const buildSettingsJson = (item) => {
+  const attrs = item.attributes ?? {};
+  const isCamera = item.type === 'camera';
+
+  const settings = pickDefined({
+    name: item.name,
+    customIcon: item.customIcon,
+    ...(isCamera
+      ? {
+          focalLength: item.focalLength,
+          height: item.height,
+          tilt: item.tilt,
+          irRange: item.irRange,
+          notes: item.notes,
+          fovColor: item.fovColor,
+          fovOpacity: item.fovOpacity,
+        }
+      : {
+          deviceSpecifications: attrs.deviceSpecifications,
+        }),
+  });
+
+  return Object.keys(settings).length > 0 ? JSON.stringify(settings) : null;
+};
+
 const toPlacementPayload = (item, floorId) => {
   const attrs = item.attributes ?? {};
   const isCatalogItem =
@@ -34,6 +72,7 @@ const toPlacementPayload = (item, floorId) => {
     modelName: attrs.modelName ?? '',
     subtype,
     costPerUnit,
+    settingsJson: buildSettingsJson(item),
   };
 };
 
