@@ -7,54 +7,69 @@ import { SelectButton } from 'primereact/selectbutton';
 import { Checkbox } from 'primereact/checkbox';
 import defaultLogo from '../assets/logo.png';
 
+const defaultExportSettings = {
+  orientation: 'landscape',
+  showFov: true,
+  selectedLayerIds: [],
+  branding: {
+    companyName: 'Company Name',
+    projectTitle: 'Project Title',
+    logo: defaultLogo,
+  },
+};
+
 export default function ExportModal({ visible, floorLayouts = [], currentLayerId, onHide, onConfirmExport }) {
-  const [companyName, setCompanyName] = useState('Company Name');
-  const [projectTitle, setProjectTitle] = useState('Project Title');
-  const [exportType, setExportType] = useState('pdf'); 
-  const [orientation, setOrientation] = useState('landscape'); 
-  
-  const [showFov, setShowFov] = useState(true);
-  const [logoPreview, setLogoPreview] = useState(defaultLogo);
-  const [selectedLayerIds, setSelectedLayerIds] = useState([]);
+  const [exportSettings, setExportSettings] = useState(defaultExportSettings);
+  const {
+    orientation,
+    showFov,
+    selectedLayerIds,
+    branding,
+  } = exportSettings;
 
   const fileInputRef = useRef(null);
 
   // Auto-check the currently active workspace layer on open
   useEffect(() => {
     if (visible && currentLayerId) {
-      setSelectedLayerIds([currentLayerId]);
+      setExportSettings((prev) => ({ ...prev, selectedLayerIds: [currentLayerId] }));
     }
   }, [visible, currentLayerId]);
+
+  const updateExportSetting = (field, value) => {
+    setExportSettings((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updateBrandingSetting = (field, value) => {
+    setExportSettings((prev) => ({
+      ...prev,
+      branding: {
+        ...prev.branding,
+        [field]: value,
+      },
+    }));
+  };
 
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => setLogoPreview(reader.result);
+      reader.onloadend = () => updateBrandingSetting('logo', reader.result);
       reader.readAsDataURL(file);
     }
   };
 
   const handleLayerCheckboxChange = (id, checked) => {
-    if (checked) {
-      setSelectedLayerIds((prev) => [...prev, id]);
-    } else {
-      setSelectedLayerIds((prev) => prev.filter((item) => item !== id));
-    }
+    setExportSettings((prev) => ({
+      ...prev,
+      selectedLayerIds: checked
+        ? [...prev.selectedLayerIds, id]
+        : prev.selectedLayerIds.filter((item) => item !== id),
+    }));
   };
 
   const handleExportSubmit = () => {
-    onConfirmExport({
-      exportType,
-      orientation,
-      showFov,
-      selectedLayerIds,
-      branding: {
-        companyName,
-        projectTitle,
-        logo: logoPreview,
-      }
-    });
+    onConfirmExport(exportSettings);
   };
 
   return (
@@ -69,18 +84,16 @@ export default function ExportModal({ visible, floorLayouts = [], currentLayerId
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         
-        {/* Export Target Type Selection */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        {/* PDF Layout Selection */}
+        <div>
           <div>
             <label style={labelStyle}>Export Format</label>
-            <SelectButton value={exportType} options={[{ label: 'PDF Report', value: 'pdf' }, { label: 'PNG Image', value: 'png' }]} onChange={(e) => e.value && setExportType(e.value)} />
+            <div style={{ color: '#343a40', fontSize: '14px', fontWeight: '600' }}>PDF Report</div>
           </div>
-          {exportType === 'pdf' && (
-            <div>
-              <label style={labelStyle}>Orientation</label>
-              <SelectButton value={orientation} options={[{ label: 'Landscape', value: 'landscape' }, { label: 'Portrait', value: 'portrait' }]} onChange={(e) => e.value && setOrientation(e.value)} />
-            </div>
-          )}
+          <div style={{ marginTop: '1rem' }}>
+            <label style={labelStyle}>Orientation</label>
+            <SelectButton value={orientation} options={[{ label: 'Landscape', value: 'landscape' }, { label: 'Portrait', value: 'portrait' }]} onChange={(e) => e.value && updateExportSetting('orientation', e.value)} />
+          </div>
         </div>
 
         {/* TARGET LAYERS FILTER SELECTION BOX */}
@@ -110,7 +123,7 @@ export default function ExportModal({ visible, floorLayouts = [], currentLayerId
         {/* Visibility Layer Toggles */}
         <div>
           <label style={labelStyle}>Include FOV &amp; Walls</label>
-          <ToggleButton onLabel="On" offLabel="Off" checked={showFov} onChange={(e) => setShowFov(e.value)} />
+          <ToggleButton onLabel="On" offLabel="Off" checked={showFov} onChange={(e) => updateExportSetting('showFov', e.value)} />
         </div>
 
         <div style={{ borderTop: '1px solid #dee2e6' }} />
@@ -121,18 +134,18 @@ export default function ExportModal({ visible, floorLayouts = [], currentLayerId
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
             <div className="p-inputgroup">
               <span className="p-inputgroup-addon"><i className="pi pi-building"></i></span>
-              <InputText placeholder="Company Name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+              <InputText placeholder="Company Name" value={branding.companyName} onChange={(e) => updateBrandingSetting('companyName', e.target.value)} />
             </div>
             <div className="p-inputgroup">
               <span className="p-inputgroup-addon"><i className="pi pi-file"></i></span>
-              <InputText placeholder="Project Title" value={projectTitle} onChange={(e) => setProjectTitle(e.target.value)} />
+              <InputText placeholder="Project Title" value={branding.projectTitle} onChange={(e) => updateBrandingSetting('projectTitle', e.target.value)} />
             </div>
 
             <div>
               <input type="file" accept="image/*" ref={fileInputRef} onChange={handleLogoChange} style={{ display: 'none' }} />
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center', background: '#f8fafc', padding: '8px', borderRadius: '4px', border: '1px solid #ced4da' }}>
                 <Button type="button" label="Upload Custom Logo" icon="pi pi-upload" className="p-button-outlined p-button-sm" onClick={() => fileInputRef.current?.click()} style={{ width: 'auto', color: '#245d91', borderColor: '#245d91' }} />
-                {logoPreview && <img src={logoPreview} alt="Preview" style={{ height: '24px', marginLeft: 'auto', objectFit: 'contain' }} />}
+                {branding.logo && <img src={branding.logo} alt="Preview" style={{ height: '24px', marginLeft: 'auto', objectFit: 'contain' }} />}
               </div>
             </div>
           </div>

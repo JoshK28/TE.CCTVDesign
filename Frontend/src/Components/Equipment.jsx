@@ -4,6 +4,7 @@ import domeIcon from '../assets/Icons/Dome.png';
 import routerIcon from '../assets/Icons/Router.png';
 import sensorIcon from '../assets/Icons/Sensor.png';
 import alarmIcon from '../assets/Icons/Alarm.png';
+import { getImagePoint } from '../utils/points';
 
 const renderImg = (src) => (
   <img src={src} alt="" draggable={false} className="equipment-icon" />
@@ -41,7 +42,7 @@ const getIcon = (deviceInstance) => {
   return ICONS[type] ?? <span className="equipment-icon equipment-icon--emoji">❓</span>;
 };
 
-function Equipment({ deviceInstance, onSelect, onUpdatePlacement }) {
+function Equipment({ deviceInstance, imageSize, onSelect, onUpdatePlacement }) {
   const { id, x, y, rotation = 0 } = deviceInstance;
 
   // Tooltip content
@@ -63,16 +64,19 @@ ${resolution ? `Resolution: ${resolution}` : ''}
     e.stopPropagation();
     onSelect(id);
 
-    const offsetX = e.clientX - x;
-    const offsetY = e.clientY - y;
+    const stage = e.currentTarget.parentElement;
+    const startPoint = getImagePoint(e, stage, imageSize);
+    const offsetX = startPoint.x - x;
+    const offsetY = startPoint.y - y;
     let isFirstMove = true;
 
     const handlePointerMove = (moveEvent) => {
+      const point = getImagePoint(moveEvent, stage, imageSize);
       onUpdatePlacement(
         id,
         {
-          x: moveEvent.clientX - offsetX,
-          y: moveEvent.clientY - offsetY,
+          x: point.x - offsetX,
+          y: point.y - offsetY,
         },
         { commit: isFirstMove }
       );
@@ -93,24 +97,23 @@ ${resolution ? `Resolution: ${resolution}` : ''}
       <Tooltip target={`#equip-${id}`} content={tooltipContent} position="top" />
 
       <div
-        id={`equip-${id}`}
-        className="equipment"
-        onPointerDown={handlePointerDown}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect(id);
-        }}
-        style={{
-          left: x,
-          top: y,
-          position: 'absolute',
-          transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-          userSelect: 'none',
-          cursor: 'grab',
-        }}
-      >
-        {getIcon(deviceInstance)}
-      </div>
+      className="equipment"
+      onPointerDown={handlePointerDown}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(id);
+      }}
+      style={{
+        left: imageSize?.naturalWidth ? `${(x / imageSize.naturalWidth) * 100}%` : x,
+        top: imageSize?.naturalHeight ? `${(y / imageSize.naturalHeight) * 100}%` : y,
+        position: 'absolute',
+        transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+        userSelect: 'none',
+        cursor: 'grab',
+      }}
+    >
+      {getIcon(deviceInstance)}
+    </div>
     </>
   );
 }

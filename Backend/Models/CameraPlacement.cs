@@ -31,6 +31,8 @@ namespace Backend.Models
         public Camera? Camera { get; set; }
         public NetworkingDevice? NetworkingDevice { get; set; }
         public AccessControlDevice? AccessControlDevice { get; set; }
+        public int? CustomCameraId { get; set; }
+        public CustomCamera? CustomCamera { get; set; }
     }
 }
         

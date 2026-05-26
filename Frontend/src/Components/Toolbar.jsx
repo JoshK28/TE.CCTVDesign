@@ -112,7 +112,12 @@ export default function Toolbar({ onSelectTool }) {
             label: 'Draw',
             icon: 'pi pi-pencil',
             items: [[
-                { items: [{ label: 'wall', template: selectableItem }] }
+                {
+                items: [
+                    { label: 'wall', template: selectableItem },
+                    { label: 'obstacle', template: selectableItem },
+                    ]
+                }
             ]]
         },
         {

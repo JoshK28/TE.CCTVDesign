@@ -4,6 +4,7 @@ using Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260520044525_AddObstaclesTable")]
+    partial class AddObstaclesTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -560,25 +563,14 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-<<<<<<< HEAD
-                    b.Property<bool>("CorridorMode")
-                        .HasColumnType("bit");
-=======
                     b.Property<int?>("CustomCameraId")
                         .HasColumnType("int");
->>>>>>> origin/DemoMerging
 
                     b.Property<int>("FloorID")
                         .HasColumnType("int");
 
                     b.Property<int?>("FloorLayoutFloorID")
                         .HasColumnType("int");
-
-                    b.Property<double>("FocalLength")
-                        .HasColumnType("float");
-
-                    b.Property<double>("IrRange")
-                        .HasColumnType("float");
 
                     b.Property<int?>("NetworkingId")
                         .HasColumnType("int");
@@ -589,10 +581,6 @@ namespace Backend.Migrations
 
                     b.Property<double>("Rotation")
                         .HasColumnType("float");
-
-                    b.Property<string>("SensorType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Type")
                         .IsRequired()

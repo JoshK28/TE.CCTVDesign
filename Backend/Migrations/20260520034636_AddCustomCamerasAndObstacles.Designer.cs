@@ -4,6 +4,7 @@ using Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260520034636_AddCustomCamerasAndObstacles")]
+    partial class AddCustomCamerasAndObstacles
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -560,25 +563,14 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-<<<<<<< HEAD
-                    b.Property<bool>("CorridorMode")
-                        .HasColumnType("bit");
-=======
                     b.Property<int?>("CustomCameraId")
                         .HasColumnType("int");
->>>>>>> origin/DemoMerging
 
                     b.Property<int>("FloorID")
                         .HasColumnType("int");
 
                     b.Property<int?>("FloorLayoutFloorID")
                         .HasColumnType("int");
-
-                    b.Property<double>("FocalLength")
-                        .HasColumnType("float");
-
-                    b.Property<double>("IrRange")
-                        .HasColumnType("float");
 
                     b.Property<int?>("NetworkingId")
                         .HasColumnType("int");
@@ -589,10 +581,6 @@ namespace Backend.Migrations
 
                     b.Property<double>("Rotation")
                         .HasColumnType("float");
-
-                    b.Property<string>("SensorType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -640,6 +628,9 @@ namespace Backend.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedById")
+                        .HasColumnType("int");
 
                     b.Property<int>("CreatedByUserId")
                         .HasColumnType("int");
@@ -701,9 +692,9 @@ namespace Backend.Migrations
 
                     b.HasKey("CustomCameraId");
 
-                    b.HasIndex("CreatedByUserId");
+                    b.HasIndex("CreatedById");
 
-                    b.ToTable("CustomCameras");
+                    b.ToTable("CustomCamera");
                 });
 
             modelBuilder.Entity("Backend.Models.FloorLayout", b =>
@@ -783,47 +774,6 @@ namespace Backend.Migrations
                     b.HasKey("NetworkingID");
 
                     b.ToTable("NetworkingDevices");
-                });
-
-            modelBuilder.Entity("Backend.Models.Obstacle", b =>
-                {
-                    b.Property<int>("ObstacleId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ObstacleId"));
-
-                    b.Property<string>("Color")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("FloorID")
-                        .HasColumnType("int");
-
-                    b.Property<double>("Height")
-                        .HasColumnType("float");
-
-                    b.Property<string>("Label")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<double>("Rotation")
-                        .HasColumnType("float");
-
-                    b.Property<double>("Width")
-                        .HasColumnType("float");
-
-                    b.Property<double>("X")
-                        .HasColumnType("float");
-
-                    b.Property<double>("Y")
-                        .HasColumnType("float");
-
-                    b.HasKey("ObstacleId");
-
-                    b.HasIndex("FloorID");
-
-                    b.ToTable("Obstacles");
                 });
 
             modelBuilder.Entity("Backend.Models.Project", b =>
@@ -937,8 +887,7 @@ namespace Backend.Migrations
 
                     b.HasOne("Backend.Models.CustomCamera", "CustomCamera")
                         .WithMany()
-                        .HasForeignKey("CustomCameraId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("CustomCameraId");
 
                     b.HasOne("Backend.Models.FloorLayout", "FloorLayout")
                         .WithMany()
@@ -964,9 +913,7 @@ namespace Backend.Migrations
                 {
                     b.HasOne("Backend.Models.User", "CreatedBy")
                         .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .HasForeignKey("CreatedById");
 
                     b.Navigation("CreatedBy");
                 });
@@ -980,17 +927,6 @@ namespace Backend.Migrations
                         .IsRequired();
 
                     b.Navigation("Project");
-                });
-
-            modelBuilder.Entity("Backend.Models.Obstacle", b =>
-                {
-                    b.HasOne("Backend.Models.FloorLayout", "FloorLayout")
-                        .WithMany()
-                        .HasForeignKey("FloorID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("FloorLayout");
                 });
 
             modelBuilder.Entity("Backend.Models.Project", b =>

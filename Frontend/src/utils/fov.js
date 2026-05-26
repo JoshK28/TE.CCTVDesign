@@ -54,33 +54,18 @@ const castRayWithWalls = (origin, angle, maxDistance, walls) => {
   return closest;
 };
 
-// ---------- Main FOV polygon ----------
+// converts an obstacle rectangle into 4 wall segments for ray casting
+const obstacleToWalls = (obstacle) => {
+  const { x, y, width, height } = obstacle;
+  return [
+    { x1: x,         y1: y,          x2: x + width, y2: y          }, // top
+    { x1: x + width, y1: y,          x2: x + width, y2: y + height }, // right
+    { x1: x + width, y1: y + height, x2: x,         y2: y + height }, // bottom
+    { x1: x,         y1: y + height, x2: x,         y2: y          }, // left
+  ];
+};
 
-/**
- * calculateFovPolygon
- *
- * item: {
- *   x, y, rotation,
- *   focalLength,
- *   sensorType,
- *   corridorMode,
- *   irRange
- * }
- *
- * walls: [{ x1, y1, x2, y2 }, ...]
- *
- * options: {
- *   ppm,                // pixels per metre (from ScaleCalibrator)
- *   rayCount,
- *   focalLength,
- *   sensorType,
- *   corridorMode,
- *   maxDistanceMeters
- * }
- */
-export const calculateFovPolygon = (item, walls, options = {}) => {
-  if (!item) return '';
-
+export const calculateFovPolygon = (item, walls, options = {}, obstacles = []) => {
   const {
     ppm = null,
     rayCount = DEFAULT_RAY_COUNT,
@@ -136,12 +121,16 @@ export const calculateFovPolygon = (item, walls, options = {}) => {
   const step = (effectiveHfov) / rayCount;
   const origin = { x, y };
 
-  // ----- Build polygon -----
+  // combine walls and obstacle edges into one list for ray casting
+  const allWalls = [
+    ...walls,
+    ...obstacles.flatMap(obstacleToWalls),
+  ];
+
   const points = [`${x},${y}`];
 
   for (let i = 0; i <= rayCount; i += 1) {
-    const angle = startAngle + step * i;
-    const { x: hitX, y: hitY } = castRayWithWalls(origin, angle, maxDistancePx, walls);
+    const { x: hitX, y: hitY } = castRayWithWalls(origin, startAngle + step * i, maxDistancePx, allWalls);
     points.push(`${hitX},${hitY}`);
   }
 
