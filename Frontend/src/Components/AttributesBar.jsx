@@ -10,6 +10,7 @@ import './AttributesBar.css';
 
 const DEFAULT_FOV_COLOR = '#0096ff';
 const DEFAULT_FOV_OPACITY = 0.3;
+const DEFAULT_ICON_BACKGROUND_COLOR = '#ffffff';
 const MAX_ICON_BYTES = 1_000_000;
 const ALLOWED_ICON_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp', 'image/gif'];
 const PRESET_COLORS = ['#0096ff', '#ff0000', '#00ff00', '#ffa500', '#800080', '#ffff00'];
@@ -33,15 +34,19 @@ function AttributesBar({
 }) {
 
   const [showPicker, setShowPicker] = useState(false);
+  const [showIconBackgroundPicker, setShowIconBackgroundPicker] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [iconError, setIconError] = useState('');
   const pickerRef = useRef(null);
   const swatchRef = useRef(null);
+  const iconBackgroundPickerRef = useRef(null);
+  const iconBackgroundSwatchRef = useRef(null);
   const iconInputRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(e) {
       if (
+        showPicker &&
         pickerRef.current &&
         !pickerRef.current.contains(e.target) &&
         swatchRef.current &&
@@ -49,15 +54,27 @@ function AttributesBar({
       ) {
         setShowPicker(false);
       }
+      if (
+        showIconBackgroundPicker &&
+        iconBackgroundPickerRef.current &&
+        !iconBackgroundPickerRef.current.contains(e.target) &&
+        iconBackgroundSwatchRef.current &&
+        !iconBackgroundSwatchRef.current.contains(e.target)
+      ) {
+        setShowIconBackgroundPicker(false);
+      }
     }
-    if (showPicker) document.addEventListener('mousedown', handleClickOutside);
+    if (showPicker || showIconBackgroundPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showPicker]);
+  }, [showPicker, showIconBackgroundPicker]);
 
   // Reset to first tab whenever a different item is selected
   useEffect(() => {
     setActiveTab(0);
     setShowPicker(false);
+    setShowIconBackgroundPicker(false);
     setIconError('');
   }, [selectedItem?.id]);
 
@@ -65,6 +82,8 @@ function AttributesBar({
 
   const currentFovColor = selectedItem.fovColor ?? DEFAULT_FOV_COLOR;
   const currentOpacity = selectedItem.fovOpacity ?? DEFAULT_FOV_OPACITY;
+  const currentIconBackgroundColor =
+    selectedItem.iconBackgroundColor ?? DEFAULT_ICON_BACKGROUND_COLOR;
   const isPreset = PRESET_COLORS.includes(currentFovColor);
 
   function handleIconUpload(event) {
@@ -331,6 +350,7 @@ function AttributesBar({
                           style={{ backgroundColor: color }}
                           onClick={() => {
                             setShowPicker(false);
+                            setShowIconBackgroundPicker(false);
                             updateSetting('fovColor', color);
                           }}
                         />
@@ -342,6 +362,7 @@ function AttributesBar({
                         style={{ backgroundColor: currentFovColor }}
                         onClick={(e) => {
                           e.stopPropagation();
+                          setShowIconBackgroundPicker(false);
                           setShowPicker(prev => !prev);
                         }}
                       >
@@ -378,12 +399,49 @@ function AttributesBar({
               </>
             )}
 
+            <h3 className="section-subtitle">Icon Background</h3>
+            <div className="section-box">
+              <div className="field">
+                <label>Colour</label>
+                <div className="fov-swatches">
+                  <div
+                    ref={iconBackgroundSwatchRef}
+                    className="fov-swatch custom selected"
+                    style={{ backgroundColor: currentIconBackgroundColor }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowPicker(false);
+                      setShowIconBackgroundPicker(prev => !prev);
+                    }}
+                  >
+                    <span className="edit-indicator">✎</span>
+                  </div>
+                </div>
+
+                {showIconBackgroundPicker && (
+                  <div ref={iconBackgroundPickerRef} className="picker-inline">
+                    <ColorPicker
+                      value={currentIconBackgroundColor}
+                      format="hex"
+                      inline
+                      onChange={(e) => {
+                        updateSetting('iconBackgroundColor', `#${e.value.replace('#', '')}`);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
             <h3 className="section-subtitle">Custom Icon</h3>
             <div className="section-box">
               <div className="field">
                 <label>Icon</label>
                 <div className="custom-icon-row">
-                  <div className="custom-icon-preview">
+                  <div
+                    className="custom-icon-preview"
+                    style={{ backgroundColor: currentIconBackgroundColor }}
+                  >
                     {selectedItem.customIcon ? (
                       <img
                         src={selectedItem.customIcon}

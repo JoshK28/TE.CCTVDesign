@@ -20,6 +20,7 @@ const buildSettingsJson = (item) => {
   const settings = pickDefined({
     name: item.name,
     customIcon: item.customIcon,
+    iconBackgroundColor: item.iconBackgroundColor,
     ...(isCamera
       ? {
           focalLength: item.focalLength,

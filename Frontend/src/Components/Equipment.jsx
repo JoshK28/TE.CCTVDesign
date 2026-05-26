@@ -6,6 +6,8 @@ import alarmIcon from '../assets/Icons/Alarm.png';
 import nvrIcon from '../assets/Icons/NVR.png';
 import { getImagePoint } from '../utils/points';
 
+const DEFAULT_ICON_BACKGROUND_COLOR = '#ffffff';
+
 const renderImg = (src) => (
   <img src={src} alt="" draggable={false} className="equipment-icon" />
 );
@@ -45,6 +47,8 @@ const getIcon = (deviceInstance) => {
 
 function Equipment({ deviceInstance, imageSize, onSelect, onUpdatePlacement }) {
   const { id, x, y, rotation = 0 } = deviceInstance;
+  const iconBackgroundColor =
+    deviceInstance.iconBackgroundColor ?? DEFAULT_ICON_BACKGROUND_COLOR;
 
   const handlePointerDown = (e) => {
     e.stopPropagation();
@@ -95,7 +99,12 @@ function Equipment({ deviceInstance, imageSize, onSelect, onUpdatePlacement }) {
         cursor: 'grab',
       }}
     >
-      {getIcon(deviceInstance)}
+      <div
+        className="equipment-icon-background"
+        style={{ backgroundColor: iconBackgroundColor }}
+      >
+        {getIcon(deviceInstance)}
+      </div>
     </div>
   );
 }

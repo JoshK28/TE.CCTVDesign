@@ -79,7 +79,7 @@
   height: 32px;
   border-radius: 6px;
   cursor: pointer;
-  border: 2px solid transparent;
+  border: 2px solid #d7d7d7;
   position: relative;
 }
 

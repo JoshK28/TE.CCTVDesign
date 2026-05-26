@@ -27,6 +27,8 @@ import { jsPDF } from 'jspdf';
 
 import '../page_styling/designPage.css';
 
+const DEFAULT_ICON_BACKGROUND_COLOR = '#ffffff';
+
 const CAMERA_DEFAULTS = {
   focalLength: 2.8,
   height: 3,
@@ -36,6 +38,7 @@ const CAMERA_DEFAULTS = {
   notes: '',
   fovColor: '#0096ff',
   fovOpacity: 0.3,
+  iconBackgroundColor: DEFAULT_ICON_BACKGROUND_COLOR,
 };
 
 const createCamera = ({ x, y, name = '', attributes = {}, rotation = 0, id = Date.now() }) => ({
@@ -56,6 +59,7 @@ const createDevice = ({ x, y, type, name = '', attributes = {}, id = Date.now() 
   x,
   y,
   name: name || attributes.modelName || '',
+  iconBackgroundColor: DEFAULT_ICON_BACKGROUND_COLOR,
   attributes,
 });
 
@@ -123,8 +127,8 @@ function Workspace({
           const subtype = p.subtype ?? '';
 
           // SettingsJson holds per-placement settings that don't have dedicated
-          // columns (name, FOV color/opacity, focal length, height, tilt, IR
-          // range, notes, custom icon, deviceSpecifications). Unpacking happens
+          // columns (name, FOV color/opacity, icon background, focal length,
+          // height, tilt, IR range, notes, custom icon, deviceSpecifications). Unpacking happens
           // here; packing happens in utils/designSave.js → buildSettingsJson.
           let settings = {};
           if (p.settingsJson) {
