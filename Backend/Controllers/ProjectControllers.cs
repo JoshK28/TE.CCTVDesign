@@ -10,196 +10,131 @@ namespace Backend.Controllers
 {
     [ApiController]
     [Route("api/projects")]
-    [Authorize] // requires login for all endpoints
-    public class ProjectController : ControllerBase
+    [Authorize]
+    public class ProjectController(AppDbContext context) : ControllerBase
     {
-        private readonly AppDbContext _context;
+        // extract user id from JWT token
+        private int GetUserId() =>
+            int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int id) ? id : 0;
 
-        public ProjectController(AppDbContext context)
-        {
-            _context = context;
-        }
-
-        // gets the logged in user's id from the JWT token
-        private int GetUserId()
-        {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return int.TryParse(userIdClaim, out int userId) ? userId : 0;
-        }
-
-        // handles POST requests to /api/projects/create
-        // creates a new project linked to the logged in user
+        // POST api/projects/create
         [HttpPost("create")]
         public async Task<IActionResult> CreateProject([FromForm] CreateProjectDto dto)
         {
-            // get the logged in user's id from the JWT token
             var userId = GetUserId();
-            if (userId == 0)
-                return Unauthorized("User not found");
+            if (userId == 0) return Unauthorized("User not found");
 
-            // create a new project using the data from the form
             var project = new Project
             {
                 Title = dto.Title,
                 Address = dto.Address,
                 Description = dto.Description ?? string.Empty,
-                UserID = userId // use actual logged in user id
+                UserID = userId
             };
 
-            // save the new project to the database first to get the ProjectID
-            _context.Projects.Add(project);
-            await _context.SaveChangesAsync();
+            context.Projects.Add(project);
+            await context.SaveChangesAsync();
 
-            // handle floor image uploads if any were provided
-            if (dto.FloorImages != null && dto.FloorImages.Count > 0)
+            // process floor image uploads if provided
+            if (dto.FloorImages?.Count > 0)
             {
-                int layerNumber = 1;
-                foreach (var image in dto.FloorImages)
+                var allowedTypes = new[] { "image/jpeg", "image/png" };
+                int layer = 1;
+
+                foreach (var image in dto.FloorImages.Where(i => allowedTypes.Contains(i.ContentType)))
                 {
-                    var allowedTypes = new[] { "image/jpeg", "image/png" };
-                    if (!allowedTypes.Contains(image.ContentType))
-                        continue;
+                    using var ms = new MemoryStream();
+                    await image.CopyToAsync(ms);
 
-                    using var memoryStream = new MemoryStream();
-                    await image.CopyToAsync(memoryStream);
-                    var imageBytes = memoryStream.ToArray();
-
-                    var floorLayout = new FloorLayout
+                    context.FloorLayouts.Add(new FloorLayout
                     {
                         ProjectID = project.ProjectID,
-                        ImageData = imageBytes,
+                        ImageData = ms.ToArray(),
                         ImageContentType = image.ContentType,
                         FileName = image.FileName,
-                        Width = 0,
-                        Height = 0,
+                        Width = 0, Height = 0,
                         Scale = dto.Scale,
-                        Layer = layerNumber
-                    };
-
-                    _context.FloorLayouts.Add(floorLayout);
-                    layerNumber++;
+                        Layer = layer++
+                    });
                 }
 
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
             }
 
             return Ok(new
             {
-                project.ProjectID,
-                project.Title,
-                project.Address,
-                project.Description,
+                project.ProjectID, project.Title,
+                project.Address, project.Description,
                 FloorLayoutsUploaded = dto.FloorImages?.Count ?? 0
             });
         }
 
-        // handles GET requests to /api/projects
-        // only returns projects belonging to the logged in user
+        // GET api/projects — returns only projects belonging to the logged in user
         [HttpGet]
         public async Task<IActionResult> GetProjects()
         {
             var userId = GetUserId();
-            if (userId == 0)
-                return Unauthorized("User not found");
+            if (userId == 0) return Unauthorized("User not found");
 
-            // filter projects by logged in user
-            var projects = await _context.Projects
+            var projects = await context.Projects
                 .Where(p => p.UserID == userId)
-                .Select(p => new
-                {
-                    p.ProjectID,
-                    p.Title,
-                    p.Address,
-                    p.Description,
-                    p.UserID
-                })
+                .Select(p => new { p.ProjectID, p.Title, p.Address, p.Description, p.UserID })
                 .ToListAsync();
 
             return Ok(projects);
         }
 
-        // handles GET requests to /api/projects/{id}
-        // only returns the project if it belongs to the logged in user
+        // GET api/projects/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProject(int id)
         {
-            var userId = GetUserId();
-
-            var project = await _context.Projects
+            var project = await context.Projects
                 .Include(p => p.FloorLayouts)
-                .FirstOrDefaultAsync(p => p.ProjectID == id && p.UserID == userId);
+                .FirstOrDefaultAsync(p => p.ProjectID == id && p.UserID == GetUserId());
 
-            if (project == null)
-                return NotFound("Project not found");
+            if (project == null) return NotFound("Project not found");
 
-            // map to anonymous object to avoid circular reference
+            // omit ImageData and navigation properties to avoid large payloads and circular references
             return Ok(new
             {
-                project.ProjectID,
-                project.Title,
-                project.Address,
-                project.Description,
-                project.UserID,
+                project.ProjectID, project.Title,
+                project.Address, project.Description, project.UserID,
                 FloorLayouts = project.FloorLayouts.Select(f => new
                 {
-                    f.FloorID,
-                    f.FileName,
-                    f.Layer,
-                    f.Scale,
-                    f.Width,
-                    f.Height,
-                    f.ImageContentType
-                    // intentionally omitting f.Project and f.ImageData to avoid cycle and large payloads
+                    f.FloorID, f.FileName, f.Layer,
+                    f.Scale, f.Width, f.Height, f.ImageContentType
                 })
             });
         }
 
-        // handles DELETE requests to /api/projects/{id}
-        // only deletes the project if it belongs to the logged in user
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProject(int id)
-        {
-            var userId = GetUserId();
-
-            var project = await _context.Projects
-                .FirstOrDefaultAsync(p => p.ProjectID == id && p.UserID == userId);
-
-            if (project == null)
-                return NotFound("Project not found");
-
-            _context.Projects.Remove(project);
-            await _context.SaveChangesAsync();
-
-            return Ok("Project deleted successfully");
-        }
-        
-        // handles PUT requests to /api/projects/{id}
-        // updates a project belonging to the logged in user
+        // PUT api/projects/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProject(int id, [FromBody] CreateProjectDto dto)
         {
-            var userId = GetUserId();
+            var project = await context.Projects
+                .FirstOrDefaultAsync(p => p.ProjectID == id && p.UserID == GetUserId());
 
-            var project = await _context.Projects
-                .FirstOrDefaultAsync(p => p.ProjectID == id && p.UserID == userId);
+            if (project == null) return NotFound("Project not found");
 
-            if (project == null)
-                return NotFound("Project not found");
+            (project.Title, project.Address, project.Description) =
+                (dto.Title, dto.Address, dto.Description ?? string.Empty);
 
-            project.Title = dto.Title;
-            project.Address = dto.Address;
-            project.Description = dto.Description ?? string.Empty;
-            // note: floor images are not updated here - too complex for edit
+            await context.SaveChangesAsync();
+            return Ok(new { project.ProjectID, project.Title, project.Address, project.Description });
+        }
 
-            await _context.SaveChangesAsync();
+        // DELETE api/projects/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProject(int id)
+        {
+            var project = await context.Projects
+                .FirstOrDefaultAsync(p => p.ProjectID == id && p.UserID == GetUserId());
 
-            return Ok(new
-            {
-                project.ProjectID,
-                project.Title,
-                project.Address,
-                project.Description
-            });
+            if (project == null) return NotFound("Project not found");
+
+            context.Projects.Remove(project);
+            await context.SaveChangesAsync();
+            return Ok("Project deleted successfully");
         }
     }
 }

@@ -3,63 +3,32 @@ using Backend.Models;
 
 namespace Backend.Data
 {
-    // AppDbContext is the main class that connects the app to the database
-    // it acts as a middle man between the code and the database
+    // main database context — connects the app to SQL Server via EF Core
     public class AppDbContext : DbContext
     {
-        // sets up the database connection using the settings from appsettings.json
-        public AppDbContext(DbContextOptions<AppDbContext> options)
-            : base(options) { }
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        // represents the Users table in the database
-        // allows the app to read and write user data
+        // database tables
         public DbSet<User> Users => Set<User>();
-
-             // represents the Projects table in the database
-        // allows the app to read and write project data
         public DbSet<Project> Projects => Set<Project>();
-
-        // represents the FloorLayouts table in the database
-        // allows the app to read and write floor layout images per project
         public DbSet<FloorLayout> FloorLayouts => Set<FloorLayout>();
-
-        // represents the Cameras table in the database
-        // allows the app to read and write camera data
         public DbSet<Camera> Cameras => Set<Camera>();
-
-        // represents the Camera Placements table in the database
-        // allows the app to read and write the camera location
         public DbSet<CameraPlacement> CameraPlacemens => Set<CameraPlacement>();
 
-        // FOR JOSH- was going to be used for when a user adds devices just for access control but if you're going to do your own can delete not neccessary
-
-        // represents the NetworkingDevices table
+        // FOR JOSH- was going to be used for when a user adds devices just for networking device but if you're going to do your own can delete not neccessary
         public DbSet<NetworkingDevice> NetworkingDevices => Set<NetworkingDevice>();
 
         // FOR JOSH- was going to be used for when a user adds devices just for access control but if you're going to do your own can delete not neccessary
-
-        // represents the AccessControlDevices table
         public DbSet<AccessControlDevice> AccessControlDevices => Set<AccessControlDevice>();
-
-        // represents the Wall Placements table in the database
-        // allows the app to read and write the Wall location
         public DbSet<Wall> Walls => Set<Wall>();
 
         // FOR JOSH- was going to be used for when a user chagnes camera spec can delete not neccessary
-
-        // represents the CustomCameras table - globally accessible user-created camera variants
         public DbSet<CustomCamera> CustomCameras => Set<CustomCamera>();
-
-        // represents the Obstacles table - drawn shapes on the design canvas
         public DbSet<Obstacle> Obstacles => Set<Obstacle>();
 
-        // this method runs when the database is first being set up
-        // it pre-fills the Cameras table with 21 HikVision cameras
-        // so the data is automatically available without manual entry
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // seed data - automatically adds these cameras to the database
-            // when dotnet ef database update is run
+            // seed 21 HikVision cameras — runs automatically on dotnet ef database update
             modelBuilder.Entity<Camera>().HasData(
                 new Camera { Id = 1, ModelNumber = "DS-2CD2685G1-IZS", Description = "Camera Bullet 8MP V-Focus HikVision", Brand = "HikVision", Type = "Bullet", Resolution = "8MP", Range = "50m", LensSize = "Varifocal", LensType = "Motorised Varifocal", FovHorizontal = "112°–46°", FovVertical = "60°–26°", FovDiagonal = "133°–53°", IrRange = "50m", Aperture = "F1.4", OperatingTemp = "–30°C to 60°C", Price = "$480–$650" },
                 new Camera { Id = 2, ModelNumber = "DS-2CD2046G2-I", Description = "Camera 4MP Mini Bullet 40m IR IP67 2.8mm HIKVision", Brand = "HikVision", Type = "Bullet", Resolution = "4MP", Range = "40m", LensSize = "2.8mm", LensType = "Fixed Focal Lens", FovHorizontal = "103°–83°–53°", FovVertical = "55°–45°–28°", FovDiagonal = "123°–98°–62°", IrRange = "40m", Aperture = "F1.4", OperatingTemp = "–30°C to 60°C", Price = "$180–$260" },
@@ -84,53 +53,42 @@ namespace Backend.Data
                 new Camera { Id = 21, ModelNumber = "DS-2DE7530IW-AE", Description = "Camera PTZ 5MP 30x Zoom 150m IR IP66 Pendant HikVision", Brand = "HikVision", Type = "PTZ", Resolution = "5MP", Range = "150m", LensSize = "30x Optical Zoom", LensType = "PTZ", FovHorizontal = "60°–2.3°", FovVertical = "", FovDiagonal = "", IrRange = "200m", Aperture = "F1.5", OperatingTemp = "–30°C to 60°C", Price = "$2500–$3200" }
             );
 
+            // relationships — cascade delete removes child records when parent is deleted
             modelBuilder.Entity<Wall>()
-                .HasOne(w => w.FloorLayout)
-                .WithMany()
-                .HasForeignKey(w => w.FloorID)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<CameraPlacement>()
-                .HasOne(c => c.Camera)
-                .WithMany()
-                .HasForeignKey(c => c.CameraId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            // FOR JOSH- was going to be used for when a user adds devices just for access control but if you're going to do your own can delete not neccessary
-            
-            modelBuilder.Entity<CameraPlacement>()
-                .HasOne(c => c.NetworkingDevice)
-                .WithMany()
-                .HasForeignKey(c => c.NetworkingId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            // FOR JOSH- was going to be used for when a user adds devices just for networking but if you're going to do your own can delete not neccessary
-
-            modelBuilder.Entity<CameraPlacement>()
-                .HasOne(c => c.AccessControlDevice)
-                .WithMany()
-                .HasForeignKey(c => c.AccessControlId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .HasOne(w => w.FloorLayout).WithMany()
+                .HasForeignKey(w => w.FloorID).OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Obstacle>()
-                .HasOne(o => o.FloorLayout)
-                .WithMany()
-                .HasForeignKey(o => o.FloorID)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(o => o.FloorLayout).WithMany()
+                .HasForeignKey(o => o.FloorID).OnDelete(DeleteBehavior.Cascade);
+
+            // placements — set null on delete so placements aren't removed if a device is deleted
+            modelBuilder.Entity<CameraPlacement>()
+                .HasOne(c => c.Camera).WithMany()
+                .HasForeignKey(c => c.CameraId).OnDelete(DeleteBehavior.SetNull);
+
+            // FOR JOSH- was going to be used for when a user adds devices just for networking device but if you're going to do your own can delete not neccessary
+
+            modelBuilder.Entity<CameraPlacement>()
+                .HasOne(c => c.NetworkingDevice).WithMany()
+                .HasForeignKey(c => c.NetworkingId).OnDelete(DeleteBehavior.SetNull);
+
+            // FOR JOSH- was going to be used for when a user adds devices just for access control but if you're going to do your own can delete not neccessary
+
+            modelBuilder.Entity<CameraPlacement>()
+                .HasOne(c => c.AccessControlDevice).WithMany()
+                .HasForeignKey(c => c.AccessControlId).OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<CameraPlacement>()
+                .HasOne(c => c.CustomCamera).WithMany()
+                .HasForeignKey(c => c.CustomCameraId).OnDelete(DeleteBehavior.SetNull);
 
             // FOR JOSH- was going to be used for when a user chagnes camera spec can delete not neccessary
 
+            // restrict delete — keep custom cameras even if the user who created them is deleted
             modelBuilder.Entity<CustomCamera>()
-                .HasOne(c => c.CreatedBy)
-                .WithMany()
-                .HasForeignKey(c => c.CreatedByUserId)
-                .OnDelete(DeleteBehavior.Restrict); // don't delete custom cameras if user is deleted
-
-            modelBuilder.Entity<CameraPlacement>()
-                .HasOne(c => c.CustomCamera)
-                .WithMany()
-                .HasForeignKey(c => c.CustomCameraId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .HasOne(c => c.CreatedBy).WithMany()
+                .HasForeignKey(c => c.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
