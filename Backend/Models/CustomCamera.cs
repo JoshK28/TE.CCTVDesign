@@ -1,3 +1,6 @@
+// FOR JOSH- was going to be used for when a user chagnes camera spec can delete not neccessary
+
+
 using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models

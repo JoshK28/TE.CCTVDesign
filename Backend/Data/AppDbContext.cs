@@ -31,8 +31,12 @@ namespace Backend.Data
         // allows the app to read and write the camera location
         public DbSet<CameraPlacement> CameraPlacemens => Set<CameraPlacement>();
 
+        // FOR JOSH- was going to be used for when a user adds devices just for access control but if you're going to do your own can delete not neccessary
+
         // represents the NetworkingDevices table
         public DbSet<NetworkingDevice> NetworkingDevices => Set<NetworkingDevice>();
+
+        // FOR JOSH- was going to be used for when a user adds devices just for access control but if you're going to do your own can delete not neccessary
 
         // represents the AccessControlDevices table
         public DbSet<AccessControlDevice> AccessControlDevices => Set<AccessControlDevice>();
@@ -40,6 +44,8 @@ namespace Backend.Data
         // represents the Wall Placements table in the database
         // allows the app to read and write the Wall location
         public DbSet<Wall> Walls => Set<Wall>();
+
+        // FOR JOSH- was going to be used for when a user chagnes camera spec can delete not neccessary
 
         // represents the CustomCameras table - globally accessible user-created camera variants
         public DbSet<CustomCamera> CustomCameras => Set<CustomCamera>();
@@ -90,11 +96,15 @@ namespace Backend.Data
                 .HasForeignKey(c => c.CameraId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            // FOR JOSH- was going to be used for when a user adds devices just for access control but if you're going to do your own can delete not neccessary
+            
             modelBuilder.Entity<CameraPlacement>()
                 .HasOne(c => c.NetworkingDevice)
                 .WithMany()
                 .HasForeignKey(c => c.NetworkingId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // FOR JOSH- was going to be used for when a user adds devices just for networking but if you're going to do your own can delete not neccessary
 
             modelBuilder.Entity<CameraPlacement>()
                 .HasOne(c => c.AccessControlDevice)
@@ -107,6 +117,8 @@ namespace Backend.Data
                 .WithMany()
                 .HasForeignKey(o => o.FloorID)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // FOR JOSH- was going to be used for when a user chagnes camera spec can delete not neccessary
 
             modelBuilder.Entity<CustomCamera>()
                 .HasOne(c => c.CreatedBy)
