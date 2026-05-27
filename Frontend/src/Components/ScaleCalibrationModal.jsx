@@ -3,6 +3,8 @@ import { Dialog } from "primereact/dialog";
 import { InputNumber } from "primereact/inputnumber";
 import { Button } from "primereact/button";
 
+import "../page_styling/designPage.css";
+
 export default function ScaleCalibrationModal({
     visible,
     pixelDistance,
@@ -22,35 +24,53 @@ export default function ScaleCalibrationModal({
             header="Scale Calibration"
             visible={visible}
             onHide={onCancel}
-            style={{ width: "400px" }}
             modal
+            style={{ width: "420px" }}
+            className="scale-dialog"
         >
-            <p>You measured: <strong>{pixelDistance?.toFixed(2)} px</strong></p>
+            <div className="scale-dialog-content">
 
-            <div className="p-field">
-                <label>Real-world distance (meters):</label>
-                <InputNumber
-                    value={meters}
-                    onValueChange={(e) => setMeters(e.value)}
-                    min={0.01}
-                    step={0.1}
-                    placeholder="Enter meters"
-                    style={{ width: "100%" }}
-                />
-            </div>
+                {/* Summary */}
+                <div className="scale-summary">
+                    <p className="scale-summary-text">
+                        You measured:
+                        <strong className="scale-summary-value">
+                            {pixelDistance?.toFixed(2)} px
+                        </strong>
+                    </p>
+                </div>
 
-            <div style={{ marginTop: "1rem", textAlign: "right" }}>
-                <Button
-                    label="Cancel"
-                    className="p-button-text"
-                    onClick={onCancel}
-                    style={{ marginRight: "0.5rem" }}
-                />
-                <Button
-                    label="Apply"
-                    icon="pi pi-check"
-                    onClick={handleApply}
-                />
+                {/* Input */}
+                <div className="scale-input-group">
+                    <label className="scale-input-label">
+                        Real‑world distance (meters)
+                    </label>
+
+                    <InputNumber
+                        value={meters}
+                        onValueChange={(e) => setMeters(e.value)}
+                        min={0.01}
+                        step={0.1}
+                        placeholder="Enter meters"
+                        className="scale-input"
+                        inputStyle={{ width: "100%" }}
+                    />
+                </div>
+
+                {/* Actions */}
+                <div className="scale-actions">
+                    <Button
+                        label="Cancel"
+                        className="p-button-text scale-btn-cancel"
+                        onClick={onCancel}
+                    />
+                    <Button
+                        label="Apply"
+                        icon="pi pi-check"
+                        className="scale-btn-apply"
+                        onClick={handleApply}
+                    />
+                </div>
             </div>
         </Dialog>
     );

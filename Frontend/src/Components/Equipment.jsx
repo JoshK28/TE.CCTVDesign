@@ -1,4 +1,3 @@
-import { Tooltip } from 'primereact/tooltip';
 import securityCameraIcon from '../assets/Icons/security-camera.png';
 import domeIcon from '../assets/Icons/Dome.png';
 import routerIcon from '../assets/Icons/Router.png';
@@ -42,23 +41,31 @@ const getIcon = (deviceInstance) => {
   return ICONS[type] ?? <span className="equipment-icon equipment-icon--emoji">❓</span>;
 };
 
-function Equipment({ deviceInstance, imageSize, onSelect, onUpdatePlacement }) {
+export default function Equipment({
+  deviceInstance,
+  imageSize,
+  onSelect,
+  onUpdatePlacement,
+  onMouseEnter,
+  onMouseLeave
+}) {
   const { id, x, y, rotation = 0 } = deviceInstance;
 
-  // Tooltip content
-  const name = deviceInstance.name || deviceInstance.attributes?.cameraModel || 'Unnamed device';
-  const type = deviceInstance.type || 'Unknown';
-  const model = deviceInstance.attributes?.cameraModel || deviceInstance.attributes?.modelName || '—';
-  const brand = deviceInstance.attributes?.brand || '';
-  const resolution = deviceInstance.attributes?.resolution || '';
-
-  const tooltipContent = `
-Name: ${name}
-Type: ${type}
-Model: ${model}
-${brand ? `Brand: ${brand}` : ''}
-${resolution ? `Resolution: ${resolution}` : ''}
-  `.trim();
+  // Build tooltip content (clean, structured)
+  const tooltipContent = {
+    name:
+      deviceInstance.name ||
+      deviceInstance.attributes?.cameraModel ||
+      deviceInstance.attributes?.modelName ||
+      'Unnamed device',
+    type: deviceInstance.type || 'Unknown',
+    model:
+      deviceInstance.attributes?.cameraModel ||
+      deviceInstance.attributes?.modelName ||
+      '—',
+    brand: deviceInstance.attributes?.brand || '—',
+    resolution: deviceInstance.attributes?.resolution || '—'
+  };
 
   const handlePointerDown = (e) => {
     e.stopPropagation();
@@ -93,16 +100,16 @@ ${resolution ? `Resolution: ${resolution}` : ''}
   };
 
   return (
-    <>
-      <Tooltip target={`#equip-${id}`} content={tooltipContent} position="top" />
-
-      <div
+    <div
+      id={`equip-${id}`}
       className="equipment"
       onPointerDown={handlePointerDown}
       onClick={(e) => {
         e.stopPropagation();
         onSelect(id);
       }}
+      onMouseEnter={() => onMouseEnter(tooltipContent)}
+      onMouseLeave={onMouseLeave}
       style={{
         left: imageSize?.naturalWidth ? `${(x / imageSize.naturalWidth) * 100}%` : x,
         top: imageSize?.naturalHeight ? `${(y / imageSize.naturalHeight) * 100}%` : y,
@@ -114,8 +121,5 @@ ${resolution ? `Resolution: ${resolution}` : ''}
     >
       {getIcon(deviceInstance)}
     </div>
-    </>
   );
 }
-
-export default Equipment;

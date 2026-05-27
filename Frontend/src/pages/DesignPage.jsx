@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { Toast } from 'primereact/toast';
 import { Dialog } from 'primereact/dialog';
+import { Button } from "primereact/button";
 
 import {
     Toolbar,
@@ -120,6 +121,9 @@ function Workspace({
     const [calibrationEnd, setCalibrationEnd] = useState(null);
     const [calibrationDistancePx, setCalibrationDistancePx] = useState(null);
     const [showCalibrationModal, setShowCalibrationModal] = useState(false);
+
+    //HOVER TOOL IMPLEMENTATION
+    const [hoverDevice, setHoverDevice] = useState(null);
 
     useEffect(() => {
         setImageSize(null);
@@ -992,6 +996,58 @@ function Workspace({
                         />
                     )}
 
+                    {/* DEVICE HOVER INFO BOX */}
+                    {hoverDevice && (
+                        <div
+                            className="device-hover-box"
+                            style={{
+                                left: hoverDevice.x,
+                                top: hoverDevice.y,
+                                transform: "translate(-50%, -110%)"
+                            }}
+                        >
+                            <div className="hover-title">
+                                {hoverDevice.name || hoverDevice.model || "Unnamed Device"}
+                            </div>
+
+                            {hoverDevice.type && (
+                                <div className="hover-line">
+                                    Type: {hoverDevice.type}
+                                </div>
+                            )}
+
+                            {hoverDevice.model && (
+                                <div className="hover-line">
+                                    Model: {hoverDevice.model}
+                                </div>
+                            )}
+
+                            {hoverDevice.brand && (
+                                <div className="hover-line">
+                                    Brand: {hoverDevice.brand}
+                                </div>
+                            )}
+
+                            {hoverDevice.resolution && (
+                                <div className="hover-line">
+                                    Resolution: {hoverDevice.resolution}
+                                </div>
+                            )}
+
+                            {hoverDevice.fov && (
+                                <div className="hover-line">
+                                    FOV: {hoverDevice.fov}°
+                                </div>
+                            )}
+
+                            {hoverDevice.height && (
+                                <div className="hover-line">
+                                    Height: {hoverDevice.height}m
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {equipment.map((item) => (
                         <Equipment
                             key={item.id}
@@ -999,8 +1055,20 @@ function Workspace({
                             imageSize={imageSize}
                             onSelect={setSelectedItemId}
                             onUpdatePlacement={updatePlacement}
+                            onMouseEnter={(tooltip) =>
+                                setHoverDevice({
+                                    id: item.id,
+                                    x: item.x,
+                                    y: item.y,
+                                    ...tooltip,
+                                    fov: item.fov,
+                                    height: item.attributes?.height
+                                })
+                            }
+                            onMouseLeave={() => setHoverDevice(null)}
                         />
                     ))}
+
                 </div>
 
                 <p className="item-count" data-html2canvas-ignore="true">
@@ -1093,115 +1161,99 @@ function Workspace({
                 header="Image Settings"
                 visible={imageSettingsOpen}
                 onHide={() => setImageSettingsOpen(false)}
-                style={{ width: '360px' }}
+                style={{ width: '380px' }}
+                className="image-settings-dialog"
             >
                 <div className="image-settings-panel">
+
+                    {/* RESIZE */}
                     <h4>Resize</h4>
                     <div className="image-settings-row">
-                        <button
-                            type="button"
-                            onClick={() => setImgScale((s) => s + 0.1)}
-                        >
-                            Zoom In
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setImgScale((s) => Math.max(0.1, s - 0.1))}
-                        >
-                            Zoom Out
-                        </button>
-                        <button
-                            type="button"
+                        <Button
+                            label="Zoom In"
+                            onClick={() => setImgScale(s => s + 0.1)}
+                            className="image-settings-btn"
+                        />
+                        <Button
+                            label="Zoom Out"
+                            onClick={() => setImgScale(s => Math.max(0.1, s - 0.1))}
+                            className="image-settings-btn"
+                        />
+                        <Button
+                            label="Reset Zoom"
                             onClick={() => setImgScale(1)}
-                        >
-                            Reset Zoom
-                        </button>
+                            className="image-settings-btn"
+                        />
                     </div>
 
+                    {/* ROTATE */}
                     <h4>Rotate</h4>
                     <div className="image-settings-row">
-                        <button
-                            type="button"
-                            onClick={() => setImgRotation((r) => r - 90)}
-                        >
-                            Rotate Left
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setImgRotation((r) => r + 90)}
-                        >
-                            Rotate Right
-                        </button>
+                        <Button
+                            label="Rotate Left"
+                            onClick={() => setImgRotation(r => r - 90)}
+                            className="image-settings-btn"
+                        />
+                        <Button
+                            label="Rotate Right"
+                            onClick={() => setImgRotation(r => r + 90)}
+                            className="image-settings-btn"
+                        />
                     </div>
 
+                    {/* FLIP */}
                     <h4>Flip</h4>
                     <div className="image-settings-row">
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setImgFlip((f) => ({ ...f, x: f.x * -1 }))
-                            }
-                        >
-                            Flip Horizontal
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setImgFlip((f) => ({ ...f, y: f.y * -1 }))
-                            }
-                        >
-                            Flip Vertical
-                        </button>
+                        <Button
+                            label="Flip Horizontal"
+                            onClick={() => setImgFlip(f => ({ ...f, x: f.x * -1 }))}
+                            className="image-settings-btn"
+                        />
+                        <Button
+                            label="Flip Vertical"
+                            onClick={() => setImgFlip(f => ({ ...f, y: f.y * -1 }))}
+                            className="image-settings-btn"
+                        />
                     </div>
 
+                    {/* REPOSITION */}
                     <h4>Reposition</h4>
                     <div className="image-settings-row image-settings-row--grid">
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setImgOffset((o) => ({ ...o, y: o.y - 20 }))
-                            }
-                        >
-                            Up
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setImgOffset((o) => ({ ...o, y: o.y + 20 }))
-                            }
-                        >
-                            Down
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setImgOffset((o) => ({ ...o, x: o.x - 20 }))
-                            }
-                        >
-                            Left
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setImgOffset((o) => ({ ...o, x: o.x + 20 }))
-                            }
-                        >
-                            Right
-                        </button>
+                        <Button
+                            label="Up"
+                            onClick={() => setImgOffset(o => ({ ...o, y: o.y - 20 }))}
+                            className="image-settings-btn"
+                        />
+                        <Button
+                            label="Down"
+                            onClick={() => setImgOffset(o => ({ ...o, y: o.y + 20 }))}
+                            className="image-settings-btn"
+                        />
+                        <Button
+                            label="Left"
+                            onClick={() => setImgOffset(o => ({ ...o, x: o.x - 20 }))}
+                            className="image-settings-btn"
+                        />
+                        <Button
+                            label="Right"
+                            onClick={() => setImgOffset(o => ({ ...o, x: o.x + 20 }))}
+                            className="image-settings-btn"
+                        />
                     </div>
 
+                    {/* RESET */}
                     <h4>Reset</h4>
-                    <button
-                        type="button"
+                    <Button
+                        label="Reset Image"
+                        severity="danger"
                         onClick={() => {
                             setImgScale(1);
                             setImgRotation(0);
                             setImgOffset({ x: 0, y: 0 });
                             setImgFlip({ x: 1, y: 1 });
                         }}
-                    >
-                        Reset Image
-                    </button>
+                        className="image-settings-btn"
+                    />
                 </div>
             </Dialog>
         </div>

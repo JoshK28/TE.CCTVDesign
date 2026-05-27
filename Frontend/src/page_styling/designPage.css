@@ -387,3 +387,118 @@
   font-size: 16px;
   font-weight: 700;
 }
+
+/* ------------------------------------------
+   SCALE CALIBRATION DIALOG — Modern UI
+------------------------------------------- */
+
+.scale-dialog .p-dialog-content {
+  background: #1e2226 !important;
+  border: 1px solid #2f343a !important;
+  padding: 20px 18px !important;
+}
+
+.scale-dialog .p-dialog-header {
+  background: #1e2226 !important;
+  border-bottom: 1px solid #2f343a !important;
+  color: #ffffff !important;
+}
+
+.scale-dialog .p-dialog-title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+/* Content wrapper */
+.scale-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* Summary */
+.scale-summary-text {
+  margin: 0;
+  font-size: 14px;
+  color: #ced4da;
+}
+
+.scale-summary-value {
+  margin-left: 6px;
+  color: #00d1ff;
+  font-weight: 700;
+}
+
+/* Input group */
+.scale-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scale-input-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.scale-input .p-inputtext {
+  background: #2c3237 !important;
+  border: 1px solid #3d444b !important;
+  color: #ffffff !important;
+}
+
+/* Actions */
+.scale-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.scale-btn-cancel {
+  color: #adb5bd !important;
+}
+
+.scale-btn-apply {
+  background: #00d1ff !important;
+  border-color: #00b4d6 !important;
+  color: #1c1f22 !important;
+  font-weight: 600;
+}
+
+.scale-btn-apply:hover {
+  background: #00b4d6 !important;
+}
+
+/* ------------------------------------------
+   DEVICE HOVER INFO BOX
+------------------------------------------- */
+
+.device-hover-box {
+  position: absolute;
+  background: rgba(33, 37, 41, 0.92);
+  border: 1px solid #2d3238;
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: #f8f9fa;
+  font-size: 12.5px;
+  line-height: 1.35;
+  pointer-events: none;
+  z-index: 3000;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+  transform: translateX(-50%);
+  max-width: 220px;
+}
+
+.device-hover-box .hover-title {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: #00d1ff;
+}
+
+.device-hover-box .hover-line {
+  opacity: 0.9;
+}
