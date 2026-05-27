@@ -1003,7 +1003,7 @@ function Workspace({
                             style={{
                                 left: hoverDevice.x,
                                 top: hoverDevice.y,
-                                transform: "translate(-50%, -110%)"
+                                transform: "translate(-50%, -85%)"
                             }}
                         >
                             <div className="hover-title">
