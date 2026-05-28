@@ -1,5 +1,6 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+
 import { Toast } from 'primereact/toast';
 import { Dialog } from 'primereact/dialog';
 import { Button } from "primereact/button";
@@ -51,7 +52,7 @@ const CAMERA_DEFAULTS = {
     iconBackgroundColor: DEFAULT_ICON_BACKGROUND_COLOR,
 };
 
-/* Creates a new camera placement with default FOV + appearance settings. */
+// Build a fresh camera placement object with all FOV/appearance defaults.
 const createCamera = ({ x, y, name = '', attributes = {}, rotation = 0, id = Date.now() }) => ({
     id,
     type: 'camera',
@@ -64,7 +65,7 @@ const createCamera = ({ x, y, name = '', attributes = {}, rotation = 0, id = Dat
     attributes,
 });
 
-/* Creates a new non-camera device placement. */
+// Build a fresh non-camera device placement (NVR, switch, sensor, etc.).
 const createDevice = ({ x, y, type, name = '', attributes = {}, id = Date.now() }) => ({
     id,
     type,
@@ -104,7 +105,7 @@ function Workspace({
     const toastRef = useRef(null);
     const [imageSize, setImageSize] = useState(null);
 
-    /* Image settings state (zoom, rotate, flip, drag). */
+    // IMAGE SETTINGS STATE
     const [imgScale, setImgScale] = useState(1);
     const [imgRotation, setImgRotation] = useState(0);
     const [imgOffset, setImgOffset] = useState({ x: 0, y: 0 });
@@ -112,20 +113,20 @@ function Workspace({
     const [imageSettingsOpen, setImageSettingsOpen] = useState(false);
     const dragState = useRef({ dragging: false, startX: 0, startY: 0 });
 
-    /* Measure tool state. */
+    // MEASURE TOOL STATE
     const [measureStart, setMeasureStart] = useState(null);
     const [measureEnd, setMeasureEnd] = useState(null);
     const [measurePreview, setMeasurePreview] = useState(null);
     const [measureCursor, setMeasureCursor] = useState(null);
     const [measureEscCount, setMeasureEscCount] = useState(0);
 
-    /* Scale calibration state. */
+    // SCALE CALIBRATION STATE
     const [calibrationStart, setCalibrationStart] = useState(null);
     const [calibrationEnd, setCalibrationEnd] = useState(null);
     const [calibrationDistancePx, setCalibrationDistancePx] = useState(null);
     const [showCalibrationModal, setShowCalibrationModal] = useState(false);
 
-    /* Hover info box state. */
+    //HOVER TOOL IMPLEMENTATION
     const [hoverDevice, setHoverDevice] = useState(null);
 
     useEffect(() => {
@@ -134,15 +135,14 @@ function Workspace({
 
     const handleImageLoad = ({ currentTarget: img }) => {
         if (!img.naturalWidth || !img.naturalHeight) return;
-        setImageSize({
-            naturalWidth: img.naturalWidth,
-            naturalHeight: img.naturalHeight,
-        });
+        setImageSize((prev) =>
+            prev?.naturalWidth === img.naturalWidth && prev?.naturalHeight === img.naturalHeight
+                ? prev
+                : { naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight }
+        );
     };
 
-    // -----------------------------
     // UNDO / REDO
-    // -----------------------------
     const applyHistorySnapshot = useCallback(({ equipment: eq, wallGraphs: wg }) => {
         setEquipment(eq);
         setWallGraphs(wg);
@@ -153,15 +153,11 @@ function Workspace({
         applyHistorySnapshot
     );
 
-    // -----------------------------
     // WALL GRAPH
-    // -----------------------------
-    const currentWallGraph = floorId ? (wallGraphs[floorId] ?? empty_Walls) : empty_Walls;
+    const currentWallGraph = floorId ? wallGraphs[floorId] ?? empty_Walls : empty_Walls;
     const currentWalls = wallToSegments(currentWallGraph);
 
-    // -----------------------------
     // LOAD FLOOR DATA
-    // -----------------------------
     useEffect(() => {
         if (!floorId) return;
 
@@ -180,7 +176,11 @@ function Workspace({
                         try {
                             settings = JSON.parse(p.settingsJson) ?? {};
                         } catch (err) {
-                            console.warn('Failed to parse settingsJson', p.placementID, err);
+                            console.warn(
+                                'Failed to parse settingsJson for placement',
+                                p.placementID,
+                                err
+                            );
                         }
                     }
 
@@ -207,12 +207,9 @@ function Workspace({
                     };
 
                     const base =
-                        type === 'camera'
-                            ? createCamera(args)
-                            : createDevice({ ...args, type });
+                        type === 'camera' ? createCamera(args) : createDevice({ ...args, type });
 
                     const { deviceSpecifications: _ignored, ...overrides } = settings;
-
                     return { ...base, ...overrides };
                 });
 
@@ -263,9 +260,7 @@ function Workspace({
         fetchObstacles();
     }, [floorId]);
 
-    // -----------------------------
     // EQUIPMENT SELECTOR HELPERS
-    // -----------------------------
     const closeEquipmentSelector = () => setPendingEquipment(null);
 
     const openEquipmentSelector = ({ x, y, type, replaceItemId }) => {
@@ -276,13 +271,12 @@ function Workspace({
         setActiveTool(null);
     };
 
-    // -----------------------------
     // TOOL ARMING
-    // -----------------------------
     const armTool = (tool) => {
         closeEquipmentSelector();
 
-        if (tool === 'image settings') {
+        // Image Settings opens panel instead of arming a drawing tool
+        if (tool === 'Image Settings') {
             setImageSettingsOpen(true);
             return;
         }
@@ -306,9 +300,7 @@ function Workspace({
         }
     };
 
-    // -----------------------------
     // ESC / ENTER HANDLING
-    // -----------------------------
     useEffect(() => {
         const handleKeyDown = (event) => {
             // Measure tool ESC/Enter
@@ -322,6 +314,7 @@ function Workspace({
                         setMeasureEscCount(1);
                         return;
                     }
+
                     if (measureEscCount === 1) {
                         setMeasureEscCount(0);
                         setActiveTool(null);
@@ -338,8 +331,8 @@ function Workspace({
                 return;
             }
 
-            // Scale calibration ESC
-            if (activeTool === 'scale calibration') {
+            // Calibration tool ESC
+            if (activeTool === 'Scale Calibration') {
                 if (event.key === 'Escape') {
                     if (calibrationStart || calibrationEnd) {
                         setCalibrationStart(null);
@@ -349,11 +342,13 @@ function Workspace({
                         setMeasureEscCount(1);
                         return;
                     }
+
                     if (measureEscCount === 1) {
                         setMeasureEscCount(0);
                         setActiveTool(null);
                     }
                 }
+
                 return;
             }
 
@@ -380,14 +375,9 @@ function Workspace({
         measureEscCount,
     ]);
 
-    // -----------------------------
-    // IMAGE DRAG (REPOSITION)
-    // -----------------------------
+    // IMAGE DRAG (REPOSITION) – applied to floorplan-stage
     const startImageDrag = (e) => {
-        // FIX: do not start background drag when clicking on equipment
-        if (e.target.closest('.equipment')) return;
-        if (activeTool === 'measure' || activeTool === 'scale calibration') return;
-
+        if (activeTool === 'measure' || activeTool === 'Scale Calibration') return;
         dragState.current = { dragging: true, startX: e.clientX, startY: e.clientY };
     };
 
@@ -411,9 +401,7 @@ function Workspace({
         }));
     };
 
-    // -----------------------------
-    // UPDATE PLACEMENT
-    // -----------------------------
+    // UPDATE PLACEMENT (with history)
     const updatePlacement = (id, patchOrBuilder, options = {}) => {
         const { commit: shouldCommit = true } = options;
 
@@ -422,10 +410,12 @@ function Workspace({
         setEquipment((prev) =>
             prev.map((item) => {
                 if (item.id !== id) return item;
+
                 const patch =
                     typeof patchOrBuilder === 'function'
                         ? patchOrBuilder(item)
                         : patchOrBuilder;
+
                 return { ...item, ...patch };
             })
         );
@@ -433,14 +423,12 @@ function Workspace({
         onUnsavedChanges(true);
     };
 
-    // -----------------------------
-    // CANVAS INTERACTION
-    // -----------------------------
+    // CANVAS INTERACTION (measure + calibration + placement)
     const handleCanvasInteraction = (event) => {
         event.stopPropagation();
 
-        // SCALE CALIBRATION
-        if (activeTool === 'scale calibration') {
+        // SCALE CALIBRATION TOOL
+        if (activeTool === 'Scale Calibration') {
             const { x, y } = getImagePoint(event, event.currentTarget, imageSize);
 
             if (!calibrationStart) {
@@ -483,7 +471,7 @@ function Workspace({
             return;
         }
 
-        // EQUIPMENT PLACEMENT
+        // Equipment placement (MainDesign behaviour)
         const droppedTool = event.dataTransfer ? event.dataTransfer.getData('tool') : '';
         const toolToPlace = droppedTool || activeTool;
 
@@ -497,9 +485,7 @@ function Workspace({
         closeEquipmentSelector();
     };
 
-    // -----------------------------
-    // LIVE POINTER MOVEMENT (measure + calibration)
-    // -----------------------------
+    // LIVE PREVIEW MOVEMENT (measure + calibration)
     const handlePointerMove = (e) => {
         if (!imageSize) return;
 
@@ -515,21 +501,20 @@ function Workspace({
             }
         }
 
-        if (activeTool === 'scale calibration') {
+        if (activeTool === 'Scale Calibration') {
             const pt = getImagePoint(e, e.currentTarget, imageSize);
             setMeasureCursor(pt);
         }
     };
 
+    // RIGHT CLICK DISABLED for measure/calibration
     const handleContextMenu = (e) => {
-        if (activeTool === 'measure' || activeTool === 'scale calibration') {
+        if (activeTool === 'measure' || activeTool === 'Scale Calibration') {
             e.preventDefault();
         }
     };
 
-    // -----------------------------
     // CONFIRM PLACEMENT
-    // -----------------------------
     const handleConfirmPlacement = ({ subtype, name, attributes = {} } = {}) => {
         if (!pendingEquipment) return;
 
@@ -560,9 +545,7 @@ function Workspace({
         onUnsavedChanges(true);
     };
 
-    // -----------------------------
     // CHANGE EQUIPMENT MODEL
-    // -----------------------------
     const handleChangeModel = (item) => {
         if (!item) return;
 
@@ -576,19 +559,16 @@ function Workspace({
         });
     };
 
-    // -----------------------------
     // DELETE EQUIPMENT
-    // -----------------------------
     const handleDeleteEquipment = (id) => {
         commit();
+
         setEquipment((prev) => prev.filter((item) => item.id !== id));
         setSelectedItemId(null);
         onUnsavedChanges(true);
     };
 
-    // -----------------------------
     // WALL GRAPH CHANGE
-    // -----------------------------
     const handleWallGraphChange = (updater) => {
         if (!floorId || typeof updater !== 'function') return;
 
@@ -602,9 +582,7 @@ function Workspace({
         onUnsavedChanges(true);
     };
 
-    // -----------------------------
     // SAVE (placements + walls + obstacles)
-    // -----------------------------
     const handleSave = async () => {
         if (!floorId) {
             toastRef.current?.show({
@@ -653,19 +631,21 @@ function Workspace({
 
     const showFov = exportOptions ? exportOptions.showFov !== false : true;
     const showWalls = showFov;
-
     const branding = exportOptions?.brandingActive && exportOptions?.brandingData;
 
     const overlayViewBox = imageSize
         ? `0 0 ${imageSize.naturalWidth} ${imageSize.naturalHeight}`
         : undefined;
 
-    // -----------------------------
-    // APPLY SCALE CALIBRATION
-    // -----------------------------
+    // SCALE CALIBRATION APPLY
     const handleApplyCalibration = (newPPM) => {
-        if (typeof setPPM === 'function') setPPM(newPPM);
-        if (typeof onUnsavedChanges === 'function') onUnsavedChanges(true);
+        if (typeof setPPM === 'function') {
+            setPPM(newPPM);
+        }
+
+        if (typeof onUnsavedChanges === 'function') {
+            onUnsavedChanges(true);
+        }
 
         setShowCalibrationModal(false);
         setActiveTool(null);
@@ -676,9 +656,7 @@ function Workspace({
         setMeasureEscCount(0);
     };
 
-    // -----------------------------
     // RENDER
-    // -----------------------------
     return (
         <div className="design-workspace">
             <Toast ref={toastRef} position="top-right" />
@@ -727,7 +705,6 @@ function Workspace({
                         onLoad={handleImageLoad}
                     />
 
-                    {/* BRANDING OVERLAY */}
                     {branding && (
                         <div className="floating-branding">
                             {branding.logo && (
@@ -748,9 +725,13 @@ function Workspace({
                         </div>
                     )}
 
-                    {/* MEASURE TOOL — HOVER DOT */}
+                    {/* MEASURE TOOL — HOVER DOT BEFORE FIRST CLICK */}
                     {activeTool === 'measure' && !measureStart && measureCursor && (
-                        <svg className="measure-overlay" viewBox={overlayViewBox} preserveAspectRatio="none">
+                        <svg
+                            className="measure-overlay"
+                            viewBox={overlayViewBox}
+                            preserveAspectRatio="none"
+                        >
                             <circle
                                 cx={measureCursor.x}
                                 cy={measureCursor.y}
@@ -759,15 +740,23 @@ function Workspace({
                         </svg>
                     )}
 
-                    {/* FOV OVERLAY */}
                     {showFov && (
-                        <svg className="fov-overlay" viewBox={overlayViewBox} preserveAspectRatio="none">
+                        <svg
+                            className="fov-overlay"
+                            viewBox={overlayViewBox}
+                            preserveAspectRatio="none"
+                        >
                             {equipment
                                 .filter((item) => item.type === 'camera')
                                 .map((item) => (
                                     <polygon
                                         key={item.id}
-                                        points={calculateFovPolygon(item, currentWalls, {}, obstacles)}
+                                        points={calculateFovPolygon(
+                                            item,
+                                            currentWalls,
+                                            {},
+                                            obstacles
+                                        )}
                                         fill={item.fovColor ?? '#0096ff'}
                                         stroke={item.fovColor ?? '#0096ff'}
                                         fillOpacity={item.fovOpacity ?? 0.3}
@@ -778,11 +767,15 @@ function Workspace({
                         </svg>
                     )}
 
-                    {/* SCALE CALIBRATION — HOVER HANDLE */}
-                    {activeTool === 'scale calibration' &&
+                    {/* SCALE CALIBRATION HOVER HANDLE */}
+                    {activeTool === 'Scale Calibration' &&
                         !calibrationStart &&
                         measureCursor && (
-                            <svg className="scale-overlay" viewBox={overlayViewBox} preserveAspectRatio="none">
+                            <svg
+                                className="scale-overlay"
+                                viewBox={overlayViewBox}
+                                preserveAspectRatio="none"
+                            >
                                 <circle
                                     cx={measureCursor.x}
                                     cy={measureCursor.y}
@@ -792,12 +785,16 @@ function Workspace({
                             </svg>
                         )}
 
-                    {/* SCALE CALIBRATION — PREVIEW LINE */}
-                    {activeTool === 'scale calibration' &&
+                    {/* SCALE CALIBRATION PREVIEW */}
+                    {activeTool === 'Scale Calibration' &&
                         calibrationStart &&
                         !calibrationEnd &&
                         measureCursor && (
-                            <svg className="scale-overlay" viewBox={overlayViewBox} preserveAspectRatio="none">
+                            <svg
+                                className="scale-overlay"
+                                viewBox={overlayViewBox}
+                                preserveAspectRatio="none"
+                            >
                                 <line
                                     x1={calibrationStart.x}
                                     y1={calibrationStart.y}
@@ -805,16 +802,30 @@ function Workspace({
                                     y2={measureCursor.y}
                                     className="scale-line"
                                 />
-                                <circle cx={calibrationStart.x} cy={calibrationStart.y} r="8" className="scale-handle" />
-                                <circle cx={measureCursor.x} cy={measureCursor.y} r="8" className="scale-handle" />
+                                <circle
+                                    cx={calibrationStart.x}
+                                    cy={calibrationStart.y}
+                                    r="8"
+                                    className="scale-handle"
+                                />
+                                <circle
+                                    cx={measureCursor.x}
+                                    cy={measureCursor.y}
+                                    r="8"
+                                    className="scale-handle"
+                                />
                             </svg>
                         )}
 
-                    {/* SCALE CALIBRATION — FINAL LINE */}
-                    {activeTool === 'scale calibration' &&
+                    {/* SCALE CALIBRATION FINAL LINE */}
+                    {activeTool === 'Scale Calibration' &&
                         calibrationStart &&
                         calibrationEnd && (
-                            <svg className="scale-overlay" viewBox={overlayViewBox} preserveAspectRatio="none">
+                            <svg
+                                className="scale-overlay"
+                                viewBox={overlayViewBox}
+                                preserveAspectRatio="none"
+                            >
                                 <line
                                     x1={calibrationStart.x}
                                     y1={calibrationStart.y}
@@ -822,16 +833,38 @@ function Workspace({
                                     y2={calibrationEnd.y}
                                     className="scale-line"
                                 />
-                                <circle cx={calibrationStart.x} cy={calibrationStart.y} r="8" className="scale-handle" />
-                                <circle cx={calibrationEnd.x} cy={calibrationEnd.y} r="8" className="scale-handle" />
+                                <circle
+                                    cx={calibrationStart.x}
+                                    cy={calibrationStart.y}
+                                    r="8"
+                                    className="scale-handle"
+                                />
+                                <circle
+                                    cx={calibrationEnd.x}
+                                    cy={calibrationEnd.y}
+                                    r="8"
+                                    className="scale-handle"
+                                />
                             </svg>
                         )}
 
                     {/* MEASURE TOOL — FINAL MEASUREMENT */}
                     {measureStart && measureEnd && (
-                        <svg className="measure-overlay" viewBox={overlayViewBox} preserveAspectRatio="none">
-                            <circle cx={measureStart.x} cy={measureStart.y} className="measure-point-start" />
-                            <circle cx={measureEnd.x} cy={measureEnd.y} className="measure-point-end" />
+                        <svg
+                            className="measure-overlay"
+                            viewBox={overlayViewBox}
+                            preserveAspectRatio="none"
+                        >
+                            <circle
+                                cx={measureStart.x}
+                                cy={measureStart.y}
+                                className="measure-point-start"
+                            />
+                            <circle
+                                cx={measureEnd.x}
+                                cy={measureEnd.y}
+                                className="measure-point-end"
+                            />
                             <line
                                 x1={measureStart.x}
                                 y1={measureStart.y}
@@ -839,7 +872,6 @@ function Workspace({
                                 y2={measureEnd.y}
                                 className="measure-line"
                             />
-
                             {(() => {
                                 const midX = (measureStart.x + measureEnd.x) / 2;
                                 const midY = (measureStart.y + measureEnd.y) / 2;
@@ -863,7 +895,11 @@ function Workspace({
                                             height="28"
                                             className="measure-label-bg"
                                         />
-                                        <text x={midX} y={midY} className="measure-label-text">
+                                        <text
+                                            x={midX}
+                                            y={midY}
+                                            className="measure-label-text"
+                                        >
                                             {distMeters != null ? `${distMeters} m` : 'N/A'}
                                         </text>
                                     </>
@@ -874,8 +910,16 @@ function Workspace({
 
                     {/* MEASURE TOOL — LIVE PREVIEW */}
                     {measureStart && !measureEnd && measurePreview && (
-                        <svg className="measure-overlay" viewBox={overlayViewBox} preserveAspectRatio="none">
-                            <circle cx={measureStart.x} cy={measureStart.y} className="measure-point-start" />
+                        <svg
+                            className="measure-overlay"
+                            viewBox={overlayViewBox}
+                            preserveAspectRatio="none"
+                        >
+                            <circle
+                                cx={measureStart.x}
+                                cy={measureStart.y}
+                                className="measure-point-start"
+                            />
                             <line
                                 x1={measureStart.x}
                                 y1={measureStart.y}
@@ -883,7 +927,6 @@ function Workspace({
                                 y2={measurePreview.y}
                                 className="measure-line measure-line--preview"
                             />
-
                             {(() => {
                                 const midX = (measureStart.x + measurePreview.x) / 2;
                                 const midY = (measureStart.y + measurePreview.y) / 2;
@@ -907,7 +950,11 @@ function Workspace({
                                             height="28"
                                             className="measure-label-bg"
                                         />
-                                        <text x={midX} y={midY} className="measure-label-text">
+                                        <text
+                                            x={midX}
+                                            y={midY}
+                                            className="measure-label-text"
+                                        >
                                             {distMeters != null ? `${distMeters} m` : 'N/A'}
                                         </text>
                                     </>
@@ -916,9 +963,13 @@ function Workspace({
                         </svg>
                     )}
 
-                    {/* WALLS + OBSTACLES */}
+                    {/* WALLS + OBSTACLES + EQUIPMENT */}
                     {showWalls && activeTool !== 'wall' && (
-                        <WallOverlay wallGraph={currentWallGraph} scale={scale} imageSize={imageSize} />
+                        <WallOverlay
+                            wallGraph={currentWallGraph}
+                            scale={scale}
+                            imageSize={imageSize}
+                        />
                     )}
 
                     {activeTool === 'wall' && (
@@ -949,30 +1000,36 @@ function Workspace({
                         />
                     )}
 
-                    {/* HOVER INFO BOX */}
+                    {/* DEVICE HOVER INFO BOX */}
                     {hoverDevice && (
                         <div
                             className="device-hover-box"
                             style={{
                                 left: hoverDevice.x,
                                 top: hoverDevice.y,
-                                transform: 'translate(-50%, -85%)',
+                                transform: "translate(-50%, -85%)"
                             }}
                         >
                             <div className="hover-title">
-                                {hoverDevice.name || hoverDevice.model || 'Unnamed Device'}
+                                {hoverDevice.name || hoverDevice.model || "Unnamed Device"}
                             </div>
 
                             {hoverDevice.type && (
-                                <div className="hover-line">Type: {hoverDevice.type}</div>
+                                <div className="hover-line">
+                                    Type: {hoverDevice.type}
+                                </div>
                             )}
 
                             {hoverDevice.model && (
-                                <div className="hover-line">Model: {hoverDevice.model}</div>
+                                <div className="hover-line">
+                                    Model: {hoverDevice.model}
+                                </div>
                             )}
 
                             {hoverDevice.brand && (
-                                <div className="hover-line">Brand: {hoverDevice.brand}</div>
+                                <div className="hover-line">
+                                    Brand: {hoverDevice.brand}
+                                </div>
                             )}
 
                             {hoverDevice.resolution && (
@@ -982,16 +1039,19 @@ function Workspace({
                             )}
 
                             {hoverDevice.fov && (
-                                <div className="hover-line">FOV: {hoverDevice.fov}°</div>
+                                <div className="hover-line">
+                                    FOV: {hoverDevice.fov}°
+                                </div>
                             )}
 
                             {hoverDevice.height && (
-                                <div className="hover-line">Height: {hoverDevice.height}m</div>
+                                <div className="hover-line">
+                                    Height: {hoverDevice.height}m
+                                </div>
                             )}
                         </div>
                     )}
 
-                    {/* EQUIPMENT */}
                     {equipment.map((item) => (
                         <Equipment
                             key={item.id}
@@ -1006,7 +1066,7 @@ function Workspace({
                                     y: item.y,
                                     ...tooltip,
                                     fov: item.fov,
-                                    height: item.attributes?.height,
+                                    height: item.attributes?.height
                                 })
                             }
                             onMouseLeave={() => setHoverDevice(null)}
@@ -1113,12 +1173,12 @@ function Workspace({
                     <div className="image-settings-row">
                         <Button
                             label="Zoom In"
-                            onClick={() => setImgScale((s) => s + 0.1)}
+                            onClick={() => setImgScale(s => s + 0.1)}
                             className="image-settings-btn"
                         />
                         <Button
                             label="Zoom Out"
-                            onClick={() => setImgScale((s) => Math.max(0.1, s - 0.1))}
+                            onClick={() => setImgScale(s => Math.max(0.1, s - 0.1))}
                             className="image-settings-btn"
                         />
                         <Button
@@ -1133,12 +1193,12 @@ function Workspace({
                     <div className="image-settings-row">
                         <Button
                             label="Rotate Left"
-                            onClick={() => setImgRotation((r) => r - 90)}
+                            onClick={() => setImgRotation(r => r - 90)}
                             className="image-settings-btn"
                         />
                         <Button
                             label="Rotate Right"
-                            onClick={() => setImgRotation((r) => r + 90)}
+                            onClick={() => setImgRotation(r => r + 90)}
                             className="image-settings-btn"
                         />
                     </div>
@@ -1148,12 +1208,12 @@ function Workspace({
                     <div className="image-settings-row">
                         <Button
                             label="Flip Horizontal"
-                            onClick={() => setImgFlip((f) => ({ ...f, x: f.x * -1 }))}
+                            onClick={() => setImgFlip(f => ({ ...f, x: f.x * -1 }))}
                             className="image-settings-btn"
                         />
                         <Button
                             label="Flip Vertical"
-                            onClick={() => setImgFlip((f) => ({ ...f, y: f.y * -1 }))}
+                            onClick={() => setImgFlip(f => ({ ...f, y: f.y * -1 }))}
                             className="image-settings-btn"
                         />
                     </div>
@@ -1163,22 +1223,22 @@ function Workspace({
                     <div className="image-settings-row image-settings-row--grid">
                         <Button
                             label="Up"
-                            onClick={() => setImgOffset((o) => ({ ...o, y: o.y - 20 }))}
+                            onClick={() => setImgOffset(o => ({ ...o, y: o.y - 20 }))}
                             className="image-settings-btn"
                         />
                         <Button
                             label="Down"
-                            onClick={() => setImgOffset((o) => ({ ...o, y: o.y + 20 }))}
+                            onClick={() => setImgOffset(o => ({ ...o, y: o.y + 20 }))}
                             className="image-settings-btn"
                         />
                         <Button
                             label="Left"
-                            onClick={() => setImgOffset((o) => ({ ...o, x: o.x - 20 }))}
+                            onClick={() => setImgOffset(o => ({ ...o, x: o.x - 20 }))}
                             className="image-settings-btn"
                         />
                         <Button
                             label="Right"
-                            onClick={() => setImgOffset((o) => ({ ...o, x: o.x + 20 }))}
+                            onClick={() => setImgOffset(o => ({ ...o, x: o.x + 20 }))}
                             className="image-settings-btn"
                         />
                     </div>
@@ -1217,7 +1277,6 @@ function DesignPage() {
     const [selectedLayer, setSelectedLayer] = useState(0);
     const [loading, setLoading] = useState(true);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
     const [exportModalOpen, setExportModalOpen] = useState(false);
     const [exportWorkspaceConfig, setExportWorkspaceConfig] = useState({
         showFov: true,
@@ -1228,7 +1287,6 @@ function DesignPage() {
     const [ppm, setPPM] = useState(null);
     const workspaceRef = useRef(null);
 
-    // Load floor layouts
     useEffect(() => {
         if (imageSrcFromState) {
             setLoading(false);
@@ -1254,7 +1312,7 @@ function DesignPage() {
         fetchFloorLayouts();
     }, [projectId, imageSrcFromState, navigate]);
 
-    // Update PPM when layer changes
+    // Update ppm when layer changes
     useEffect(() => {
         if (floorLayouts.length > 0) {
             const currentScale = floorLayouts[selectedLayer]?.scale ?? '';
@@ -1262,9 +1320,7 @@ function DesignPage() {
         }
     }, [floorLayouts, selectedLayer]);
 
-    // -----------------------------
     // EXPORT
-    // -----------------------------
     const handleExecuteExport = async (settings) => {
         setExportModalOpen(false);
 
@@ -1280,7 +1336,6 @@ function DesignPage() {
 
         const captureLayer = async (idx) => {
             setSelectedLayer(idx);
-
             setExportWorkspaceConfig({
                 showFov: settings.showFov,
                 brandingActive: true,
@@ -1323,7 +1378,11 @@ function DesignPage() {
         pdf?.save(`${filename}_Report.pdf`);
 
         setSelectedLayer(original);
-        setExportWorkspaceConfig({ showFov: true, brandingActive: false, brandingData: null });
+        setExportWorkspaceConfig({
+            showFov: true,
+            brandingActive: false,
+            brandingData: null,
+        });
     };
 
     if (loading) return <p className="design-message">Loading floor layouts...</p>;
@@ -1356,10 +1415,13 @@ function DesignPage() {
     const handleBomButton = () => {
         if (
             hasUnsavedChanges &&
-            !window.confirm('You have unsaved changes. Please save before viewing the Bill of Materials.')
+            !window.confirm(
+                'You have unsaved changes. Please save before viewing the Bill of Materials.'
+            )
         ) {
             return;
         }
+
         navigate('/app/bom', { state: { projectId } });
     };
 
@@ -1375,7 +1437,9 @@ function DesignPage() {
                 </button>
 
                 <button
-                    onClick={() => navigate('/app/calculator', { state: { projectId } })}
+                    onClick={() =>
+                        navigate('/app/calculator', { state: { projectId } })
+                    }
                     className="design-nav-btn"
                 >
                     💾 Storage

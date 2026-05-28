@@ -53,6 +53,7 @@ export default function Toolbar({ onSelectTool }) {
                     display: 'flex',
                     alignItems: 'center',
                     background: '#212529',
+                    color: '#ffffff'
                 }}
             >
                 {isImage ? (
@@ -64,14 +65,13 @@ export default function Toolbar({ onSelectTool }) {
                             width: '22px',
                             height: '22px',
                             marginRight: '0.5rem',
-                            verticalAlign: 'middle',
                             pointerEvents: 'none'
                         }}
                     />
                 ) : iconSrc ? (
                     <span className={iconSrc} style={{ marginRight: '0.5rem' }}></span>
                 ) : (
-                    <span className="pi pi-question-circle" style={{ marginRight: '0.5rem' }}></span>
+                    <span className="pi pi-question-circle" style={{ marginRight: '0.5rem', color: '#ffffff' }}></span>
                 )}
                 {item.label}
             </div>
