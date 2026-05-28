@@ -105,13 +105,12 @@ function Workspace({
     const toastRef = useRef(null);
     const [imageSize, setImageSize] = useState(null);
 
-    // IMAGE SETTINGS STATE
+    // image settings STATE
     const [imgScale, setImgScale] = useState(1);
     const [imgRotation, setImgRotation] = useState(0);
     const [imgOffset, setImgOffset] = useState({ x: 0, y: 0 });
     const [imgFlip, setImgFlip] = useState({ x: 1, y: 1 });
     const [imageSettingsOpen, setImageSettingsOpen] = useState(false);
-    const dragState = useRef({ dragging: false, startX: 0, startY: 0 });
 
     // MEASURE TOOL STATE
     const [measureStart, setMeasureStart] = useState(null);
@@ -120,7 +119,7 @@ function Workspace({
     const [measureCursor, setMeasureCursor] = useState(null);
     const [measureEscCount, setMeasureEscCount] = useState(0);
 
-    // SCALE CALIBRATION STATE
+    // scale calibration STATE
     const [calibrationStart, setCalibrationStart] = useState(null);
     const [calibrationEnd, setCalibrationEnd] = useState(null);
     const [calibrationDistancePx, setCalibrationDistancePx] = useState(null);
@@ -275,8 +274,8 @@ function Workspace({
     const armTool = (tool) => {
         closeEquipmentSelector();
 
-        // Image Settings opens panel instead of arming a drawing tool
-        if (tool === 'Image Settings') {
+        // image settings opens panel instead of arming a drawing tool
+        if (tool === 'image settings') {
             setImageSettingsOpen(true);
             return;
         }
@@ -332,7 +331,7 @@ function Workspace({
             }
 
             // Calibration tool ESC
-            if (activeTool === 'Scale Calibration') {
+            if (activeTool === 'scale calibration') {
                 if (event.key === 'Escape') {
                     if (calibrationStart || calibrationEnd) {
                         setCalibrationStart(null);
@@ -375,32 +374,6 @@ function Workspace({
         measureEscCount,
     ]);
 
-    // IMAGE DRAG (REPOSITION) – applied to floorplan-stage
-    const startImageDrag = (e) => {
-        if (activeTool === 'measure' || activeTool === 'Scale Calibration') return;
-        dragState.current = { dragging: true, startX: e.clientX, startY: e.clientY };
-    };
-
-    const stopImageDrag = () => {
-        dragState.current.dragging = false;
-    };
-
-    const handleImageDragMove = (e) => {
-        if (!dragState.current.dragging) return;
-
-        const { startX, startY } = dragState.current;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-
-        dragState.current.startX = e.clientX;
-        dragState.current.startY = e.clientY;
-
-        setImgOffset((prev) => ({
-            x: prev.x + dx,
-            y: prev.y + dy,
-        }));
-    };
-
     // UPDATE PLACEMENT (with history)
     const updatePlacement = (id, patchOrBuilder, options = {}) => {
         const { commit: shouldCommit = true } = options;
@@ -427,8 +400,8 @@ function Workspace({
     const handleCanvasInteraction = (event) => {
         event.stopPropagation();
 
-        // SCALE CALIBRATION TOOL
-        if (activeTool === 'Scale Calibration') {
+        // scale calibration TOOL
+        if (activeTool === 'scale calibration') {
             const { x, y } = getImagePoint(event, event.currentTarget, imageSize);
 
             if (!calibrationStart) {
@@ -501,7 +474,7 @@ function Workspace({
             }
         }
 
-        if (activeTool === 'Scale Calibration') {
+        if (activeTool === 'scale calibration') {
             const pt = getImagePoint(e, e.currentTarget, imageSize);
             setMeasureCursor(pt);
         }
@@ -509,7 +482,7 @@ function Workspace({
 
     // RIGHT CLICK DISABLED for measure/calibration
     const handleContextMenu = (e) => {
-        if (activeTool === 'measure' || activeTool === 'Scale Calibration') {
+        if (activeTool === 'measure' || activeTool === 'scale calibration') {
             e.preventDefault();
         }
     };
@@ -637,7 +610,7 @@ function Workspace({
         ? `0 0 ${imageSize.naturalWidth} ${imageSize.naturalHeight}`
         : undefined;
 
-    // SCALE CALIBRATION APPLY
+    // scale calibration APPLY
     const handleApplyCalibration = (newPPM) => {
         if (typeof setPPM === 'function') {
             setPPM(newPPM);
@@ -682,9 +655,6 @@ function Workspace({
                         handleCanvasInteraction(event);
                     }}
                     onDragOver={(e) => e.preventDefault()}
-                    onMouseDown={startImageDrag}
-                    onMouseMove={handleImageDragMove}
-                    onMouseUp={stopImageDrag}
                     onPointerMove={handlePointerMove}
                     onContextMenu={handleContextMenu}
                     style={{
@@ -767,8 +737,8 @@ function Workspace({
                         </svg>
                     )}
 
-                    {/* SCALE CALIBRATION HOVER HANDLE */}
-                    {activeTool === 'Scale Calibration' &&
+                    {/* scale calibration HOVER HANDLE */}
+                    {activeTool === 'scale calibration' &&
                         !calibrationStart &&
                         measureCursor && (
                             <svg
@@ -785,8 +755,8 @@ function Workspace({
                             </svg>
                         )}
 
-                    {/* SCALE CALIBRATION PREVIEW */}
-                    {activeTool === 'Scale Calibration' &&
+                    {/* scale calibration PREVIEW */}
+                    {activeTool === 'scale calibration' &&
                         calibrationStart &&
                         !calibrationEnd &&
                         measureCursor && (
@@ -817,8 +787,8 @@ function Workspace({
                             </svg>
                         )}
 
-                    {/* SCALE CALIBRATION FINAL LINE */}
-                    {activeTool === 'Scale Calibration' &&
+                    {/* scale calibration FINAL LINE */}
+                    {activeTool === 'scale calibration' &&
                         calibrationStart &&
                         calibrationEnd && (
                             <svg
@@ -1143,7 +1113,7 @@ function Workspace({
                 onDeleteEquipment={handleDeleteEquipment}
             />
 
-            {/* SCALE CALIBRATION MODAL */}
+            {/* scale calibration MODAL */}
             <ScaleCalibrationModal
                 visible={showCalibrationModal}
                 pixelDistance={calibrationDistancePx || 0}
@@ -1159,7 +1129,7 @@ function Workspace({
                 }}
             />
 
-            {/* IMAGE SETTINGS DIALOG */}
+            {/* image settings DIALOG */}
             <Dialog
                 header="Image Settings"
                 visible={imageSettingsOpen}
