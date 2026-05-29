@@ -18,6 +18,7 @@ import {
 
 import ExportModal from '../Components/ExportModal';
 import ScaleCalibrationTool, { useScaleCalibration } from '../Components/ScaleCalibrationTool';
+import MeasureTool, { useMeasure } from '../Components/MeasureTool';
 
 import api from '../services/api';
 import { getSaveErrorMessage, saveDesign } from '../utils/designSave';
@@ -112,13 +113,6 @@ function Workspace({
     const [imgFlip, setImgFlip] = useState({ x: 1, y: 1 });
     const [imageSettingsOpen, setImageSettingsOpen] = useState(false);
 
-    // MEASURE TOOL STATE
-    const [measureStart, setMeasureStart] = useState(null);
-    const [measureEnd, setMeasureEnd] = useState(null);
-    const [measurePreview, setMeasurePreview] = useState(null);
-    const [measureCursor, setMeasureCursor] = useState(null);
-    const [measureEscCount, setMeasureEscCount] = useState(0);
-
     //HOVER TOOL IMPLEMENTATION
     const [hoverDevice, setHoverDevice] = useState(null);
 
@@ -142,6 +136,12 @@ function Workspace({
             setPPM(newPPM);
             onUnsavedChanges(true);
         },
+        onDeactivate: () => setActiveTool(null),
+    });
+
+    const measure = useMeasure({
+        active: activeTool === 'measure',
+        imageSize,
         onDeactivate: () => setActiveTool(null),
     });
 
@@ -287,11 +287,7 @@ function Workspace({
         setActiveTool(tool);
 
         if (tool === 'measure') {
-            setMeasureStart(null);
-            setMeasureEnd(null);
-            setMeasurePreview(null);
-            setMeasureCursor(null);
-            setMeasureEscCount(0);
+            measure.reset();
         }
 
         if (tool === 'scale calibration') {
@@ -302,31 +298,9 @@ function Workspace({
     // ESC / ENTER HANDLING
     useEffect(() => {
         const handleKeyDown = (event) => {
-            // Measure tool ESC/Enter
             if (activeTool === 'measure') {
-                if (event.key === 'Escape') {
-                    if (measureStart || measureEnd || measurePreview) {
-                        setMeasureStart(null);
-                        setMeasureEnd(null);
-                        setMeasurePreview(null);
-                        setMeasureCursor(null);
-                        setMeasureEscCount(1);
-                        return;
-                    }
-
-                    if (measureEscCount === 1) {
-                        setMeasureEscCount(0);
-                        setActiveTool(null);
-                    }
-                }
-
-                if (event.key === 'Enter') {
-                    if (measureStart && !measureEnd && measurePreview) {
-                        setMeasureEnd(measurePreview);
-                        setMeasurePreview(null);
-                    }
-                }
-
+                if (event.key === 'Escape' && measure.handleEscape()) return;
+                if (event.key === 'Enter' && measure.handleEnter()) return;
                 return;
             }
 
@@ -350,10 +324,8 @@ function Workspace({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [
         activeTool,
-        measureStart,
-        measureEnd,
-        measurePreview,
-        measureEscCount,
+        measure.handleEscape,
+        measure.handleEnter,
         scaleCalibration.handleEscape,
     ]);
 
@@ -384,25 +356,7 @@ function Workspace({
         event.stopPropagation();
 
         if (scaleCalibration.handleClick(event)) return;
-
-        // MEASURE TOOL
-        if (activeTool === 'measure') {
-            const { x, y } = getImagePoint(event, event.currentTarget, imageSize);
-
-            if (!measureStart) {
-                setMeasureStart({ x, y });
-                setMeasureCursor(null);
-                return;
-            }
-
-            if (!measureEnd) {
-                setMeasureEnd({ x, y });
-                setMeasurePreview(null);
-                return;
-            }
-
-            return;
-        }
+        if (measure.handleClick(event)) return;
 
         // Equipment placement (MainDesign behaviour)
         const droppedTool = event.dataTransfer ? event.dataTransfer.getData('tool') : '';
@@ -421,24 +375,12 @@ function Workspace({
     // LIVE PREVIEW MOVEMENT (measure + calibration)
     const handlePointerMove = (e) => {
         if (!imageSize) return;
-
-        if (activeTool === 'measure') {
-            const pt = getImagePoint(e, e.currentTarget, imageSize);
-
-            if (!measureStart) {
-                setMeasureCursor(pt);
-            }
-
-            if (measureStart && !measureEnd) {
-                setMeasurePreview(pt);
-            }
-        }
-
+        measure.handlePointerMove(e);
         scaleCalibration.handlePointerMove(e);
     };
 
     const handleContextMenu = (e) => {
-        if (activeTool === 'measure' || scaleCalibration.preventContextMenu) {
+        if (measure.preventContextMenu || scaleCalibration.preventContextMenu) {
             e.preventDefault();
         }
     };
@@ -632,20 +574,12 @@ function Workspace({
                         </div>
                     )}
 
-                    {/* MEASURE TOOL — HOVER DOT BEFORE FIRST CLICK */}
-                    {activeTool === 'measure' && !measureStart && measureCursor && (
-                        <svg
-                            className="measure-overlay"
-                            viewBox={overlayViewBox}
-                            preserveAspectRatio="none"
-                        >
-                            <circle
-                                cx={measureCursor.x}
-                                cy={measureCursor.y}
-                                className="measure-point-start"
-                            />
-                        </svg>
-                    )}
+                    <MeasureTool
+                        measure={measure}
+                        viewBox={overlayViewBox}
+                        ppm={ppm}
+                        active={activeTool === 'measure'}
+                    />
 
                     {showFov && (
                         <svg
@@ -679,121 +613,6 @@ function Workspace({
                             calibration={scaleCalibration}
                             viewBox={overlayViewBox}
                         />
-                    )}
-
-                    {/* MEASURE TOOL — FINAL MEASUREMENT */}
-                    {measureStart && measureEnd && (
-                        <svg
-                            className="measure-overlay"
-                            viewBox={overlayViewBox}
-                            preserveAspectRatio="none"
-                        >
-                            <circle
-                                cx={measureStart.x}
-                                cy={measureStart.y}
-                                className="measure-point-start"
-                            />
-                            <circle
-                                cx={measureEnd.x}
-                                cy={measureEnd.y}
-                                className="measure-point-end"
-                            />
-                            <line
-                                x1={measureStart.x}
-                                y1={measureStart.y}
-                                x2={measureEnd.x}
-                                y2={measureEnd.y}
-                                className="measure-line"
-                            />
-                            {(() => {
-                                const midX = (measureStart.x + measureEnd.x) / 2;
-                                const midY = (measureStart.y + measureEnd.y) / 2;
-
-                                const distMeters =
-                                    ppm && ppm > 0
-                                        ? (
-                                              Math.hypot(
-                                                  measureEnd.x - measureStart.x,
-                                                  measureEnd.y - measureStart.y
-                                              ) / ppm
-                                          ).toFixed(2)
-                                        : null;
-
-                                return (
-                                    <>
-                                        <rect
-                                            x={midX - 30}
-                                            y={midY - 14}
-                                            width="60"
-                                            height="28"
-                                            className="measure-label-bg"
-                                        />
-                                        <text
-                                            x={midX}
-                                            y={midY}
-                                            className="measure-label-text"
-                                        >
-                                            {distMeters != null ? `${distMeters} m` : 'N/A'}
-                                        </text>
-                                    </>
-                                );
-                            })()}
-                        </svg>
-                    )}
-
-                    {/* MEASURE TOOL — LIVE PREVIEW */}
-                    {measureStart && !measureEnd && measurePreview && (
-                        <svg
-                            className="measure-overlay"
-                            viewBox={overlayViewBox}
-                            preserveAspectRatio="none"
-                        >
-                            <circle
-                                cx={measureStart.x}
-                                cy={measureStart.y}
-                                className="measure-point-start"
-                            />
-                            <line
-                                x1={measureStart.x}
-                                y1={measureStart.y}
-                                x2={measurePreview.x}
-                                y2={measurePreview.y}
-                                className="measure-line measure-line--preview"
-                            />
-                            {(() => {
-                                const midX = (measureStart.x + measurePreview.x) / 2;
-                                const midY = (measureStart.y + measurePreview.y) / 2;
-
-                                const distMeters =
-                                    ppm && ppm > 0
-                                        ? (
-                                              Math.hypot(
-                                                  measurePreview.x - measureStart.x,
-                                                  measurePreview.y - measureStart.y
-                                              ) / ppm
-                                          ).toFixed(2)
-                                        : null;
-
-                                return (
-                                    <>
-                                        <rect
-                                            x={midX - 30}
-                                            y={midY - 14}
-                                            width="60"
-                                            height="28"
-                                            className="measure-label-bg"
-                                        />
-                                        <text
-                                            x={midX}
-                                            y={midY}
-                                            className="measure-label-text"
-                                        >
-                                            {distMeters != null ? `${distMeters} m` : 'N/A'}
-                                        </text>
-                                    </>
-                                );
-                            })()}
-                        </svg>
                     )}
 
                     {/* WALLS + OBSTACLES + EQUIPMENT */}
