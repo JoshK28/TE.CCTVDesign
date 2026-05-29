@@ -1,95 +1,76 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
-const INITIAL_LINE = { a: { x: 0.25, y: 0.5 }, b: { x: 0.75, y: 0.5 } };
+import ScaleCalibrationTool, { useScaleCalibration } from "./ScaleCalibrationTool";
+import { scaleStringFromPpm } from "../utils/scale";
 
 /*
-ScaleCalibrator is the second step of the project-creation flow. The user
-drags two endpoints across a known distance on the first floor image and
-types in the real-world length of that distance in metres. The component
-computes pixels-per-metre from the on-screen line length and reports the
-result up to its parent as a "1:N" string via onScaleChange.
+ScaleCalibrator is the scaling step of the project-creation flow. It is just a
+host for the shared calibration tool: it owns the preview <img>, runs the same
+click-two-points + modal UX as the design page, and — because a project stores
+its scale as a "1:N" string — serialises the calibrated pixels-per-metre at this
+persistence boundary via onScaleChange.
 */
 function ScaleCalibrator({ layer, scale, onScaleChange }) {
-  const [line, setLine] = useState(INITIAL_LINE);
-  const [dragPoint, setDragPoint] = useState(null);
-  const [knownLength, setKnownLength] = useState("10");
-  const previewRef = useRef(null);
+    const [imageSize, setImageSize] = useState(null);
 
-  useEffect(() => {
-    if (!dragPoint) return undefined;
-    const onMove = ({ clientX, clientY }) => {
-      const rect = previewRef.current?.getBoundingClientRect();
-      if (!rect || rect.width <= 0 || rect.height <= 0) return;
-      const nx = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-      const ny = Math.min(1, Math.max(0, (clientY - rect.top) / rect.height));
-      setLine((prev) => ({ ...prev, [dragPoint]: { x: nx, y: ny } }));
+    const calibration = useScaleCalibration({
+        active: Boolean(layer?.preview),
+        imageSize,
+        onApply: (ppm) => {
+            const next = scaleStringFromPpm(ppm);
+            if (next) onScaleChange(next);
+        },
+    });
+
+    const handleImageLoad = ({ currentTarget: img }) => {
+        if (!img.naturalWidth || !img.naturalHeight) return;
+        setImageSize({ naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight });
     };
-    const onUp = () => setDragPoint(null);
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-    };
-  }, [dragPoint]);
 
-  useEffect(() => {
-    if (typeof onScaleChange !== "function") return;
-    const rect = previewRef.current?.getBoundingClientRect();
-    if (!rect || rect.width <= 0 || rect.height <= 0) return;
-    const length = Number(knownLength);
-    if (!Number.isFinite(length) || length <= 0) return;
-    const px = Math.hypot((line.b.x - line.a.x) * rect.width, (line.b.y - line.a.y) * rect.height);
-    onScaleChange(`1:${(px / length).toFixed(2)}`);
-  }, [line, knownLength, onScaleChange]);
+    const viewBox = imageSize
+        ? `0 0 ${imageSize.naturalWidth} ${imageSize.naturalHeight}`
+        : undefined;
 
-  const setDrag = (point) => (e) => {
-    e.preventDefault();
-    setDragPoint(point);
-  };
+    // Keep handles a consistent on-screen size despite the natural-pixel viewBox.
+    const handleRadius = imageSize
+        ? Math.max(imageSize.naturalWidth, imageSize.naturalHeight) / 120
+        : 8;
 
-  return (
-    <div className="scaling-section">
-      <h3>Scaling</h3>
-      {layer?.preview ? (
-        <div className="scaling-preview" ref={previewRef}>
-          <img src={layer.preview} alt="First layer for scaling" style={{ width: `${layer.imageWidth ?? 80}%` }} />
-          <svg className="scale-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <line x1={line.a.x * 100} y1={line.a.y * 100} x2={line.b.x * 100} y2={line.b.y * 100} className="scale-line" />
-            <circle
-              cx={line.a.x * 100}
-              cy={line.a.y * 100}
-              r="1.7"
-              className="scale-handle"
-              onPointerDown={setDrag("a")}
-            />
-            <circle
-              cx={line.b.x * 100}
-              cy={line.b.y * 100}
-              r="1.7"
-              className="scale-handle"
-              onPointerDown={setDrag("b")}
-            />
-          </svg>
+    return (
+        <div className="scaling-section">
+            <h3>Scaling</h3>
+
+            {layer?.preview ? (
+                <div className="scaling-preview">
+                    <div
+                        className="scale-stage"
+                        onClick={calibration.handleClick}
+                        onPointerMove={calibration.handlePointerMove}
+                        onContextMenu={(e) => calibration.preventContextMenu && e.preventDefault()}
+                    >
+                        <img
+                            src={layer.preview}
+                            alt="First layer for scaling"
+                            onLoad={handleImageLoad}
+                            draggable={false}
+                        />
+                        <ScaleCalibrationTool
+                            calibration={calibration}
+                            viewBox={viewBox}
+                            handleRadius={handleRadius}
+                        />
+                    </div>
+                </div>
+            ) : (
+                <p className="scaling-help">First layer image is missing.</p>
+            )}
+
+            <p className="scaling-help">
+                Click the two ends of a known distance, then enter its length. Scale:{" "}
+                <strong>{scale}</strong>
+            </p>
         </div>
-      ) : (
-        <p className="scaling-help">First layer image is missing.</p>
-      )}
-      <div className="scaling-known-length">
-        <input
-          type="number"
-          min="0.01"
-          step="0.1"
-          value={knownLength}
-          onChange={(e) => setKnownLength(e.target.value)}
-        />
-        <span>meters</span>
-      </div>
-      <p className="scaling-help">
-        Drag endpoints over a known distance. Scale: <strong>{scale}</strong>
-      </p>
-    </div>
-  );
+    );
 }
 
 export default ScaleCalibrator;

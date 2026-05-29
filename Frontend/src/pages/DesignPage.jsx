@@ -24,6 +24,7 @@ import api from '../services/api';
 import { getSaveErrorMessage, saveDesign } from '../utils/designSave';
 import { calculateFovPolygon } from '../utils/fov';
 import { getImagePoint } from '../utils/points';
+import { ppmFromScaleString } from '../utils/scale';
 import { empty_Walls, segmentsToWallGraph, wallToSegments } from '../utils/wallsConverter';
 import useUndoRedo from '../hooks/useUndoRedo';
 
@@ -31,13 +32,6 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
 import '../page_styling/designPage.css';
-
-/* Converts scale string (e.g., "1:50") to pixels-per-meter. */
-const scaleToPpm = (scaleString) => {
-    if (!scaleString || !scaleString.includes(':')) return null;
-    const ppm = parseFloat(scaleString.split(':')[1]);
-    return Number.isFinite(ppm) ? ppm : null;
-};
 
 const DEFAULT_ICON_BACKGROUND_COLOR = '#ffffff';
 
@@ -952,7 +946,7 @@ function DesignPage() {
     useEffect(() => {
         if (floorLayouts.length > 0) {
             const currentScale = floorLayouts[selectedLayer]?.scale ?? '';
-            setPPM(scaleToPpm(currentScale));
+            setPPM(ppmFromScaleString(currentScale));
         }
     }, [floorLayouts, selectedLayer]);
 

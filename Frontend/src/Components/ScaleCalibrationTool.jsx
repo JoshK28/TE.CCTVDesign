@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { getImagePoint } from '../utils/points';
+import { getDistancePx } from '../utils/scale';
 import ScaleCalibrationModal from './ScaleCalibrationModal';
 
 const INITIAL_CALIBRATION = {
@@ -7,9 +8,6 @@ const INITIAL_CALIBRATION = {
     end: null,
     cursor: null,
 };
-
-const getDistancePx = (start, end) =>
-    start && end ? Math.hypot(end.x - start.x, end.y - start.y) : 0;
 
 /*
 Scale calibration for the design workspace: two-click line measurement on the
@@ -104,7 +102,7 @@ export function useScaleCalibration({ active, imageSize, onApply, onDeactivate }
     };
 }
 
-function ScaleCalibrationOverlay({ viewBox, start, end, cursor }) {
+export function ScaleCalibrationOverlay({ viewBox, start, end, cursor, handleRadius = 8 }) {
     if (!viewBox) return null;
 
     const lineEnd = end || (start && cursor);
@@ -112,7 +110,13 @@ function ScaleCalibrationOverlay({ viewBox, start, end, cursor }) {
     if (!start && !end && cursor) {
         return (
             <svg className="scale-overlay" viewBox={viewBox} preserveAspectRatio="none">
-                <circle cx={cursor.x} cy={cursor.y} r="8" className="scale-handle" />
+                <circle
+                    cx={cursor.x}
+                    cy={cursor.y}
+                    r={handleRadius}
+                    className="scale-handle"
+                    vectorEffect="non-scaling-stroke"
+                />
             </svg>
         );
     }
@@ -126,9 +130,22 @@ function ScaleCalibrationOverlay({ viewBox, start, end, cursor }) {
                     x2={lineEnd.x}
                     y2={lineEnd.y}
                     className="scale-line"
+                    vectorEffect="non-scaling-stroke"
                 />
-                <circle cx={start.x} cy={start.y} r="8" className="scale-handle" />
-                <circle cx={lineEnd.x} cy={lineEnd.y} r="8" className="scale-handle" />
+                <circle
+                    cx={start.x}
+                    cy={start.y}
+                    r={handleRadius}
+                    className="scale-handle"
+                    vectorEffect="non-scaling-stroke"
+                />
+                <circle
+                    cx={lineEnd.x}
+                    cy={lineEnd.y}
+                    r={handleRadius}
+                    className="scale-handle"
+                    vectorEffect="non-scaling-stroke"
+                />
             </svg>
         );
     }
@@ -136,13 +153,19 @@ function ScaleCalibrationOverlay({ viewBox, start, end, cursor }) {
     return null;
 }
 
-export default function ScaleCalibrationTool({ calibration, viewBox }) {
+export default function ScaleCalibrationTool({ calibration, viewBox, handleRadius }) {
     const { start, end, cursor, showModal, distancePx, applyCalibration, cancelCalibration } =
         calibration;
 
     return (
         <>
-            <ScaleCalibrationOverlay viewBox={viewBox} start={start} end={end} cursor={cursor} />
+            <ScaleCalibrationOverlay
+                viewBox={viewBox}
+                start={start}
+                end={end}
+                cursor={cursor}
+                handleRadius={handleRadius}
+            />
             <ScaleCalibrationModal
                 visible={showModal}
                 pixelDistance={distancePx || 0}
