@@ -4,12 +4,25 @@ import AppLayout from "../Components/AppLayout";
 import "../page_styling/storageCalculator.css";
 import api from "../services/api";
 
+const RESOLUTIONS = [
+  { label: "12MP (4000x3000)", bitrate: 20480 },
+  { label: "8MP (3840x2160)", bitrate: 16384 },
+  { label: "5MP (2560x1920)", bitrate: 8192 },
+  { label: "1080p (1920x1080)", bitrate: 4096 },
+  { label: "720p (1280x720)", bitrate: 2048 },
+];
+
+const DEFAULT_RESOLUTION = RESOLUTIONS[3];
+
 const DEFAULT_CHANNEL = {
   encoding: "H.264",
-  resolution: "12MP (4000x3000)",
+  resolution: DEFAULT_RESOLUTION.label,
   fps: 25,
-  bitrate: 20480,
+  bitrate: DEFAULT_RESOLUTION.bitrate,
 };
+
+const getBaseBitrate = (resolution) =>
+  RESOLUTIONS.find((r) => r.label === resolution)?.bitrate ?? DEFAULT_RESOLUTION.bitrate;
 
 /*
 The StorageNetworkCalculator page lets the user estimate CCTV storage and
@@ -27,10 +40,9 @@ function StorageNetworkCalculator({ onLogout }) {
   const navigate = useNavigate();
 
   const projectId = location.state?.projectId;
-  const fromDesign = !!projectId;
 
   const nav = [
-    fromDesign
+    projectId
       ? {
           label: "⬅ Back to Design",
           onClick: () => navigate("/app/design", { state: { projectId } }),
@@ -44,14 +56,6 @@ function StorageNetworkCalculator({ onLogout }) {
   const [channels, setChannels] = useState([
     { id: 1, name: "Channel 1", ...DEFAULT_CHANNEL },
   ]);
-
-  const BASE_BITRATES = {
-    "12MP (4000x3000)": 20480,
-    "8MP (3840x2160)": 16384,
-    "5MP (2560x1920)": 8192,
-    "1080p (1920x1080)": 4096,
-    "720p (1280x720)": 2048,
-  };
 
   const [diskSpaceTB, setDiskSpaceTB] = useState(4);
   const [diskUnit, setDiskUnit] = useState("TB");
@@ -105,7 +109,7 @@ function StorageNetworkCalculator({ onLogout }) {
         const updated = { ...ch, ...patch };
 
         if (patch.resolution || patch.encoding || patch.fps) {
-          const base = BASE_BITRATES[updated.resolution] ?? 20480;
+          const base = getBaseBitrate(updated.resolution);
           const encodingMultiplier = updated.encoding === "H.265" ? 0.5 : 1;
           const fpsMultiplier = Number(updated.fps) / 25;
           updated.bitrate = Math.round(base * encodingMultiplier * fpsMultiplier);
@@ -127,22 +131,22 @@ function StorageNetworkCalculator({ onLogout }) {
       const totalStorageBytes = diskSpaceTB * multiplier;
       const totalSeconds = totalStorageBytes / bytesPerSecond;
       const totalDays = (totalSeconds / 3600 / recordHours).toFixed(1);
-      const totalWeeks = (totalDays / 7).toFixed(1);
-      const totalMonths = (totalDays / 30).toFixed(1);
-      setResult({ mode: "saving", days: totalDays, weeks: totalWeeks, months: totalMonths });
+      setResult({ days: totalDays });
 
     } else if (mode === "disk") {
       const totalSeconds = retentionDays * recordHours * 3600;
       const totalBytes = bytesPerSecond * totalSeconds;
-      const totalGB = (totalBytes / 1024 ** 3).toFixed(2);
-      const totalTB = (totalBytes / 1024 ** 4).toFixed(2);
-      setResult({ mode: "disk", gb: totalGB, tb: totalTB });
+      const useTb = totalBytes >= 1024 ** 4;
+      setResult({
+        storage: (totalBytes / (useTb ? 1024 ** 4 : 1024 ** 3)).toFixed(2),
+        unit: useTb ? "TB" : "GB",
+      });
 
     } else if (mode === "bandwidth") {
       const totalMbps = (totalBitrateKbps / 1000).toFixed(2);
       const totalGbps = (totalBitrateKbps / 1000000).toFixed(4);
       const recommended = (totalMbps * 1.2).toFixed(2);
-      setResult({ mode: "bandwidth", mbps: totalMbps, gbps: totalGbps, recommended });
+      setResult({ mbps: totalMbps, gbps: totalGbps, recommended });
     }
   };
 
@@ -162,7 +166,7 @@ function StorageNetworkCalculator({ onLogout }) {
       {loading && <p>Loading project devices...</p>}
 
       <section className="device-section">
-        <h2>Add Device</h2>
+        <h2>Device Channels</h2>
         <div className="table-container">
           <table>
             <thead>
@@ -193,11 +197,9 @@ function StorageNetworkCalculator({ onLogout }) {
                       value={ch.resolution}
                       onChange={(e) => updateChannel(i, { resolution: e.target.value })}
                     >
-                      <option>12MP (4000x3000)</option>
-                      <option>8MP (3840x2160)</option>
-                      <option>5MP (2560x1920)</option>
-                      <option>1080p (1920x1080)</option>
-                      <option>720p (1280x720)</option>
+                      {RESOLUTIONS.map((r) => (
+                        <option key={r.label} value={r.label}>{r.label}</option>
+                      ))}
                     </select>
                   </td>
                   <td>
@@ -295,33 +297,24 @@ function StorageNetworkCalculator({ onLogout }) {
                 </label>
               </>
             )}
-
-            {mode === "bandwidth" && (
-              <p style={{ color: '#666', fontSize: '0.9rem' }}>
-                Bandwidth is calculated automatically from your channel bitrates above.
-              </p>
-            )}
           </div>
 
           <button className="calculate-btn" onClick={calculate}>Calculate</button>
         </div>
 
-        {result && result.mode === "saving" && (
+        {result && mode === "saving" && (
           <div className="results">
-            <div className="result-box"><h3>{result.days}</h3><p>Days</p></div>
-            <div className="result-box"><h3>{result.weeks}</h3><p>Weeks</p></div>
-            <div className="result-box"><h3>{result.months}</h3><p>Months</p></div>
+            <div className="result-box"><h3>{result.days}</h3><p>Days of retention</p></div>
           </div>
         )}
 
-        {result && result.mode === "disk" && (
+        {result && mode === "disk" && (
           <div className="results">
-            <div className="result-box"><h3>{result.gb} GB</h3><p>Required Storage</p></div>
-            <div className="result-box"><h3>{result.tb} TB</h3><p>Required Storage</p></div>
+            <div className="result-box"><h3>{result.storage} {result.unit}</h3><p>Required Storage</p></div>
           </div>
         )}
 
-        {result && result.mode === "bandwidth" && (
+        {result && mode === "bandwidth" && (
           <div className="results">
             <div className="result-box"><h3>{result.mbps} Mbps</h3><p>Total Bandwidth</p></div>
             <div className="result-box"><h3>{result.gbps} Gbps</h3><p>Total Bandwidth</p></div>
