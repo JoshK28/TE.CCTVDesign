@@ -1,7 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
+import { Dialog } from 'primereact/dialog';
+import { InputNumber } from 'primereact/inputnumber';
+import { Button } from 'primereact/button';
+
 import { getImagePoint } from '../utils/points';
 import { getDistancePx } from '../utils/scale';
-import ScaleCalibrationModal from './ScaleCalibrationModal';
+
+import '../page_styling/designPage.css';
 
 const INITIAL_CALIBRATION = {
     start: null,
@@ -151,6 +156,64 @@ export function ScaleCalibrationOverlay({ viewBox, start, end, cursor, handleRad
     }
 
     return null;
+}
+
+function ScaleCalibrationModal({ visible, pixelDistance, onApply, onCancel }) {
+    const [meters, setMeters] = useState(null);
+
+    const handleApply = () => {
+        if (!meters || meters <= 0) return;
+        onApply(pixelDistance / meters);
+    };
+
+    return (
+        <Dialog
+            header="Scale Calibration"
+            visible={visible}
+            onHide={onCancel}
+            modal
+            style={{ width: '420px' }}
+            className="scale-dialog"
+        >
+            <div className="scale-dialog-content">
+                <div className="scale-summary">
+                    <p className="scale-summary-text">
+                        You measured:
+                        <strong className="scale-summary-value">
+                            {pixelDistance?.toFixed(2)} px
+                        </strong>
+                    </p>
+                </div>
+
+                <div className="scale-input-group">
+                    <label className="scale-input-label">Real‑world distance (meters)</label>
+                    <InputNumber
+                        value={meters}
+                        onValueChange={(e) => setMeters(e.value)}
+                        min={0.01}
+                        step={0.1}
+                        placeholder="Enter meters"
+                        className="scale-input"
+                        inputStyle={{ width: '100%' }}
+                    />
+                </div>
+
+                <div className="scale-actions">
+                    <Button
+                        label="Cancel"
+                        className="p-button-text scale-btn-cancel"
+                        onClick={onCancel}
+                    />
+                    <Button
+                        label="Apply"
+                        icon="pi pi-check"
+                        className="scale-btn-apply"
+                        onClick={handleApply}
+                    />
+                </div>
+            </div>
+        </Dialog>
+    );
 }
 
 export default function ScaleCalibrationTool({ calibration, viewBox, handleRadius }) {
