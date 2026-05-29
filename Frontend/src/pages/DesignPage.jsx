@@ -146,15 +146,20 @@ function Workspace({
     const { handleEscape: handleScaleCalibrationEscape } = scaleCalibration;
 
     // UNDO / REDO
-    const applyHistorySnapshot = useCallback(({ equipment: eq, wallGraphs: wg }) => {
+    const applyHistorySnapshot = useCallback(({ equipment: eq, wallGraphs: wg, obstacles: obs }) => {
         setEquipment(eq);
         setWallGraphs(wg);
+        setObstacles(obs ?? []);
     }, []);
 
-    const { commit, undo, redo, canUndo, canRedo } = useUndoRedo(
-        { equipment, wallGraphs },
+    const { commit, undo, redo, reset, canUndo, canRedo } = useUndoRedo(
+        { equipment, wallGraphs, obstacles },
         applyHistorySnapshot
     );
+
+    useEffect(() => {
+        reset();
+    }, [floorId, reset]);
 
     // WALL GRAPH
     const currentWallGraph = floorId ? wallGraphs[floorId] ?? empty_Walls : empty_Walls;
@@ -165,6 +170,7 @@ function Workspace({
         if (!floorId) return;
 
         setEquipment([]);
+        setObstacles([]);
 
         const fetchPlacements = async () => {
             try {
@@ -453,6 +459,16 @@ function Workspace({
         onUnsavedChanges(true);
     };
 
+    const handleObstaclesChange = (updater) => {
+        commit();
+
+        setObstacles((prev) =>
+            typeof updater === 'function' ? updater(prev) : updater
+        );
+
+        onUnsavedChanges(true);
+    };
+
     // SAVE (placements + walls + obstacles)
     const handleSave = async () => {
         if (!floorId) {
@@ -467,11 +483,11 @@ function Workspace({
         setSaving(true);
 
         try {
-            await saveDesign({ floorId, equipment, walls: currentWalls });
+            await saveDesign({ floorId, equipment, walls: currentWalls, obstacles });
 
             toastRef.current?.show({
                 severity: 'success',
-                detail: 'Placements and walls saved successfully.',
+                detail: 'Design saved successfully.',
             });
 
             onUnsavedChanges(false);
@@ -485,19 +501,6 @@ function Workspace({
         } finally {
             setSaving(false);
         }
-
-        const obstaclesToSave = obstacles.map((o) => ({
-            floorID: floorId,
-            label: o.label,
-            x: o.x,
-            y: o.y,
-            width: o.width,
-            height: o.height,
-            rotation: o.rotation ?? 0,
-            color: o.color ?? '#FF0000',
-        }));
-
-        await api.post(`/api/obstacles/save/${floorId}`, obstaclesToSave);
     };
 
     const showFov = exportOptions ? exportOptions.showFov !== false : true;
@@ -640,12 +643,7 @@ function Workspace({
                         <ObstacleDrawingLayer
                             obstacles={obstacles}
                             imageSize={imageSize}
-                            onObstaclesChange={(updater) => {
-                                setObstacles((prev) =>
-                                    typeof updater === 'function' ? updater(prev) : updater
-                                );
-                                onUnsavedChanges(true);
-                            }}
+                            onObstaclesChange={handleObstaclesChange}
                             onExitObstacleMode={() => armTool(null)}
                         />
                     )}

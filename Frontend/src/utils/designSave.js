@@ -88,7 +88,18 @@ const toWallPayload = (wall, floorId) => ({
   realWorldHeight: wall.realWorldHeight ?? 0,
 });
 
-export const saveDesign = async ({ floorId, equipment, walls }) => {
+const toObstaclePayload = (obstacle, floorId) => ({
+  floorID: floorId,
+  label: obstacle.label,
+  x: obstacle.x,
+  y: obstacle.y,
+  width: obstacle.width,
+  height: obstacle.height,
+  rotation: obstacle.rotation ?? 0,
+  color: obstacle.color ?? '#FF0000',
+});
+
+export const saveDesign = async ({ floorId, equipment, walls, obstacles = [] }) => {
   await api.post(
     `/api/camerplacements/save/${floorId}`,
     equipment.map((item) => toPlacementPayload(item, floorId))
@@ -97,6 +108,11 @@ export const saveDesign = async ({ floorId, equipment, walls }) => {
   await api.post(
     `/api/walls/save/${floorId}`,
     walls.map((wall) => toWallPayload(wall, floorId))
+  );
+
+  await api.post(
+    `/api/obstacles/save/${floorId}`,
+    obstacles.map((obstacle) => toObstaclePayload(obstacle, floorId))
   );
 };
 
