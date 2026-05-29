@@ -8,56 +8,35 @@ namespace Backend.Controllers
 {
     [ApiController]
     [Route("api/walls")]
-    public class WallController : ControllerBase
+    public class WallController(AppDbContext context) : ControllerBase
     {
-        private readonly AppDbContext _context;
+        // GET api/walls/{floorId}
+        [HttpGet("{floorId}")]
+        public async Task<IActionResult> GetWalls(int floorId) =>
+            Ok(await context.Walls.Where(w => w.FloorID == floorId).ToListAsync());
 
-        public WallController(AppDbContext context)
-        {
-            _context = context;
-        }
-
-        // saves all walls for a floor layout
+        // POST api/walls/save/{floorId} — replaces all walls for a floor
         [HttpPost("save/{floorId}")]
         public async Task<IActionResult> SaveWalls(int floorId, List<WallDto> walls)
         {
-            var floor = await _context.FloorLayouts.FindAsync(floorId);
-            if (floor == null)
+            if (await context.FloorLayouts.FindAsync(floorId) == null)
                 return NotFound("Floor layout not found");
 
-            // delete existing walls for this floor
-            var existing = _context.Walls.Where(w => w.FloorID == floorId);
-            _context.Walls.RemoveRange(existing);
+            // remove existing walls then add the new set
+            context.Walls.RemoveRange(context.Walls.Where(w => w.FloorID == floorId));
 
-            // add new walls
-            foreach (var wall in walls)
+            context.Walls.AddRange(walls.Select(w => new Wall
             {
-                _context.Walls.Add(new Wall
-                {
-                    FloorID = floorId,
-                    X1 = wall.X1,
-                    Y1 = wall.Y1,
-                    X2 = wall.X2,
-                    Y2 = wall.Y2,
-                    Length = wall.Length,
-                    RealWorldLength = wall.RealWorldLength,
-                    RealWorldHeight = wall.RealWorldHeight
-                });
-            }
+                FloorID = floorId,
+                X1 = w.X1, Y1 = w.Y1,
+                X2 = w.X2, Y2 = w.Y2,
+                Length = w.Length,
+                RealWorldLength = w.RealWorldLength,
+                RealWorldHeight = w.RealWorldHeight
+            }));
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return Ok("Walls saved successfully");
-        }
-
-        // gets all walls for a floor layout
-        [HttpGet("{floorId}")]
-        public async Task<IActionResult> GetWalls(int floorId)
-        {
-            var walls = await _context.Walls
-                .Where(w => w.FloorID == floorId)
-                .ToListAsync();
-
-            return Ok(walls);
         }
     }
 }

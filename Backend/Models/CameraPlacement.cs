@@ -40,6 +40,8 @@ namespace Backend.Models
 
         public FloorLayout? FloorLayout { get; set; }
         public Camera? Camera { get; set; }
+
+        // FOR JOSH- was going to be used for when a user adds devices just for access control, networking or customer camera but if you're going to do your own can delete not neccessary
         public NetworkingDevice? NetworkingDevice { get; set; }
         public AccessControlDevice? AccessControlDevice { get; set; }
         public int? CustomCameraId { get; set; }
