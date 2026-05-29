@@ -2,25 +2,28 @@ import { useState, useCallback, useEffect } from 'react';
 import { getImagePoint } from '../utils/points';
 import ScaleCalibrationModal from './ScaleCalibrationModal';
 
+const INITIAL_CALIBRATION = {
+    start: null,
+    end: null,
+    cursor: null,
+};
+
+const getDistancePx = (start, end) =>
+    start && end ? Math.hypot(end.x - start.x, end.y - start.y) : 0;
+
 /*
 Scale calibration for the design workspace: two-click line measurement on the
 floor plan, SVG overlay, modal for real-world distance, and ESC to clear/exit.
 */
 export function useScaleCalibration({ active, imageSize, onApply, onDeactivate }) {
-    const [start, setStart] = useState(null);
-    const [end, setEnd] = useState(null);
-    const [cursor, setCursor] = useState(null);
-    const [distancePx, setDistancePx] = useState(null);
-    const [showModal, setShowModal] = useState(false);
-    const [escCount, setEscCount] = useState(0);
+    const [calibration, setCalibration] = useState(INITIAL_CALIBRATION);
+    const { start, end, cursor } = calibration;
+
+    const showModal = Boolean(start && end);
+    const distancePx = getDistancePx(start, end);
 
     const reset = useCallback(() => {
-        setStart(null);
-        setEnd(null);
-        setCursor(null);
-        setDistancePx(null);
-        setShowModal(false);
-        setEscCount(0);
+        setCalibration(INITIAL_CALIBRATION);
     }, []);
 
     useEffect(() => {
@@ -34,15 +37,12 @@ export function useScaleCalibration({ active, imageSize, onApply, onDeactivate }
             const { x, y } = getImagePoint(event, event.currentTarget, imageSize);
 
             if (!start) {
-                setStart({ x, y });
+                setCalibration({ start: { x, y }, end: null, cursor: null });
                 return true;
             }
 
             if (!end) {
-                const endPoint = { x, y };
-                setEnd(endPoint);
-                setDistancePx(Math.hypot(endPoint.x - start.x, endPoint.y - start.y));
-                setShowModal(true);
+                setCalibration((prev) => ({ ...prev, end: { x, y }, cursor: null }));
                 return true;
             }
 
@@ -54,7 +54,10 @@ export function useScaleCalibration({ active, imageSize, onApply, onDeactivate }
     const handlePointerMove = useCallback(
         (event) => {
             if (!active || !imageSize) return;
-            setCursor(getImagePoint(event, event.currentTarget, imageSize));
+            setCalibration((prev) => {
+                if (prev.end) return prev.cursor ? { ...prev, cursor: null } : prev;
+                return { ...prev, cursor: getImagePoint(event, event.currentTarget, imageSize) };
+            });
         },
         [active, imageSize]
     );
@@ -62,20 +65,14 @@ export function useScaleCalibration({ active, imageSize, onApply, onDeactivate }
     const handleEscape = useCallback(() => {
         if (!active) return false;
 
-        if (start || end || showModal) {
+        if (start || end || cursor) {
             reset();
-            setEscCount(1);
             return true;
         }
 
-        if (escCount === 1) {
-            setEscCount(0);
-            onDeactivate?.();
-            return true;
-        }
-
-        return false;
-    }, [active, start, end, showModal, escCount, reset, onDeactivate]);
+        onDeactivate?.();
+        return true;
+    }, [active, start, end, cursor, reset, onDeactivate]);
 
     const applyCalibration = useCallback(
         (newPPM) => {
@@ -110,7 +107,9 @@ export function useScaleCalibration({ active, imageSize, onApply, onDeactivate }
 function ScaleCalibrationOverlay({ viewBox, start, end, cursor }) {
     if (!viewBox) return null;
 
-    if (!start && cursor) {
+    const lineEnd = end || (start && cursor);
+
+    if (!start && !end && cursor) {
         return (
             <svg className="scale-overlay" viewBox={viewBox} preserveAspectRatio="none">
                 <circle cx={cursor.x} cy={cursor.y} r="8" className="scale-handle" />
@@ -118,34 +117,18 @@ function ScaleCalibrationOverlay({ viewBox, start, end, cursor }) {
         );
     }
 
-    if (start && !end && cursor) {
+    if (start && lineEnd) {
         return (
             <svg className="scale-overlay" viewBox={viewBox} preserveAspectRatio="none">
                 <line
                     x1={start.x}
                     y1={start.y}
-                    x2={cursor.x}
-                    y2={cursor.y}
+                    x2={lineEnd.x}
+                    y2={lineEnd.y}
                     className="scale-line"
                 />
                 <circle cx={start.x} cy={start.y} r="8" className="scale-handle" />
-                <circle cx={cursor.x} cy={cursor.y} r="8" className="scale-handle" />
-            </svg>
-        );
-    }
-
-    if (start && end) {
-        return (
-            <svg className="scale-overlay" viewBox={viewBox} preserveAspectRatio="none">
-                <line
-                    x1={start.x}
-                    y1={start.y}
-                    x2={end.x}
-                    y2={end.y}
-                    className="scale-line"
-                />
-                <circle cx={start.x} cy={start.y} r="8" className="scale-handle" />
-                <circle cx={end.x} cy={end.y} r="8" className="scale-handle" />
+                <circle cx={lineEnd.x} cy={lineEnd.y} r="8" className="scale-handle" />
             </svg>
         );
     }
