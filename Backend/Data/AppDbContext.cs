@@ -89,6 +89,13 @@ namespace Backend.Data
             modelBuilder.Entity<CustomCamera>()
                 .HasOne(c => c.CreatedBy).WithMany()
                 .HasForeignKey(c => c.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+
+            // stored as UTC; mark Kind on read so JSON includes "Z" for correct client conversion
+            modelBuilder.Entity<Project>()
+                .Property(p => p.LastEditedAt)
+                .HasConversion(
+                    v => v,
+                    v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
         }
     }
 }

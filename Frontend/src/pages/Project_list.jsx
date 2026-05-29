@@ -9,10 +9,19 @@ const NAV = [
   { label: "📁 New Project", to: "/app/upload" },
 ];
 
+const parseLastEdited = (value) => {
+  if (value == null || value === "") return null;
+  const text = String(value).trim();
+  if (!text) return null;
+  // API stores UTC; naive timestamps without offset must be parsed as UTC, not local
+  const hasOffset = /[Zz]$|[+-]\d{2}:\d{2}$/.test(text);
+  const date = new Date(hasOffset ? text : `${text}Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
 const formatLastEdited = (value) => {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
+  const date = parseLastEdited(value);
+  if (!date) return "—";
   return date.toLocaleString(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -88,12 +97,12 @@ function ProjectList({ onLogout }) {
     if (!editForm.address) return setEditError("Address is required");
 
     try {
-      await api.put(`/api/projects/${editProject.projectID}`, editForm);
+      const res = await api.put(`/api/projects/${editProject.projectID}`, editForm);
       setEditSuccess("Project updated successfully!");
       setProjects((prev) =>
         prev.map((p) =>
           p.projectID === editProject.projectID
-            ? { ...p, ...editForm, lastEditedAt: new Date().toISOString() }
+            ? { ...p, ...editForm, lastEditedAt: res.data?.lastEditedAt ?? p.lastEditedAt }
             : p
         )
       );
