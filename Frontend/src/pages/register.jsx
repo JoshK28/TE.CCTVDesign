@@ -20,10 +20,14 @@ function Register() {
   const [success, setSuccess] = useState("");
   const navigate = useNavigate();
 
+  // Keep the form state in sync with the controlled username/email/password inputs.
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Posts the form data to /api/auth/register. On success it shows a brief
+  // confirmation and redirects to the login page; failures surface the API
+  // message (or a fallback) in the error banner.
   const handleRegister = async (e) => {
     e.preventDefault();
     try {

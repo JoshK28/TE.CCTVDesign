@@ -1,82 +1,88 @@
-/* Center the home card similar to login/register */
 .home-container {
   background-color: rgb(36, 93, 145);
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  text-align: center;
+  min-height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
 }
 
+.home-card {
+  background: #ffffff;
+  padding: 48px 56px;
+  border-radius: 24px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  text-align: center;
+  max-width: 480px;
+  width: 100%;
+}
 
-/* Title and text */
+.home-logo {
+  width: 220px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
 .home-title {
-  margin-top: 20px;
-  color: rgb(30, 30, 30);
+  margin: 24px 0 0;
+  color: rgb(4, 66, 105);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .home-text {
-  color: #333;
-  font-size: 1.1em;
-  margin-top: 10px;
+  color: #444;
+  font-size: 1.125rem;
+  margin: 12px 0 0;
+  line-height: 1.5;
 }
 
-/* Buttons section */
 .home-buttons {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   justify-content: center;
-  margin-top: 30px;
+  margin-top: 32px;
+  flex-wrap: wrap;
 }
 
-/* Reuse login/register button colors */
-.login-button {
+.home-login-button,
+.home-register-button {
+  color: #fff;
+  border: none;
+  padding: 14px 36px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 140px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.home-login-button {
   background: rgb(4, 66, 105);
-  color: white;
-  border: none;
-  padding: 10px 30px;
-  border-radius: 6px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.3s ease;
 }
 
-.login-button:hover {
+.home-login-button:hover {
   background: rgb(2, 45, 73);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
-.register-button {
+.home-register-button {
   background: rgb(73, 125, 36);
-  color: white;
-  border: none;
-  padding: 10px 30px;
-  border-radius: 6px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.3s ease;
 }
 
-.register-button:hover {
+.home-register-button:hover {
   background: rgb(56, 96, 28);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
-/* Optional: leave testing button visible but subtle */
-.testing-button {
-  background: #666;
-  color: white;
-  border: none;
-  padding: 10px 25px;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.testing-button:hover {
-  background: #444;
-}
-
-/* Reuse your existing logo styling */
-.logo {
-  width: 250px;
-  height: auto;
+.home-login-button:active,
+.home-register-button:active {
+  transform: translateY(0);
 }

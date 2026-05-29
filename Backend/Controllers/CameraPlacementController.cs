@@ -15,7 +15,90 @@ namespace Backend.Controllers
         public async Task<IActionResult> GetPlacements(int floorId) =>
             Ok(await context.CameraPlacemens.Where(c => c.FloorID == floorId).ToListAsync());
 
-        // GET api/camerplacements/project/{projectId} — returns BOM grouped by device
+        public CameraPlacementController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        // saves all camera placements for a floor layout
+        [HttpPost("save/{floorId}")]
+        public async Task<IActionResult> SavePlacements(int floorId, List<CameraPlacementDto> placements)
+        {
+            var floor = await _context.FloorLayouts.FindAsync(floorId);
+            if (floor == null)
+                return NotFound("Floor layout not found");
+
+            var existing = _context.CameraPlacemens.Where(c => c.FloorID == floorId);
+            _context.CameraPlacemens.RemoveRange(existing);
+
+            foreach (var placement in placements)
+            {
+                _context.CameraPlacemens.Add(new CameraPlacement
+                {
+                    FloorID = floorId,
+                    CameraId = placement.CameraId == 0 ? null : placement.CameraId,
+                    NetworkingId = placement.NetworkingId == 0 ? null : placement.NetworkingId,
+                    AccessControlId = placement.AccessControlId == 0 ? null : placement.AccessControlId,
+
+                    X = placement.X,
+                    Y = placement.Y,
+                    Rotation = placement.Rotation,
+                    Type = placement.Type,
+
+                    CameraModel = placement.CameraModel,
+                    Brand = placement.Brand,
+                    Resolution = placement.Resolution,
+                    ModelName = placement.ModelName ?? string.Empty,
+                    Subtype = placement.Subtype ?? string.Empty,
+                    CostPerUnit = placement.CostPerUnit,
+                    SettingsJson = placement.SettingsJson,
+                    FocalLength = placement.FocalLength,
+                    SensorType = placement.SensorType,
+                    CorridorMode = placement.CorridorMode,
+                    IrRange = placement.IrRange
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok("Placements saved successfully");
+        }
+
+
+                // gets all camera placements for a floor layout
+                [HttpGet("{floorId}")]
+                public async Task<IActionResult> GetPlacements(int floorId)
+                {
+                    var placements = await _context.CameraPlacemens
+                        .Where(c => c.FloorID == floorId)
+                        .Select(c => new CameraPlacementDto
+                        {
+                            FloorID = c.FloorID,
+                            CameraId = c.CameraId,
+                            NetworkingId = c.NetworkingId,
+                            AccessControlId = c.AccessControlId,
+
+                            X = c.X,
+                            Y = c.Y,
+                            Rotation = c.Rotation,
+                            Type = c.Type,
+
+                            CameraModel = c.CameraModel,
+                            Brand = c.Brand,
+                            Resolution = c.Resolution,
+
+                            // --- NEW FOV FIELDS ---
+                            FocalLength = c.FocalLength,
+                            SensorType = c.SensorType,
+                            CorridorMode = c.CorridorMode,
+                            IrRange = c.IrRange
+                        })
+                        .ToListAsync();
+
+                    return Ok(placements);
+                }
+
+
+        // get all placements for a project across all floors with device details
         [HttpGet("project/{projectId}")]
         public async Task<IActionResult> GetPlacementsByProject(int projectId)
         {

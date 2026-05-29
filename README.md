@@ -84,3 +84,6 @@ When a new version of the application is provided:
 - Make sure SQL Server Express is running before starting the application
 - The application runs on `http://localhost:5113`
 - Swagger API documentation available at `http://localhost:5113/swagger`
+- If Dotnet doesn't work in vscode terminal, change ASPNETCORE_ENVIRONMENT": "Production" to ASPNETCORE_ENVIRONMENT": "Development".
+- ASPNETCORE_ENVIRONMENT": "Production" is a must so that project runs when install.bat and run.bat works
+- YOU CAN'T update the Frontend of the project is its ran by install.bat and run.bat

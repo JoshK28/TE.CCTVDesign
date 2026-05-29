@@ -3,7 +3,9 @@
 .design-page-container {
   display: flex;
   flex-direction: column;
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
   background: #1c1f22;
 }
 
@@ -25,6 +27,11 @@
   cursor: pointer;
   font-size: 13.5px;
   font-weight: 500;
+}
+
+.design-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .design-back-btn {
@@ -61,19 +68,26 @@
 .design-workspace {
   display: flex;
   width: 100%;
-  height: 100%;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
   background: #1c1f22;
 }
 
 .design-workspace .toolbar-sidebar {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
   min-width: 220px;
-  height: 100%;
   padding: 0;
   background: #212529;
   border-right: 1px solid #2d3238;
   color: #ffffff;
+}
+
+.design-workspace .toolbar-sidebar > * {
+  flex: 1;
+  min-height: 0;
 }
 
 .design-workspace .image-fullscreen-wrapper {
@@ -88,7 +102,16 @@
   overflow: auto;
 }
 
+.design-workspace .floorplan-stage {
+  position: relative;
+  flex: 0 0 auto;
+  max-width: 100%;
+  max-height: 100%;
+  line-height: 0;
+}
+
 .design-workspace .fullscreen-image {
+  display: block;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   border-radius: 4px;
   border: none;
@@ -110,6 +133,25 @@
   z-index: 1005;
   display: flex;
   gap: 8px;
+}
+
+.workspace-save-btn {
+  padding: 8px 16px;
+  background-color: #198754;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workspace-save-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .floating-branding {
@@ -163,16 +205,300 @@
   z-index: 1000;
 }
 
-.design-layer-btn.p-button {
+.design-layer-btn {
   padding: 6px 16px;
   border-radius: 20px;
   background: #343a40;
   color: #ffffff;
   font-weight: normal;
+  font-size: 13.5px;
   border: none;
+  cursor: pointer;
 }
 
-.design-layer-btn--active.p-button {
+.design-layer-btn--active {
   background: #245d91;
   font-weight: bold;
+}
+
+.measure-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 40; /* Above FOV and walls */
+}
+
+/* Final measurement line */
+.measure-line {
+  stroke: white;
+  stroke-width: 4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px black);
+}
+
+/* Live preview line */
+.measure-line--preview {
+  stroke: white;
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 2px black);
+}
+
+/* Start point circle */
+.measure-point-start {
+  fill: white;
+  stroke: black;
+  stroke-width: 2;
+  r: 6;
+}
+
+/* End point circle */
+.measure-point-end {
+  fill: red;
+  stroke: black;
+  stroke-width: 2;
+  r: 6;
+}
+
+/* Label background */
+.measure-label-bg {
+  fill: rgba(50, 50, 50, 0.9);
+  stroke: black;
+  stroke-width: 0.5;
+  rx: 4;
+  ry: 4;
+}
+
+/* Label text */
+.measure-label-text {
+  fill: white;
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: none;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+/* Legacy label classes (still used by your Workspace) */
+.measure-label {
+  fill: white;
+  font-size: 14px;
+  font-weight: 600;
+  text-shadow: 0 0 3px black;
+  pointer-events: none;
+}
+
+.measure-label--preview {
+  opacity: 0.85;
+}
+
+.scale-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 40; /* Above FOV and walls */
+}
+
+/* ------------------------------------------
+   IMAGE SETTINGS PANEL (Dialog)
+------------------------------------------- */
+
+.image-settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 10px 4px;
+  color: #e9ecef;
+}
+
+.image-settings-panel h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8f9fa;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #2d3238;
+}
+
+/* Row of buttons */
+.image-settings-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Grid layout for Up/Down/Left/Right */
+.image-settings-row--grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+/* PrimeReact button overrides inside dialog */
+.image-settings-panel .p-button {
+  flex: 1;
+  background: #343a40 !important;
+  border: 1px solid #495057 !important;
+  color: #ffffff !important;
+  font-size: 13px;
+  padding: 8px 0;
+  border-radius: 6px;
+}
+
+.image-settings-panel .p-button:hover {
+  background: #3f464d !important;
+}
+
+/* Danger button (Reset Image) */
+.image-settings-panel .p-button.p-button-danger {
+  background: #a83232 !important;
+  border-color: #c03939 !important;
+}
+
+.image-settings-panel .p-button.p-button-danger:hover {
+  background: #922b2b !important;
+}
+
+/* File input styling */
+.image-settings-panel input[type="file"] {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #ced4da;
+}
+
+/* Dialog container override */
+.p-dialog .p-dialog-content {
+  background: #212529 !important;
+  border: 1px solid #2d3238 !important;
+}
+
+.p-dialog .p-dialog-header {
+  background: #212529 !important;
+  border-bottom: 1px solid #2d3238 !important;
+  color: #ffffff !important;
+}
+
+.p-dialog .p-dialog-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* ------------------------------------------
+   SCALE CALIBRATION DIALOG — Modern UI
+------------------------------------------- */
+
+.scale-dialog .p-dialog-content {
+  background: #1e2226 !important;
+  border: 1px solid #2f343a !important;
+  padding: 20px 18px !important;
+}
+
+.scale-dialog .p-dialog-header {
+  background: #1e2226 !important;
+  border-bottom: 1px solid #2f343a !important;
+  color: #ffffff !important;
+}
+
+.scale-dialog .p-dialog-title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+/* Content wrapper */
+.scale-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* Summary */
+.scale-summary-text {
+  margin: 0;
+  font-size: 14px;
+  color: #ced4da;
+}
+
+.scale-summary-value {
+  margin-left: 6px;
+  color: #00d1ff;
+  font-weight: 700;
+}
+
+/* Input group */
+.scale-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scale-input-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.scale-input .p-inputtext {
+  background: #2c3237 !important;
+  border: 1px solid #3d444b !important;
+  color: #ffffff !important;
+}
+
+/* Actions */
+.scale-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.scale-btn-cancel {
+  color: #adb5bd !important;
+}
+
+.scale-btn-apply {
+  background: #00d1ff !important;
+  border-color: #00b4d6 !important;
+  color: #1c1f22 !important;
+  font-weight: 600;
+}
+
+.scale-btn-apply:hover {
+  background: #00b4d6 !important;
+}
+
+/* ------------------------------------------
+   DEVICE HOVER INFO BOX
+------------------------------------------- */
+
+.device-hover-box {
+  position: absolute;
+  background: rgba(33, 37, 41, 0.92);
+  border: 1px solid #2d3238;
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: #f8f9fa;
+  font-size: 12.5px;
+  line-height: 1.35;
+  pointer-events: none;
+  z-index: 3000;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+  transform: translateX(-50%);
+  max-width: 220px;
+}
+
+.device-hover-box .hover-title {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: #00d1ff;
+}
+
+.device-hover-box .hover-line {
+  opacity: 0.9;
 }

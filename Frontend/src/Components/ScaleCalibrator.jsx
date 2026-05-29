@@ -2,6 +2,13 @@ import { useEffect, useRef, useState } from "react";
 
 const INITIAL_LINE = { a: { x: 0.25, y: 0.5 }, b: { x: 0.75, y: 0.5 } };
 
+/*
+ScaleCalibrator is the second step of the project-creation flow. The user
+drags two endpoints across a known distance on the first floor image and
+types in the real-world length of that distance in metres. The component
+computes pixels-per-metre from the on-screen line length and reports the
+result up to its parent as a "1:N" string via onScaleChange.
+*/
 function ScaleCalibrator({ layer, scale, onScaleChange }) {
   const [line, setLine] = useState(INITIAL_LINE);
   const [dragPoint, setDragPoint] = useState(null);

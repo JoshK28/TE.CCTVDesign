@@ -23,6 +23,13 @@ const DEFAULT_LAYER = {
 
 const clampZoom = (w) => Math.min(300, Math.max(10, w));
 
+/*
+The ImageUploader page is the "Create Project" workflow. The user enters
+project metadata, uploads one or more floor-plan images per layer, optionally
+adjusts each image (zoom/pan/rotate/grid), then proceeds to a scaling step
+(ScaleCalibrator) before the project is created. On submit each layer is
+flattened to a PNG on the client and sent as multipart/form-data to the backend.
+*/
 function ImageUploader({ onLogout }) {
   const navigate = useNavigate();
 
@@ -54,11 +61,14 @@ function ImageUploader({ onLogout }) {
 
   const dragState = useRef({ dragging: false, startX: 0, startY: 0, index: null });
 
+  // Append a fresh floor layer slot ready to receive an image.
   const handleAddLayer = () => setFloorImages((prev) => [...prev, DEFAULT_LAYER]);
 
   const handleRemoveLayer = (index) =>
     setFloorImages((prev) => prev.filter((_, i) => i !== index));
 
+  // Validate the chosen file type and load it into the targeted layer slot,
+  // resetting any previous zoom/pan/rotation values for that layer.
   const handleImageChange = (event, index) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -118,7 +128,8 @@ function ImageUploader({ onLogout }) {
     else handleZoomOut(index);
   };
 
-  // EXPORT EDITED IMAGE(S) AS PNG USING CANVAS
+  // Bake each layer's zoom/pan/rotation into a flat PNG blob via an offscreen
+  // canvas so the backend stores the image exactly as the user previewed it.
   const generateEditedBlobs = async () => {
     const promises = floorImages
       .filter((f) => f.file && f.preview)
@@ -174,6 +185,9 @@ function ImageUploader({ onLogout }) {
     return Promise.all(promises);
   };
 
+  // Final step: validates inputs, exports each layer to PNG, sends a
+  // multipart/form-data request to /api/projects/create and, on success,
+  // navigates the user into the design page for the freshly created project.
   const handleSubmit = async () => {
     if (!form.projectName || !form.clientName || !form.address)
       return setError("Please fill all required fields.");
@@ -218,6 +232,8 @@ function ImageUploader({ onLogout }) {
     }
   };
 
+  // Re-validate the setup step before transitioning to the scale calibration
+  // step. Prevents the user from reaching scaling without basic inputs.
   const handleOpenScalingStep = () => {
     if (!form.projectName || !form.clientName || !form.address) {
       setError("Please fill all required fields.");

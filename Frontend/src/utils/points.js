@@ -1,4 +1,18 @@
-export const getLocalPoint = (event, target = event.currentTarget) => {
+// Convert a pointer/click event into a point in the floor image's natural
+// coordinate space. The DOM image is scaled to fit its container, so we
+// rescale (event.clientX/Y − target offset) by naturalSize / renderedSize so
+// placements/walls/obstacles are stored in image pixels regardless of zoom.
+export const getImagePoint = (event, target = event.currentTarget, imageSize) => {
+  if (!target) return { x: 0, y: 0 };
+
   const rect = target.getBoundingClientRect();
-  return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  const naturalWidth = imageSize?.naturalWidth ?? rect.width;
+  const naturalHeight = imageSize?.naturalHeight ?? rect.height;
+  const scaleX = rect.width ? naturalWidth / rect.width : 1;
+  const scaleY = rect.height ? naturalHeight / rect.height : 1;
+
+  return {
+    x: (event.clientX - rect.left) * scaleX,
+    y: (event.clientY - rect.top) * scaleY,
+  };
 };

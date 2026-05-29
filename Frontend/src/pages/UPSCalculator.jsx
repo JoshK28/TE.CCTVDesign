@@ -4,26 +4,32 @@ import AppLayout from "../Components/AppLayout";
 import "../page_styling/upsCalculator.css";
 import api from "../services/api";
 
+/*
+The UPSCalculator page estimates how long a UPS will keep the CCTV system
+running. The user lists devices (or auto-loads them from a project) with their
+power draw and unit count, then specifies a battery size in Ah. Predicted
+uptime is calculated as: (Ah × 12V × 0.8 efficiency) / total watts.
+*/
 function UPSCalculator({ onLogout }) {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const projectId = location.state?.projectId;
+  const nav = [
+    projectId
+      ? {
+          label: "← Back to Project",
+          onClick: () => navigate("/app/design", { state: { projectId } }),
+        }
+      : { label: "⬅ Back to Dashboard", to: "/app/dashboard" },
+    { label: "📊 Storage Calculator", to: "/app/calculator" },
+    { label: "🔋 UPS Calculator", to: "/app/ups" },
+  ];
 
   const [rows, setRows] = useState([{ id: 1, product: "", power: 0, units: 1 }]);
   const [batterySize, setBatterySize] = useState(100);
   const [loading, setLoading] = useState(false);
   const [projectName, setProjectName] = useState("");
-  const navigate = useNavigate();
-  const fromDesign = !!projectId;
-
-  const NAV = fromDesign
-  ? [{ label: "⬅ Back to Design", onClick: () => navigate(-1) }]
-  : [
-      { label: "⬅ Back to Dashboard", to: "/app/dashboard" },
-      { label: "📂 View Projects", to: "/app/projects" },
-      { label: "📊 Storage Calculator", to: "/app/calculator" },
-      { label: "🔋 UPS Calculator", to: "/app/ups" },
-    ];
 
   // auto populate rows if projectId is provided
   useEffect(() => {
@@ -80,7 +86,7 @@ function UPSCalculator({ onLogout }) {
   return (
     <AppLayout
       className="ups-page"
-      nav={NAV}
+      nav={nav}
       onLogout={onLogout}
       mainClassName="ups-main"
     >

@@ -7,6 +7,11 @@ const NAV = [
   { label: "🔋 UPS Calculator", to: "/app/ups" },
 ];
 
+/*
+The Dashboard component is the landing page after login. It uses the shared
+AppLayout shell to display the sidebar navigation (Projects, Storage Calculator,
+UPS Calculator) and a welcome message in the main content area.
+*/
 function Dashboard({ onLogout }) {
   return (
     <AppLayout nav={NAV} onLogout={onLogout} mainClassName="dashboard-main">

@@ -35,17 +35,29 @@
 
 /* Standard size for any equipment icon placed on the floor plan,
    regardless of the source asset's intrinsic dimensions. */
+.equipment-icon-background {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
 .equipment-icon {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
   display: block;
   pointer-events: none;
 }
 
 .equipment-icon--emoji {
-  font-size: 24px;
-  line-height: 32px;
+  font-size: 22px;
+  line-height: 28px;
   text-align: center;
 }
 
@@ -78,6 +90,12 @@
   fill: #ffffff;
   stroke: #30343f;
   stroke-width: 2;
+}
+
+.wall-post-handle--selected {
+  fill: #c45c26;
+  stroke: #ffffff;
+  stroke-width: 3;
 }
 
 .wall-length-label {
@@ -115,22 +133,123 @@
   background: rgba(90, 90, 90, 0.28);
 }
 
-.wall-mode-hint {
+.draw-mode-hint {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 44px;
+  top: 16px;
   max-width: min(560px, 90vw);
   margin: 0;
   text-align: center;
   color: #fff;
   background: rgba(0, 0, 0, 0.65);
-  padding: 8px 14px;
+  padding: 10px 16px;
   border-radius: 6px;
   z-index: 1003;
   pointer-events: none;
-  font-size: 0.95rem;
-  line-height: 1.35;
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+/* -----------------------------
+   OBSTACLES
+----------------------------- */
+.obstacle-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1001;
+}
+
+.obstacle-rect {
+  fill: #ff000033;
+  stroke: #ff0000;
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
+.obstacle-rect--selected {
+  stroke: #ffd700;
+  stroke-width: 2.5;
+  stroke-dasharray: 6 3;
+}
+
+.obstacle-rect--draft {
+  fill: #ff000022;
+  stroke: #ff0000;
+  stroke-width: 1.5;
+  stroke-dasharray: 6 3;
+}
+
+.obstacle-label {
+  fill: #fff;
+  stroke: #000;
+  stroke-width: 0.4;
+  font-size: 12px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+.obstacle-handle {
+  fill: #fff;
+  stroke: #245d91;
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
+.obstacle-label-popup {
+  position: absolute;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px 14px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  min-width: 220px;
+  pointer-events: all;
+}
+
+.obstacle-label-popup__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.obstacle-label-popup__input {
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.obstacle-label-popup__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.obstacle-label-popup__btn {
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.obstacle-label-popup__btn--cancel {
+  border: 1px solid #ccc;
+  background: #fff;
+}
+
+.obstacle-label-popup__btn--confirm {
+  border: none;
+  background: #245d91;
+  color: #fff;
 }
 
 html, body, #root {

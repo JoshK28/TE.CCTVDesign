@@ -12,27 +12,25 @@ function Home() {
 
   return (
     <div className="home-container">
-      <div className="card">
-        <div>
-          <img src={tePNGLogo} alt="CCTV Design Tool logo" className="logo" />
-          <h1 className="home-title">CCTV Design Tool</h1>
-          <p className="home-text">Please login or register to continue</p>
+      <div className="home-card">
+        <img src={tePNGLogo} alt="CCTV Design Tool logo" className="home-logo" />
+        <h1 className="home-title">CCTV Design Tool</h1>
+        <p className="home-text">Please login or register to continue</p>
 
-          <div className="home-buttons">
-            <button 
-              onClick={() => navigate("/login")} 
-              className="login-button"
-            >
-              Login
-            </button>
+        <div className="home-buttons">
+          <button
+            onClick={() => navigate("/login")}
+            className="home-login-button"
+          >
+            Login
+          </button>
 
-            <button 
-              onClick={() => navigate("/register")} 
-              className="register-button"
-            >
-              Register
-            </button>
-          </div>
+          <button
+            onClick={() => navigate("/register")}
+            className="home-register-button"
+          >
+            Register
+          </button>
         </div>
       </div>
     </div>
