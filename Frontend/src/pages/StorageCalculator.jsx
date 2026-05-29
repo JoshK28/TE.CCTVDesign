@@ -13,6 +13,8 @@ const RESOLUTIONS = [
 ];
 
 const DEFAULT_RESOLUTION = RESOLUTIONS[3];
+const TB_BYTES = 1024 ** 4;
+const GB_BYTES = 1024 ** 3;
 
 const DEFAULT_CHANNEL = {
   encoding: "H.264",
@@ -21,8 +23,57 @@ const DEFAULT_CHANNEL = {
   bitrate: DEFAULT_RESOLUTION.bitrate,
 };
 
+const MODES = [
+  { id: "saving", label: "Calculate Saving Time" },
+  { id: "disk", label: "Calculate Disk Space" },
+  { id: "bandwidth", label: "Calculate Bandwidth" },
+];
+
 const getBaseBitrate = (resolution) =>
   RESOLUTIONS.find((r) => r.label === resolution)?.bitrate ?? DEFAULT_RESOLUTION.bitrate;
+
+const computeBitrate = (resolution, encoding, fps) => {
+  const base = getBaseBitrate(resolution);
+  const encodingMultiplier = encoding === "H.265" ? 0.5 : 1;
+  return Math.round(base * encodingMultiplier * (Number(fps) / 25));
+};
+
+const calculateResults = (mode, { channels, diskSpaceTB, diskUnit, recordHours, retentionDays }) => {
+  const totalBitrateKbps = channels.reduce((acc, ch) => acc + Number(ch.bitrate), 0);
+  const bytesPerSecond = (totalBitrateKbps * 1000) / 8;
+
+  if (mode === "saving") {
+    const totalStorageBytes = diskSpaceTB * (diskUnit === "TB" ? TB_BYTES : GB_BYTES);
+    const totalDays = (totalStorageBytes / bytesPerSecond / 3600 / recordHours).toFixed(1);
+    return { days: totalDays };
+  }
+
+  if (mode === "disk") {
+    const totalBytes = bytesPerSecond * retentionDays * recordHours * 3600;
+    const useTb = totalBytes >= TB_BYTES;
+    return {
+      storage: (totalBytes / (useTb ? TB_BYTES : GB_BYTES)).toFixed(2),
+      unit: useTb ? "TB" : "GB",
+    };
+  }
+
+  const totalMbps = (totalBitrateKbps / 1000).toFixed(2);
+  return {
+    mbps: totalMbps,
+    gbps: (totalBitrateKbps / 1_000_000).toFixed(4),
+    recommended: (totalMbps * 1.2).toFixed(2),
+  };
+};
+
+const getResultItems = (mode, result) => {
+  if (mode === "saving") return [{ key: "days", value: result.days, label: "Days of retention" }];
+  if (mode === "disk") return [{ key: "storage", value: `${result.storage} ${result.unit}`, label: "Required Storage" }];
+  return [
+    { key: "mbps", value: `${result.mbps} Mbps`, label: "Total Bandwidth" },
+    { key: "gbps", value: `${result.gbps} Gbps`, label: "Total Bandwidth" },
+    { key: "recommended", value: `${result.recommended} Mbps`, label: "Recommended Switch Capacity" },
+  ];
+};
 
 /*
 The StorageNetworkCalculator page lets the user estimate CCTV storage and
@@ -38,7 +89,6 @@ the project's placed cameras.
 function StorageNetworkCalculator({ onLogout }) {
   const location = useLocation();
   const navigate = useNavigate();
-
   const projectId = location.state?.projectId;
 
   const nav = [
@@ -53,10 +103,7 @@ function StorageNetworkCalculator({ onLogout }) {
     { label: "🔋 UPS Calculator", to: "/app/ups" },
   ];
 
-  const [channels, setChannels] = useState([
-    { id: 1, name: "Channel 1", ...DEFAULT_CHANNEL },
-  ]);
-
+  const [channels, setChannels] = useState([{ id: 1, name: "Channel 1", ...DEFAULT_CHANNEL }]);
   const [diskSpaceTB, setDiskSpaceTB] = useState(4);
   const [diskUnit, setDiskUnit] = useState("TB");
   const [recordHours, setRecordHours] = useState(24);
@@ -76,7 +123,6 @@ function StorageNetworkCalculator({ onLogout }) {
         if (res.data.storageChannels.length > 0) {
           setChannels(res.data.storageChannels);
         }
-
         const projectRes = await api.get(`/api/projects/${projectId}`);
         setProjectName(projectRes.data.title);
       } catch (err) {
@@ -95,72 +141,35 @@ function StorageNetworkCalculator({ onLogout }) {
       { id: Date.now(), name: `Channel ${prev.length + 1}`, ...DEFAULT_CHANNEL },
     ]);
 
-  const deleteChannel = (id) =>
-    setChannels((prev) => prev.filter((ch) => ch.id !== id));
+  const deleteChannel = (id) => setChannels((prev) => prev.filter((ch) => ch.id !== id));
 
-  // Patch one channel row. When resolution/encoding/fps changes the channel
-  // bitrate is recomputed from the resolution baseline (H.265 halves the
-  // bitrate vs H.264, and fps scales linearly relative to 25 fps).
   const updateChannel = (index, patch) => {
     setChannels((prev) =>
       prev.map((ch, i) => {
         if (i !== index) return ch;
-
         const updated = { ...ch, ...patch };
-
         if (patch.resolution || patch.encoding || patch.fps) {
-          const base = getBaseBitrate(updated.resolution);
-          const encodingMultiplier = updated.encoding === "H.265" ? 0.5 : 1;
-          const fpsMultiplier = Number(updated.fps) / 25;
-          updated.bitrate = Math.round(base * encodingMultiplier * fpsMultiplier);
+          updated.bitrate = computeBitrate(updated.resolution, updated.encoding, updated.fps);
         }
-
         return updated;
       })
     );
   };
 
-  // Runs the calculation for the currently selected mode and writes the
-  // result into state for display.
-  const calculate = () => {
-    const totalBitrateKbps = channels.reduce((acc, ch) => acc + Number(ch.bitrate), 0);
-    const bytesPerSecond = (totalBitrateKbps * 1000) / 8;
-
-    if (mode === "saving") {
-      const multiplier = diskUnit === "TB" ? 1024 ** 4 : 1024 ** 3;
-      const totalStorageBytes = diskSpaceTB * multiplier;
-      const totalSeconds = totalStorageBytes / bytesPerSecond;
-      const totalDays = (totalSeconds / 3600 / recordHours).toFixed(1);
-      setResult({ days: totalDays });
-
-    } else if (mode === "disk") {
-      const totalSeconds = retentionDays * recordHours * 3600;
-      const totalBytes = bytesPerSecond * totalSeconds;
-      const useTb = totalBytes >= 1024 ** 4;
-      setResult({
-        storage: (totalBytes / (useTb ? 1024 ** 4 : 1024 ** 3)).toFixed(2),
-        unit: useTb ? "TB" : "GB",
-      });
-
-    } else if (mode === "bandwidth") {
-      const totalMbps = (totalBitrateKbps / 1000).toFixed(2);
-      const totalGbps = (totalBitrateKbps / 1000000).toFixed(4);
-      const recommended = (totalMbps * 1.2).toFixed(2);
-      setResult({ mbps: totalMbps, gbps: totalGbps, recommended });
-    }
+  const selectMode = (nextMode) => {
+    setMode(nextMode);
+    setResult(null);
   };
 
+  const calculate = () =>
+    setResult(calculateResults(mode, { channels, diskSpaceTB, diskUnit, recordHours, retentionDays }));
+
   return (
-    <AppLayout
-      className="calc-page"
-      nav={nav}
-      onLogout={onLogout}
-      mainClassName="calc-main"
-    >
+    <AppLayout className="calc-page" nav={nav} onLogout={onLogout} mainClassName="calc-main">
       <h1>Storage Calculator</h1>
 
       {projectId && projectName && (
-        <p style={{ color: '#245d91', fontWeight: 'bold' }}>Project: {projectName}</p>
+        <p style={{ color: "#245d91", fontWeight: "bold" }}>Project: {projectName}</p>
       )}
 
       {loading && <p>Loading project devices...</p>}
@@ -231,94 +240,67 @@ function StorageNetworkCalculator({ onLogout }) {
         <h2>Calculate</h2>
         <div className="calc-controls">
           <div className="radio-buttons">
-            <button
-              className={mode === "saving" ? "active-mode" : ""}
-              onClick={() => { setMode("saving"); setResult(null); }}
-            >
-              Calculate Saving Time
-            </button>
-            <button
-              className={mode === "disk" ? "active-mode" : ""}
-              onClick={() => { setMode("disk"); setResult(null); }}
-            >
-              Calculate Disk Space
-            </button>
-            <button
-              className={mode === "bandwidth" ? "active-mode" : ""}
-              onClick={() => { setMode("bandwidth"); setResult(null); }}
-            >
-              Calculate Bandwidth
-            </button>
+            {MODES.map(({ id, label }) => (
+              <button
+                key={id}
+                className={mode === id ? "active-mode" : ""}
+                onClick={() => selectMode(id)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
           <div className="inputs">
             {mode === "saving" && (
-              <>
-                <label>
-                  Disk Space:
-                  <input
-                    type="number"
-                    value={diskSpaceTB}
-                    onChange={(e) => setDiskSpaceTB(e.target.value)}
-                  />
-                  <select value={diskUnit} onChange={(e) => setDiskUnit(e.target.value)}>
-                    <option>TB</option>
-                    <option>GB</option>
-                  </select>
-                </label>
-                <label>
-                  Recording Time per Day:
-                  <input
-                    type="number"
-                    value={recordHours}
-                    onChange={(e) => setRecordHours(e.target.value)}
-                  /> h
-                </label>
-              </>
+              <label>
+                Disk Space:
+                <input
+                  type="number"
+                  value={diskSpaceTB}
+                  onChange={(e) => setDiskSpaceTB(e.target.value)}
+                />
+                <select value={diskUnit} onChange={(e) => setDiskUnit(e.target.value)}>
+                  <option>TB</option>
+                  <option>GB</option>
+                </select>
+              </label>
             )}
 
             {mode === "disk" && (
-              <>
-                <label>
-                  Desired Retention:
-                  <input
-                    type="number"
-                    value={retentionDays}
-                    onChange={(e) => setRetentionDays(e.target.value)}
-                  /> days
-                </label>
-                <label>
-                  Recording Time per Day:
-                  <input
-                    type="number"
-                    value={recordHours}
-                    onChange={(e) => setRecordHours(e.target.value)}
-                  /> h
-                </label>
-              </>
+              <label>
+                Desired Retention:
+                <input
+                  type="number"
+                  value={retentionDays}
+                  onChange={(e) => setRetentionDays(e.target.value)}
+                /> days
+              </label>
+            )}
+
+            {mode !== "bandwidth" && (
+              <label>
+                Recording Time per Day:
+                <input
+                  type="number"
+                  value={recordHours}
+                  onChange={(e) => setRecordHours(e.target.value)}
+                /> h
+              </label>
             )}
           </div>
 
           <button className="calculate-btn" onClick={calculate}>Calculate</button>
         </div>
 
-        {result && mode === "saving" && (
+        {result && (
           <div className="results">
-            <div className="result-box"><h3>{result.days}</h3><p>Days of retention</p></div>
-          </div>
-        )}
-
-        {result && mode === "disk" && (
-          <div className="results">
-            <div className="result-box"><h3>{result.storage} {result.unit}</h3><p>Required Storage</p></div>
-          </div>
-        )}
-
-        {result && mode === "bandwidth" && (
-          <div className="results">
-            <div className="result-box"><h3>{result.mbps} Mbps</h3><p>Total Bandwidth</p></div>
-            <div className="result-box"><h3>{result.gbps} Gbps</h3><p>Total Bandwidth</p></div>
-            <div className="result-box"><h3>{result.recommended} Mbps</h3><p>Recommended Switch Capacity</p></div>
+            {getResultItems(mode, result).map(({ key, value, label }) => (
+              <div key={key} className="result-box">
+                <h3>{value}</h3>
+                <p>{label}</p>
+              </div>
+            ))}
           </div>
         )}
       </section>
