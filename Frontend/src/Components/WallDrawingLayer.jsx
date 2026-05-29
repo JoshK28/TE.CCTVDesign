@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import useDraftLine from '../hooks/useDraftLine';
 import DraftLine from './DraftLine';
 import { getViewBox } from '../utils/overlayUtils';
+import { getDistancePx } from '../utils/scale';
 import {
   closestLinkIdAt,
   parsePixelsPerMeter,
@@ -157,7 +158,7 @@ export default function WallDrawingLayer({ wallGraph, scale, imageSize, onWallGr
 
     const snap = postAt(point);
     const end = snap ?? point;
-    if (!draftStart || Math.hypot(end.x - draftStart.x, end.y - draftStart.y) < MIN_LEN) return;
+    if (!draftStart || getDistancePx(draftStart, end) < MIN_LEN) return;
 
     const nextId = snap?.id ?? newId();
     onWallGraphChange?.((g) => ({

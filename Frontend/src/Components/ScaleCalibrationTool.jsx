@@ -5,7 +5,7 @@ import { InputNumber } from 'primereact/inputnumber';
 import { Button } from 'primereact/button';
 
 import useDraftLine from '../hooks/useDraftLine';
-import { getDistancePx } from '../utils/scale';
+import { getDistancePx, ppmFromDistance } from '../utils/scale';
 import DraftLine from './DraftLine';
 
 import '../page_styling/designPage.css';
@@ -105,8 +105,9 @@ function ScaleCalibrationModal({ visible, pixelDistance, onApply, onCancel }) {
     const [meters, setMeters] = useState(null);
 
     const handleApply = () => {
-        if (!meters || meters <= 0) return;
-        onApply(pixelDistance / meters);
+        const ppm = ppmFromDistance(pixelDistance, meters);
+        if (ppm == null) return;
+        onApply(ppm);
     };
 
     return (

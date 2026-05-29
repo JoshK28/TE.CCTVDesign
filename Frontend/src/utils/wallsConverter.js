@@ -8,15 +8,7 @@
 
 export const empty_Walls = { posts: [], links: [] };
 
-// Parse a "1:N" scale string into pixels-per-metre. Returns null if the
-// string is missing or malformed.
-export const parsePixelsPerMeter = (scaleText) => {
-  if (typeof scaleText !== 'string') return null;
-  const match = scaleText.trim().match(/^1\s*:\s*([\d.]+)$/);
-  if (!match) return null;
-  const value = Number.parseFloat(match[1]);
-  return Number.isFinite(value) && value > 0 ? value : null;
-};
+export { ppmFromScaleString as parsePixelsPerMeter } from './scale';
 
 // Format a segment's length as a metre value for on-canvas labels. Returns
 // null when no pixels-per-metre scale is configured.

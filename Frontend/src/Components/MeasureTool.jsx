@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components -- co-located hook + overlay */
 import { useCallback, useState } from 'react';
 import useDraftLine from '../hooks/useDraftLine';
+import { metersFromPoints } from '../utils/scale';
 import DraftLine from './DraftLine';
 
 export function useMeasure({ active, imageSize, onDeactivate }) {
@@ -56,21 +57,16 @@ export function useMeasure({ active, imageSize, onDeactivate }) {
     };
 }
 
-const formatDistanceMeters = (from, to, ppm) => {
-    if (!ppm || ppm <= 0) return null;
-    return (Math.hypot(to.x - from.x, to.y - from.y) / ppm).toFixed(2);
-};
-
 function MeasureDistanceLabel({ from, to, ppm }) {
     const midX = (from.x + to.x) / 2;
     const midY = (from.y + to.y) / 2;
-    const distMeters = formatDistanceMeters(from, to, ppm);
+    const meters = metersFromPoints(from, to, ppm);
 
     return (
         <>
             <rect x={midX - 30} y={midY - 14} width="60" height="28" className="measure-label-bg" />
             <text x={midX} y={midY} className="measure-label-text">
-                {distMeters != null ? `${distMeters} m` : 'N/A'}
+                {meters != null ? `${meters.toFixed(2)} m` : 'N/A'}
             </text>
         </>
     );

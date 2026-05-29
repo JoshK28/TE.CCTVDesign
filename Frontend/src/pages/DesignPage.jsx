@@ -24,6 +24,7 @@ import api from '../services/api';
 import { getSaveErrorMessage, saveDesign } from '../utils/designSave';
 import { calculateFovPolygon } from '../utils/fov';
 import { getImagePoint } from '../utils/points';
+import { getViewBox } from '../utils/overlayUtils';
 import { ppmFromScaleString } from '../utils/scale';
 import { empty_Walls, segmentsToWallGraph, wallToSegments } from '../utils/wallsConverter';
 import useUndoRedo from '../hooks/useUndoRedo';
@@ -503,9 +504,7 @@ function Workspace({
     const showWalls = showFov;
     const branding = exportOptions?.brandingActive && exportOptions?.brandingData;
 
-    const overlayViewBox = imageSize
-        ? `0 0 ${imageSize.naturalWidth} ${imageSize.naturalHeight}`
-        : undefined;
+    const overlayViewBox = getViewBox(imageSize);
 
     // RENDER
     return (

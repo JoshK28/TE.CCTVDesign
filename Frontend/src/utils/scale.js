@@ -6,6 +6,10 @@
 export const getDistancePx = (start, end) =>
     start && end ? Math.hypot(end.x - start.x, end.y - start.y) : 0;
 
+// Real-world distance in metres between two points at the given pixels-per-metre.
+export const metersFromPoints = (start, end, ppm) =>
+    ppm > 0 && start && end ? getDistancePx(start, end) / ppm : null;
+
 // Pixels-per-metre from a measured pixel distance and its real-world length.
 export const ppmFromDistance = (pixelDistance, meters) =>
     meters > 0 ? pixelDistance / meters : null;
@@ -16,7 +20,9 @@ export const scaleStringFromPpm = (ppm) =>
 
 // Parse a "1:N" scale string back into pixels-per-metre (N).
 export const ppmFromScaleString = (scaleString) => {
-    if (!scaleString || !scaleString.includes(':')) return null;
-    const ppm = parseFloat(scaleString.split(':')[1]);
-    return Number.isFinite(ppm) ? ppm : null;
+    if (typeof scaleString !== 'string') return null;
+    const match = scaleString.trim().match(/^1\s*:\s*([\d.]+)$/);
+    if (!match) return null;
+    const ppm = Number.parseFloat(match[1]);
+    return Number.isFinite(ppm) && ppm > 0 ? ppm : null;
 };

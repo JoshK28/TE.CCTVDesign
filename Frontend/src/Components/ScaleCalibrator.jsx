@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import ScaleCalibrationTool, { useScaleCalibration } from "./ScaleCalibrationTool";
+import { getViewBox } from "../utils/overlayUtils";
 import { scaleStringFromPpm } from "../utils/scale";
 
 /*
@@ -27,9 +28,7 @@ function ScaleCalibrator({ layer, scale, onScaleChange }) {
         setImageSize({ naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight });
     };
 
-    const viewBox = imageSize
-        ? `0 0 ${imageSize.naturalWidth} ${imageSize.naturalHeight}`
-        : undefined;
+    const viewBox = getViewBox(imageSize);
 
     // Keep handles a consistent on-screen size despite the natural-pixel viewBox.
     const handleRadius = imageSize
