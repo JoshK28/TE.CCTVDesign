@@ -138,6 +138,11 @@ function Workspace({
         imageSize,
         onDeactivate: () => setActiveTool(null),
     });
+    const {
+        handleEscape: handleMeasureEscape,
+        handleEnter: handleMeasureEnter,
+    } = measure;
+    const { handleEscape: handleScaleCalibrationEscape } = scaleCalibration;
 
     // UNDO / REDO
     const applyHistorySnapshot = useCallback(({ equipment: eq, wallGraphs: wg }) => {
@@ -293,13 +298,13 @@ function Workspace({
     useEffect(() => {
         const handleKeyDown = (event) => {
             if (activeTool === 'measure') {
-                if (event.key === 'Escape' && measure.handleEscape()) return;
-                if (event.key === 'Enter' && measure.handleEnter()) return;
+                if (event.key === 'Escape' && handleMeasureEscape()) return;
+                if (event.key === 'Enter' && handleMeasureEnter()) return;
                 return;
             }
 
             if (activeTool === 'scale calibration') {
-                if (event.key === 'Escape' && scaleCalibration.handleEscape()) return;
+                if (event.key === 'Escape' && handleScaleCalibrationEscape()) return;
                 return;
             }
 
@@ -318,9 +323,9 @@ function Workspace({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [
         activeTool,
-        measure.handleEscape,
-        measure.handleEnter,
-        scaleCalibration.handleEscape,
+        handleMeasureEscape,
+        handleMeasureEnter,
+        handleScaleCalibrationEscape,
     ]);
 
     // UPDATE PLACEMENT (with history)

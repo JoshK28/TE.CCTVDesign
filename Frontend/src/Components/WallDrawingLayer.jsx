@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getImagePoint } from '../utils/points';
+import useDraftLine from '../hooks/useDraftLine';
+import DraftLine from './DraftLine';
 import { getViewBox } from '../utils/overlayUtils';
 import {
   closestLinkIdAt,
@@ -63,20 +64,28 @@ All changes flow back through onWallGraphChange so the parent owns the wall
 graph and can route the change through its undo/redo stack.
 */
 export default function WallDrawingLayer({ wallGraph, scale, imageSize, onWallGraphChange, onExitWallMode }) {
-  const [draft, setDraft] = useState(null);
+  const [draftStartPostId, setDraftStartPostId] = useState(null);
   const [dragPostId, setDragPostId] = useState(null);
   const [selectedLinkId, setSelectedLinkId] = useState(null);
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [mode, setMode] = useState('draw');
+  const {
+    start: draftStart,
+    preview,
+    getPoint,
+    beginAt,
+    reset: resetDraftLine,
+    handlePointerMove: handleDraftPointerMove,
+  } = useDraftLine({ active: mode === 'draw', imageSize });
   const posts = wallGraph?.posts ?? [];
   const pixelsPerMeter = parsePixelsPerMeter(scale);
-  const byId = new Map(posts.map((p) => [p.id, p]));
   const postAt = (pt) => posts.find((p) => Math.hypot(p.x - pt.x, p.y - pt.y) <= HIT_R) ?? null;
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (mode === 'draw' && (e.key === 'Enter' || e.key === 'Escape')) {
-        setDraft(null);
+        setDraftStartPostId(null);
+        resetDraftLine();
         setMode('edit');
         return;
       }
@@ -94,15 +103,14 @@ export default function WallDrawingLayer({ wallGraph, scale, imageSize, onWallGr
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mode, onExitWallMode, onWallGraphChange, selectedLinkId, selectedPostId]);
+  }, [mode, onExitWallMode, onWallGraphChange, resetDraftLine, selectedLinkId, selectedPostId]);
 
-  const chainStart = draft && byId.get(draft.startPostId);
   const endDrag = () => setDragPostId(null);
 
   // In edit mode, start dragging a post if the pointer landed on one.
   const handlePointerDown = (e) => {
     if (mode !== 'edit') return;
-    const post = postAt(getImagePoint(e, e.currentTarget, imageSize));
+    const post = postAt(getPoint(e));
     if (!post) return;
     e.preventDefault();
     e.stopPropagation();
@@ -111,9 +119,8 @@ export default function WallDrawingLayer({ wallGraph, scale, imageSize, onWallGr
 
   // Drive the live preview while drawing, or move a dragged post while editing.
   const handlePointerMove = (e) => {
-    const point = getImagePoint(e, e.currentTarget, imageSize);
-
     if (mode === 'edit' && dragPostId) {
+      const point = getPoint(e);
       onWallGraphChange?.((g) => ({
         ...g,
         posts: (g.posts ?? []).map((p) => (p.id === dragPostId ? { ...p, x: point.x, y: point.y } : p)),
@@ -121,7 +128,7 @@ export default function WallDrawingLayer({ wallGraph, scale, imageSize, onWallGr
       return;
     }
 
-    if (mode === 'draw' && draft) setDraft((d) => ({ ...d, previewPoint: point }));
+    if (mode === 'draw' && draftStartPostId) handleDraftPointerMove(e);
   };
 
   // In edit mode: select the post under the click, or otherwise the closest
@@ -131,7 +138,7 @@ export default function WallDrawingLayer({ wallGraph, scale, imageSize, onWallGr
     e.preventDefault();
     e.stopPropagation();
 
-    const point = getImagePoint(e, e.currentTarget, imageSize);
+    const point = getPoint(e);
     if (mode === 'edit') {
       const post = postAt(point);
       setSelectedPostId(post?.id ?? null);
@@ -140,25 +147,26 @@ export default function WallDrawingLayer({ wallGraph, scale, imageSize, onWallGr
     }
 
     if (mode !== 'draw') return;
-    if (!draft) {
+    if (!draftStartPostId) {
       const id = newId();
       onWallGraphChange?.((g) => ({ ...g, posts: [...(g.posts ?? []), { id, x: point.x, y: point.y }] }));
-      setDraft({ startPostId: id, previewPoint: point });
+      setDraftStartPostId(id);
+      beginAt(point, point);
       return;
     }
 
-    const start = byId.get(draft.startPostId);
     const snap = postAt(point);
     const end = snap ?? point;
-    if (!start || Math.hypot(end.x - start.x, end.y - start.y) < MIN_LEN) return;
+    if (!draftStart || Math.hypot(end.x - draftStart.x, end.y - draftStart.y) < MIN_LEN) return;
 
     const nextId = snap?.id ?? newId();
     onWallGraphChange?.((g) => ({
       ...g,
       posts: snap ? g.posts ?? [] : [...(g.posts ?? []), { id: nextId, x: end.x, y: end.y }],
-      links: [...(g.links ?? []), { id: newLinkId(), aPostId: draft.startPostId, bPostId: nextId }],
+      links: [...(g.links ?? []), { id: newLinkId(), aPostId: draftStartPostId, bPostId: nextId }],
     }));
-    setDraft({ startPostId: nextId, previewPoint: end });
+    setDraftStartPostId(nextId);
+    beginAt(end, end);
   };
 
   return (
@@ -172,17 +180,13 @@ export default function WallDrawingLayer({ wallGraph, scale, imageSize, onWallGr
               className={p.id === selectedPostId ? 'wall-post-handle wall-post-handle--selected' : 'wall-post-handle'}
             />
           ))}
-        {mode === 'draw' && chainStart && draft?.previewPoint && (
-          <g>
-            <line
-              x1={chainStart.x} y1={chainStart.y} x2={draft.previewPoint.x} y2={draft.previewPoint.y}
-              className="wall-line wall-line--draft"
-            />
+        {mode === 'draw' && draftStart && preview && (
+          <DraftLine from={draftStart} to={preview} lineClassName="wall-line wall-line--draft">
             <WallLengthLabel
-              x1={chainStart.x} y1={chainStart.y} x2={draft.previewPoint.x} y2={draft.previewPoint.y} pixelsPerMeter={pixelsPerMeter}
+              x1={draftStart.x} y1={draftStart.y} x2={preview.x} y2={preview.y} pixelsPerMeter={pixelsPerMeter}
               className="wall-length-label wall-length-label--draft"
             />
-          </g>
+          </DraftLine>
         )}
       </svg>
       <p className="draw-mode-hint" role="status">

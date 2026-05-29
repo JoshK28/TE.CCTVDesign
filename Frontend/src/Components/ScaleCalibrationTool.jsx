@@ -1,81 +1,45 @@
-import { useState, useCallback, useEffect } from 'react';
+/* eslint-disable react-refresh/only-export-components -- co-located hook + overlay */
+import { useCallback, useEffect, useState } from 'react';
 import { Dialog } from 'primereact/dialog';
 import { InputNumber } from 'primereact/inputnumber';
 import { Button } from 'primereact/button';
 
-import { getImagePoint } from '../utils/points';
+import useDraftLine from '../hooks/useDraftLine';
 import { getDistancePx } from '../utils/scale';
+import DraftLine from './DraftLine';
 
 import '../page_styling/designPage.css';
 
-const INITIAL_CALIBRATION = {
-    start: null,
-    end: null,
-    cursor: null,
-};
-
-/*
-Scale calibration for the design workspace: two-click line measurement on the
-floor plan, SVG overlay, modal for real-world distance, and ESC to clear/exit.
-*/
 export function useScaleCalibration({ active, imageSize, onApply, onDeactivate }) {
-    const [calibration, setCalibration] = useState(INITIAL_CALIBRATION);
-    const { start, end, cursor } = calibration;
+    const {
+        start,
+        end,
+        preview,
+        cursor,
+        hasDraft,
+        reset,
+        handleClick,
+        handlePointerMove,
+    } = useDraftLine({ active, imageSize });
 
     const showModal = Boolean(start && end);
     const distancePx = getDistancePx(start, end);
-
-    const reset = useCallback(() => {
-        setCalibration(INITIAL_CALIBRATION);
-    }, []);
 
     useEffect(() => {
         if (!active) reset();
     }, [active, reset]);
 
-    const handleClick = useCallback(
-        (event) => {
-            if (!active || !imageSize) return false;
-
-            const { x, y } = getImagePoint(event, event.currentTarget, imageSize);
-
-            if (!start) {
-                setCalibration({ start: { x, y }, end: null, cursor: null });
-                return true;
-            }
-
-            if (!end) {
-                setCalibration((prev) => ({ ...prev, end: { x, y }, cursor: null }));
-                return true;
-            }
-
-            return true;
-        },
-        [active, imageSize, start, end]
-    );
-
-    const handlePointerMove = useCallback(
-        (event) => {
-            if (!active || !imageSize) return;
-            setCalibration((prev) => {
-                if (prev.end) return prev.cursor ? { ...prev, cursor: null } : prev;
-                return { ...prev, cursor: getImagePoint(event, event.currentTarget, imageSize) };
-            });
-        },
-        [active, imageSize]
-    );
-
     const handleEscape = useCallback(() => {
         if (!active) return false;
 
-        if (start || end || cursor) {
+        if (hasDraft) {
             reset();
             return true;
         }
 
         onDeactivate?.();
         return true;
-    }, [active, start, end, cursor, reset, onDeactivate]);
+    }, [active, hasDraft, reset, onDeactivate]);
 
     const applyCalibration = useCallback(
         (newPPM) => {
@@ -94,6 +58,7 @@ export function useScaleCalibration({ active, imageSize, onApply, onDeactivate }
     return {
         start,
         end,
+        preview,
         cursor,
         showModal,
         distancePx,
@@ -107,55 +72,33 @@ export function useScaleCalibration({ active, imageSize, onApply, onDeactivate }
     };
 }
 
-export function ScaleCalibrationOverlay({ viewBox, start, end, cursor, handleRadius = 8 }) {
+export function ScaleCalibrationOverlay({ viewBox, start, end, preview, cursor, handleRadius = 8 }) {
     if (!viewBox) return null;
 
-    const lineEnd = end || (start && cursor);
+    const lineEnd = end || preview || (start && cursor);
+
+    let from = null;
+    let to = null;
+    let handles = [];
 
     if (!start && !end && cursor) {
-        return (
-            <svg className="scale-overlay" viewBox={viewBox} preserveAspectRatio="none">
-                <circle
-                    cx={cursor.x}
-                    cy={cursor.y}
-                    r={handleRadius}
-                    className="scale-handle"
-                    vectorEffect="non-scaling-stroke"
-                />
-            </svg>
-        );
+        handles = [{ point: cursor, className: 'scale-handle', radius: handleRadius }];
+    } else if (start && lineEnd) {
+        from = start;
+        to = lineEnd;
+        handles = [
+            { point: start, className: 'scale-handle', radius: handleRadius },
+            { point: lineEnd, className: 'scale-handle', radius: handleRadius },
+        ];
+    } else {
+        return null;
     }
 
-    if (start && lineEnd) {
-        return (
-            <svg className="scale-overlay" viewBox={viewBox} preserveAspectRatio="none">
-                <line
-                    x1={start.x}
-                    y1={start.y}
-                    x2={lineEnd.x}
-                    y2={lineEnd.y}
-                    className="scale-line"
-                    vectorEffect="non-scaling-stroke"
-                />
-                <circle
-                    cx={start.x}
-                    cy={start.y}
-                    r={handleRadius}
-                    className="scale-handle"
-                    vectorEffect="non-scaling-stroke"
-                />
-                <circle
-                    cx={lineEnd.x}
-                    cy={lineEnd.y}
-                    r={handleRadius}
-                    className="scale-handle"
-                    vectorEffect="non-scaling-stroke"
-                />
-            </svg>
-        );
-    }
-
-    return null;
+    return (
+        <svg className="scale-overlay" viewBox={viewBox} preserveAspectRatio="none">
+            <DraftLine from={from} to={to} lineClassName="scale-line" handles={handles} vectorEffect />
+        </svg>
+    );
 }
 
 function ScaleCalibrationModal({ visible, pixelDistance, onApply, onCancel }) {
@@ -217,7 +160,7 @@ function ScaleCalibrationModal({ visible, pixelDistance, onApply, onCancel }) {
 }
 
 export default function ScaleCalibrationTool({ calibration, viewBox, handleRadius }) {
-    const { start, end, cursor, showModal, distancePx, applyCalibration, cancelCalibration } =
+    const { start, end, preview, cursor, showModal, distancePx, applyCalibration, cancelCalibration } =
         calibration;
 
     return (
@@ -226,6 +169,7 @@ export default function ScaleCalibrationTool({ calibration, viewBox, handleRadiu
                 viewBox={viewBox}
                 start={start}
                 end={end}
+                preview={preview}
                 cursor={cursor}
                 handleRadius={handleRadius}
             />
