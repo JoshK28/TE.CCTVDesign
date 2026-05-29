@@ -12,28 +12,54 @@ namespace Backend.Controllers
     {
         // GET api/camerplacements/{floorId}
         [HttpGet("{floorId}")]
-        public async Task<IActionResult> GetPlacements(int floorId) =>
-            Ok(await context.CameraPlacemens.Where(c => c.FloorID == floorId).ToListAsync());
-
-        public CameraPlacementController(AppDbContext context)
+        public async Task<IActionResult> GetPlacements(int floorId)
         {
-            _context = context;
+            var placements = await context.CameraPlacemens
+                .Where(c => c.FloorID == floorId)
+                .Select(c => new CameraPlacementDto
+                {
+                    FloorID = c.FloorID,
+                    CameraId = c.CameraId,
+                    NetworkingId = c.NetworkingId,
+                    AccessControlId = c.AccessControlId,
+
+                    X = c.X,
+                    Y = c.Y,
+                    Rotation = c.Rotation,
+                    Type = c.Type,
+
+                    CameraModel = c.CameraModel,
+                    Brand = c.Brand,
+                    Resolution = c.Resolution,
+                    ModelName = c.ModelName,
+                    Subtype = c.Subtype,
+                    CostPerUnit = c.CostPerUnit,
+                    SettingsJson = c.SettingsJson,
+
+                    FocalLength = c.FocalLength,
+                    SensorType = c.SensorType,
+                    CorridorMode = c.CorridorMode,
+                    IrRange = c.IrRange
+                })
+                .ToListAsync();
+
+            return Ok(placements);
         }
 
-        // saves all camera placements for a floor layout
+        // POST api/camerplacements/save/{floorId} — replaces all placements for a floor
         [HttpPost("save/{floorId}")]
         public async Task<IActionResult> SavePlacements(int floorId, List<CameraPlacementDto> placements)
         {
-            var floor = await _context.FloorLayouts.FindAsync(floorId);
-            if (floor == null)
+            if (await context.FloorLayouts.FindAsync(floorId) == null)
                 return NotFound("Floor layout not found");
 
-            var existing = _context.CameraPlacemens.Where(c => c.FloorID == floorId);
-            _context.CameraPlacemens.RemoveRange(existing);
+            context.CameraPlacemens.RemoveRange(
+                context.CameraPlacemens.Where(c => c.FloorID == floorId)
+            );
 
             foreach (var placement in placements)
             {
-                _context.CameraPlacemens.Add(new CameraPlacement
+                context.CameraPlacemens.Add(new CameraPlacement
                 {
                     FloorID = floorId,
                     CameraId = placement.CameraId == 0 ? null : placement.CameraId,
@@ -59,44 +85,9 @@ namespace Backend.Controllers
                 });
             }
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return Ok("Placements saved successfully");
         }
-
-
-                // gets all camera placements for a floor layout
-                [HttpGet("{floorId}")]
-                public async Task<IActionResult> GetPlacements(int floorId)
-                {
-                    var placements = await _context.CameraPlacemens
-                        .Where(c => c.FloorID == floorId)
-                        .Select(c => new CameraPlacementDto
-                        {
-                            FloorID = c.FloorID,
-                            CameraId = c.CameraId,
-                            NetworkingId = c.NetworkingId,
-                            AccessControlId = c.AccessControlId,
-
-                            X = c.X,
-                            Y = c.Y,
-                            Rotation = c.Rotation,
-                            Type = c.Type,
-
-                            CameraModel = c.CameraModel,
-                            Brand = c.Brand,
-                            Resolution = c.Resolution,
-
-                            // --- NEW FOV FIELDS ---
-                            FocalLength = c.FocalLength,
-                            SensorType = c.SensorType,
-                            CorridorMode = c.CorridorMode,
-                            IrRange = c.IrRange
-                        })
-                        .ToListAsync();
-
-                    return Ok(placements);
-                }
-
 
         // get all placements for a project across all floors with device details
         [HttpGet("project/{projectId}")]
@@ -232,35 +223,6 @@ namespace Backend.Controllers
                 .ToList();
 
             return Ok(new { upsDevices, storageChannels });
-        }
-
-        // POST api/camerplacements/save/{floorId} — replaces all placements for a floor
-        [HttpPost("save/{floorId}")]
-        public async Task<IActionResult> SavePlacements(int floorId, List<CameraPlacementDto> placements)
-        {
-            if (await context.FloorLayouts.FindAsync(floorId) == null)
-                return NotFound("Floor layout not found");
-
-            context.CameraPlacemens.RemoveRange(
-                context.CameraPlacemens.Where(c => c.FloorID == floorId)
-            );
-
-            context.CameraPlacemens.AddRange(placements.Select(p => new CameraPlacement
-            {
-                FloorID = floorId,
-                CameraId = p.CameraId == 0 ? null : p.CameraId,
-                NetworkingId = p.NetworkingId == 0 ? null : p.NetworkingId,
-                AccessControlId = p.AccessControlId == 0 ? null : p.AccessControlId,
-                X = p.X, Y = p.Y,
-                Rotation = p.Rotation,
-                Type = p.Type,
-                CameraModel = p.CameraModel,
-                Brand = p.Brand,
-                Resolution = p.Resolution
-            }));
-
-            await context.SaveChangesAsync();
-            return Ok("Placements saved successfully");
         }
     }
 }
