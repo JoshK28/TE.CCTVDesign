@@ -1,3 +1,6 @@
+// FOR JOSH- was going to be used for when a user adds devices just for networking device but if you're going to do your own can delete not neccessary
+
+
 using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models

@@ -1,3 +1,6 @@
+// FOR JOSH- was going to be used for when a user adds devices just for access control, networking or customer camera but if you're going to do your own can delete not neccessary
+
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend.Data;

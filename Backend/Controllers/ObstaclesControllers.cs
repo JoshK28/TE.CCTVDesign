@@ -9,141 +9,91 @@ namespace Backend.Controllers
     [ApiController]
     [Route("api/obstacles")]
     [Authorize]
-    public class ObstacleController : ControllerBase
+    public class ObstacleController(AppDbContext context) : ControllerBase
     {
-        private readonly AppDbContext _context;
-
-        public ObstacleController(AppDbContext context)
-        {
-            _context = context;
-        }
-
-        // GET /api/obstacles/floor/{floorId}
-        // returns all obstacles for a given floor layout
+        // GET api/obstacles/floor/{floorId}
         [HttpGet("floor/{floorId}")]
-        public async Task<IActionResult> GetByFloor(int floorId)
-        {
-            var obstacles = await _context.Obstacles
+        public async Task<IActionResult> GetByFloor(int floorId) =>
+            Ok(await context.Obstacles
                 .Where(o => o.FloorID == floorId)
                 .Select(o => new
                 {
-                    o.ObstacleId,
-                    o.FloorID,
-                    o.Label,
-                    o.X,
-                    o.Y,
-                    o.Width,
-                    o.Height,
-                    o.Rotation,
-                    o.Color
+                    o.ObstacleId, o.FloorID, o.Label,
+                    o.X, o.Y, o.Width, o.Height, o.Rotation, o.Color
                 })
-                .ToListAsync();
+                .ToListAsync());
 
-            return Ok(obstacles);
-        }
-
-        // POST /api/obstacles
-        // saves a new obstacle to a floor layout
+        // POST api/obstacles
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] Obstacle dto)
         {
             var obstacle = new Obstacle
             {
-                FloorID = dto.FloorID,
-                Label = dto.Label,
-                X = dto.X,
-                Y = dto.Y,
-                Width = dto.Width,
-                Height = dto.Height,
-                Rotation = dto.Rotation,
-                Color = dto.Color
+                FloorID = dto.FloorID, Label = dto.Label,
+                X = dto.X, Y = dto.Y, Width = dto.Width,
+                Height = dto.Height, Rotation = dto.Rotation, Color = dto.Color
             };
 
-            _context.Obstacles.Add(obstacle);
-            await _context.SaveChangesAsync();
-
+            context.Obstacles.Add(obstacle);
+            await context.SaveChangesAsync();
             return Ok(new { obstacle.ObstacleId, obstacle.Label, obstacle.FloorID });
         }
 
-        // PUT /api/obstacles/{id}
-        // updates an existing obstacle (e.g. after moving or resizing on canvas)
+        // PUT api/obstacles/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] Obstacle dto)
         {
-            var obstacle = await _context.Obstacles.FindAsync(id);
-            if (obstacle == null)
-                return NotFound("Obstacle not found");
+            var obstacle = await context.Obstacles.FindAsync(id);
+            if (obstacle == null) return NotFound("Obstacle not found");
 
-            obstacle.Label = dto.Label;
-            obstacle.X = dto.X;
-            obstacle.Y = dto.Y;
-            obstacle.Width = dto.Width;
-            obstacle.Height = dto.Height;
-            obstacle.Rotation = dto.Rotation;
-            obstacle.Color = dto.Color;
+            (obstacle.Label, obstacle.X, obstacle.Y, obstacle.Width,
+             obstacle.Height, obstacle.Rotation, obstacle.Color) =
+                (dto.Label, dto.X, dto.Y, dto.Width,
+                 dto.Height, dto.Rotation, dto.Color);
 
-            await _context.SaveChangesAsync();
-
+            await context.SaveChangesAsync();
             return Ok(new { obstacle.ObstacleId, obstacle.Label, obstacle.FloorID });
         }
 
-        // DELETE /api/obstacles/{id}
-        // removes an obstacle from a floor layout
+        // DELETE api/obstacles/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var obstacle = await _context.Obstacles.FindAsync(id);
-            if (obstacle == null)
-                return NotFound("Obstacle not found");
+            var obstacle = await context.Obstacles.FindAsync(id);
+            if (obstacle == null) return NotFound("Obstacle not found");
 
-            _context.Obstacles.Remove(obstacle);
-            await _context.SaveChangesAsync();
-
+            context.Obstacles.Remove(obstacle);
+            await context.SaveChangesAsync();
             return Ok("Obstacle deleted");
         }
 
-        // DELETE /api/obstacles/floor/{floorId}
-        // removes all obstacles for a floor - useful when deleting a floor layout
+        // DELETE api/obstacles/floor/{floorId} — removes all obstacles for a floor
         [HttpDelete("floor/{floorId}")]
         public async Task<IActionResult> DeleteAllForFloor(int floorId)
         {
-            var obstacles = await _context.Obstacles
-                .Where(o => o.FloorID == floorId)
-                .ToListAsync();
-
-            _context.Obstacles.RemoveRange(obstacles);
-            await _context.SaveChangesAsync();
-
+            var obstacles = await context.Obstacles.Where(o => o.FloorID == floorId).ToListAsync();
+            context.Obstacles.RemoveRange(obstacles);
+            await context.SaveChangesAsync();
             return Ok($"{obstacles.Count} obstacles deleted");
         }
 
-        // POST /api/obstacles/save/{floorId}
-        // replaces all obstacles for a floor - matches the same pattern as walls
+        // POST api/obstacles/save/{floorId} — replaces all obstacles for a floor
         [HttpPost("save/{floorId}")]
         public async Task<IActionResult> SaveAll(int floorId, [FromBody] List<Obstacle> obstacles)
         {
-            // delete existing obstacles for this floor
-            var existing = await _context.Obstacles
-                .Where(o => o.FloorID == floorId)
-                .ToListAsync();
-            _context.Obstacles.RemoveRange(existing);
+            context.Obstacles.RemoveRange(
+                await context.Obstacles.Where(o => o.FloorID == floorId).ToListAsync()
+            );
 
-            // save the new ones
             var newObstacles = obstacles.Select(o => new Obstacle
             {
-                FloorID = floorId,
-                Label = o.Label,
-                X = o.X,
-                Y = o.Y,
-                Width = o.Width,
-                Height = o.Height,
-                Rotation = o.Rotation,
-                Color = o.Color,
+                FloorID = floorId, Label = o.Label,
+                X = o.X, Y = o.Y, Width = o.Width,
+                Height = o.Height, Rotation = o.Rotation, Color = o.Color
             }).ToList();
 
-            _context.Obstacles.AddRange(newObstacles);
-            await _context.SaveChangesAsync();
-
+            context.Obstacles.AddRange(newObstacles);
+            await context.SaveChangesAsync();
             return Ok(new { saved = newObstacles.Count });
         }
     }

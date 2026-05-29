@@ -6,6 +6,8 @@ using Backend.Models;
 using System.Security.Claims;
 using Backend.DTOs;
 
+// FOR JOSH- was going to be used for when a user chagnes camera spec can delete not neccessary
+
 namespace Backend.Controllers
 {
     [ApiController]

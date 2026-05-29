@@ -10,6 +10,7 @@ namespace Backend.Models
         public int? CameraId { get; set; }
         public int? NetworkingId { get; set; }
         public int? AccessControlId { get; set; }
+
         public double X { get; set; }
         public double Y { get; set; }
         public double Rotation { get; set; } = 0;
@@ -31,12 +32,20 @@ namespace Backend.Models
         // notes, custom icon, device specifications, etc. Anything the design UI
         // can mutate per-placement that does not have its own column lives here.
         public string? SettingsJson { get; set; }
+        // --- NEW FOV FIELDS (2D only) ---
+        public double FocalLength { get; set; } = 2.8;     // mm
+        public string SensorType { get; set; } = "1/2.8";  // e.g. "1/2.8"
+        public bool CorridorMode { get; set; } = false;
+        public double IrRange { get; set; } = 30;          // metres
 
         public FloorLayout? FloorLayout { get; set; }
         public Camera? Camera { get; set; }
+
+        // FOR JOSH- was going to be used for when a user adds devices just for access control, networking or customer camera but if you're going to do your own can delete not neccessary
         public NetworkingDevice? NetworkingDevice { get; set; }
         public AccessControlDevice? AccessControlDevice { get; set; }
         public int? CustomCameraId { get; set; }
         public CustomCamera? CustomCamera { get; set; }
     }
 }
+        
