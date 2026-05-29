@@ -1063,17 +1063,20 @@ function DesignPage() {
     <div className="design-page-container">
       <div className="design-topbar">
         <button onClick={handleBackButton} className="design-back-btn">&larr; Back to Projects</button>
-        <button onClick={handleBomButton} className="design-nav-btn">📦 BOM</button>
         <button onClick={() => navigate('/app/calculator', { state: { projectId } })} className="design-nav-btn">💾 Storage Calculator</button>
         <button onClick={() => navigate('/app/ups', { state: { projectId } })} className="design-nav-btn">🔋 UPS Calculator</button>
 
-                <button
-                    onClick={() => setExportModalOpen(true)}
-                    className="design-export-btn"
-                >
-                    <span>📤</span> Export Plan Layout
-                </button>
-            </div>
+        <div className="design-topbar-actions">
+          <button type="button" onClick={handleBomButton} className="design-nav-btn">📦 BOM</button>
+          <button
+            type="button"
+            onClick={() => setExportModalOpen(true)}
+            className="design-export-btn"
+          >
+            <span>📤</span> Export Plan Layout
+          </button>
+        </div>
+      </div>
 
             <Workspace
                 imageSrc={currentImageSrc}

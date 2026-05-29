@@ -44,6 +44,13 @@
   font-weight: 500;
 }
 
+.design-topbar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .design-export-btn {
   padding: 8px 20px;
   background-color: #245d91;
@@ -53,7 +60,6 @@
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
-  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 6px;
