@@ -8,13 +8,27 @@
 
 const DEFAULT_SENSOR_WIDTH = 6.4;
 const DEFAULT_MAX_DISTANCE = 300;
+const DEFAULT_MAX_DISTANCE_METERS = 60;      // fallback if no IR range on item
 const DEFAULT_RAY_COUNT = 48;
 const DEFAULT_FOCAL_LENGTH = 2.8;
+const DEFAULT_SENSOR_TYPE = '1/2.8';
 const RAY_EPSILON = 1e-6;
 
 // Solve the parametric intersection between a ray (origin + t·direction)
 // and a wall segment, returning the hit point and ray distance, or null if
 // the ray misses or hits past maxDistance.
+// Industry-standard active sensor sizes (mm)
+const SENSOR_PRESETS = {
+  '1/3':   { width: 4.8, height: 3.6 },
+  '1/2.8': { width: 5.4, height: 3.1 },
+  '1/2.7': { width: 5.0, height: 2.8 },
+  '1/2':   { width: 6.4, height: 4.8 },
+  '2/3':   { width: 8.8, height: 6.6 },
+  '1':     { width: 12.8, height: 9.6 },
+};
+
+// ---------- Ray / wall intersection ----------
+
 const getRayWallIntersection = (origin, direction, maxDistance, wall) => {
   const sx = wall.x2 - wall.x1;
   const sy = wall.y2 - wall.y1;
@@ -72,17 +86,58 @@ const obstacleToWalls = (obstacle) => {
 // is clipped against the supplied walls and obstacle edges.
 export const calculateFovPolygon = (item, walls, options = {}, obstacles = []) => {
   const {
-    sensorWidth = DEFAULT_SENSOR_WIDTH,
-    maxDistance = DEFAULT_MAX_DISTANCE,
+    ppm = null,
     rayCount = DEFAULT_RAY_COUNT,
-    defaultFocalLength = DEFAULT_FOCAL_LENGTH,
+    focalLength: optFocalLength,
+    sensorType: optSensorType,
+    corridorMode: optCorridorMode,
+    maxDistanceMeters: optMaxDistanceMeters,
   } = options;
 
-  const { x = 0, y = 0, rotation = 0 } = item;
-  const focalLength = item.focalLength ?? defaultFocalLength;
-  const halfFov = Math.atan(sensorWidth / (2 * focalLength));
+  const {
+    x = 0,
+    y = 0,
+    rotation = 0,
+    focalLength: itemFocalLength,
+    sensorType: itemSensorType,
+    corridorMode: itemCorridorMode,
+    irRange: itemIrRange,
+  } = item;
+
+  // ----- Resolve core parameters -----
+
+  const focalLength = Number.isFinite(optFocalLength)
+    ? optFocalLength
+    : (Number.isFinite(itemFocalLength) ? itemFocalLength : DEFAULT_FOCAL_LENGTH);
+
+  const sensorKey = (optSensorType || itemSensorType || DEFAULT_SENSOR_TYPE).trim();
+  const sensor = SENSOR_PRESETS[sensorKey] ?? SENSOR_PRESETS[DEFAULT_SENSOR_TYPE];
+
+  const corridorMode = typeof optCorridorMode === 'boolean'
+    ? optCorridorMode
+    : !!itemCorridorMode;
+
+  const maxDistanceMeters = Number.isFinite(optMaxDistanceMeters)
+    ? optMaxDistanceMeters
+    : (Number.isFinite(itemIrRange) ? itemIrRange : DEFAULT_MAX_DISTANCE_METERS);
+
+  // If we don't have a valid ppm, fall back to a pixel-based distance
+  const maxDistancePx = ppm && ppm > 0
+    ? maxDistanceMeters * ppm
+    : maxDistanceMeters * 10; // crude fallback so something still renders
+
+  // ----- Compute HFOV (horizontal only) -----
+  // HFOV = 2 * atan(sensor_width / (2 * f))
+  const hfov = 2 * Math.atan(sensor.width / (2 * focalLength));
+
+  // Corridor mode swaps HFOV/VFOV; for top-down we only care about the
+  // horizontal angle, so we use VFOV as the horizontal angle when corridorMode is true.
+  const vfov = 2 * Math.atan(sensor.height / (2 * focalLength));
+  const effectiveHfov = corridorMode ? vfov : hfov;
+
+  const halfFov = effectiveHfov / 2;
   const startAngle = (rotation * Math.PI) / 180 - halfFov;
-  const step = (halfFov * 2) / rayCount;
+  const step = (effectiveHfov) / rayCount;
   const origin = { x, y };
 
   // combine walls and obstacle edges into one list for ray casting
@@ -92,8 +147,9 @@ export const calculateFovPolygon = (item, walls, options = {}, obstacles = []) =
   ];
 
   const points = [`${x},${y}`];
+
   for (let i = 0; i <= rayCount; i += 1) {
-    const { x: hitX, y: hitY } = castRayWithWalls(origin, startAngle + step * i, maxDistance, allWalls);
+    const { x: hitX, y: hitY } = castRayWithWalls(origin, startAngle + step * i, maxDistancePx, allWalls);
     points.push(`${hitX},${hitY}`);
   }
 

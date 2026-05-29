@@ -11,20 +11,37 @@ onto the canvas; in both cases `onSelectTool(label)` notifies the parent.
 */
 export default function Toolbar({ onSelectTool }) {
 
-    // Maps a tool label to its custom PNG icon (currently only the camera tile).
+    // Maps tool labels to icons (PNG or PrimeIcons).
     const getIconFor = (label) => {
         switch (label) {
             case 'camera':
                 return securityCameraIcon;
+
+            case 'device':
+                return 'pi pi-box';
+
+            case 'wall':
+                return 'pi pi-minus';
+
+            case 'measure':
+                return 'pi pi-arrows-h';
+
+            case 'scale calibration':
+                return 'pi pi-sliders-v';
+
+            case 'image settings':
+                return 'pi pi-cog';
+
             default:
                 return null;
         }
     };
 
-    // Renders a tile that can be dragged onto the canvas to drop a new
-    // equipment item, or clicked to arm the tool for placement-by-click.
+    // Draggable tiles for equipment placement.
     const draggableItem = (item) => {
         const iconSrc = getIconFor(item.label);
+        const isImage = iconSrc && !iconSrc.startsWith('pi ');
+
         return (
             <div
                 draggable
@@ -36,9 +53,10 @@ export default function Toolbar({ onSelectTool }) {
                     display: 'flex',
                     alignItems: 'center',
                     background: '#212529',
+                    color: '#ffffff'
                 }}
             >
-                {iconSrc ? (
+                {isImage ? (
                     <img
                         src={iconSrc}
                         alt=""
@@ -47,32 +65,45 @@ export default function Toolbar({ onSelectTool }) {
                             width: '22px',
                             height: '22px',
                             marginRight: '0.5rem',
-                            verticalAlign: 'middle',
                             pointerEvents: 'none'
                         }}
                     />
-                ) : item.label === 'device' ? (
-                    <span className="pi pi-box" style={{ marginRight: '0.5rem' }}></span>
+                ) : iconSrc ? (
+                    <span className={iconSrc} style={{ marginRight: '0.5rem' }}></span>
                 ) : (
-                    <span className="pi pi-question-circle" style={{ marginRight: '0.5rem' }}></span>
+                    <span className="pi pi-question-circle" style={{ marginRight: '0.5rem', color: '#ffffff' }}></span>
                 )}
                 {item.label}
             </div>
         );
     };
 
-    // Renders a click-only tile (used for draw tools like wall/obstacle that
-    // engage a dedicated drawing layer rather than drag-to-place).
-    const selectableItem = (item) => (
-        <div
-            onClick={() => onSelectTool(item.label)}
-            style={{ padding: '0.75rem 1.25rem', cursor: 'pointer' }}
-        >
-            <span className="pi pi-bars" style={{ marginRight: '0.5rem' }}></span>
-            {item.label}
-        </div>
-    );
+    // Click-only tiles for drawing tools.
+    const selectableItem = (item) => {
+        const iconClass = getIconFor(item.label);
+        const isPrimeIcon = iconClass && iconClass.startsWith('pi ');
 
+        return (
+            <div
+                onClick={() => onSelectTool(item.label)}
+                style={{ 
+                    padding: '0.75rem 1.25rem', 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center'
+                }}
+            >
+                {isPrimeIcon ? (
+                    <span className={iconClass} style={{ marginRight: '0.5rem' }}></span>
+                ) : (
+                    <span className="pi pi-bars" style={{ marginRight: '0.5rem' }}></span>
+                )}
+                {item.label}
+            </div>
+        );
+    };
+
+    // Base DemoMerging structure with added tool groups.
     const items = [
         {
             label: 'New',
@@ -91,13 +122,36 @@ export default function Toolbar({ onSelectTool }) {
             icon: 'pi pi-pencil',
             items: [[
                 {
-                items: [
-                    { label: 'wall', template: selectableItem },
-                    { label: 'obstacle', template: selectableItem },
+                    items: [
+                        { label: 'wall', template: selectableItem },
+                        { label: 'obstacle', template: selectableItem },
                     ]
                 }
             ]]
         },
+        {
+            label: 'Tools',
+            icon: 'pi pi-wrench',
+            items: [[
+                {
+                    items: [
+                        { label: 'measure', template: selectableItem },
+                        { label: 'scale calibration', template: selectableItem }
+                    ]
+                }
+            ]]
+        },
+        {
+            label: 'Image',
+            icon: 'pi pi-image',
+            items: [[
+                {
+                    items: [
+                        { label: 'image settings', template: selectableItem }
+                    ]
+                }
+            ]]
+        }
     ];
 
     return (
@@ -115,9 +169,8 @@ export default function Toolbar({ onSelectTool }) {
                 style={{ 
                     background: 'transparent', 
                     border: 'none',
-                    color: '#ffffff !inportant'
+                    color: '#ffffff'
                 }}
-                // You can add global css class hooks to style inner items cleanly
                 className="dark-dashboard-menu"
             />
         </div>
