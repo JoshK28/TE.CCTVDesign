@@ -9,6 +9,16 @@ const NAV = [
   { label: "📁 New Project", to: "/app/upload" },
 ];
 
+const formatLastEdited = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+};
+
 /*
 The ProjectList component fetches the current user's projects from the backend
 and renders them in a table. From here a user can open a project in the design
@@ -82,7 +92,9 @@ function ProjectList({ onLogout }) {
       setEditSuccess("Project updated successfully!");
       setProjects((prev) =>
         prev.map((p) =>
-          p.projectID === editProject.projectID ? { ...p, ...editForm } : p
+          p.projectID === editProject.projectID
+            ? { ...p, ...editForm, lastEditedAt: new Date().toISOString() }
+            : p
         )
       );
       setTimeout(closeEditModal, 1500);
@@ -122,6 +134,7 @@ function ProjectList({ onLogout }) {
               <th>Title</th>
               <th>Address</th>
               <th>Description</th>
+              <th>Last edited</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -131,6 +144,7 @@ function ProjectList({ onLogout }) {
                 <td>{project.title}</td>
                 <td>{project.address}</td>
                 <td>{project.description}</td>
+                <td>{formatLastEdited(project.lastEditedAt)}</td>
                 <td style={{ display: "flex", gap: "8px" }}>
                   <button
                     type="button"

@@ -93,6 +93,17 @@ namespace Backend.Controllers
             }).ToList();
 
             context.Obstacles.AddRange(newObstacles);
+            var projectId = await context.FloorLayouts
+                .Where(f => f.FloorID == floorId)
+                .Select(f => f.ProjectID)
+                .FirstOrDefaultAsync();
+            if (projectId != 0)
+            {
+                var project = await context.Projects.FindAsync(projectId);
+                if (project != null)
+                    project.LastEditedAt = DateTime.UtcNow;
+            }
+
             await context.SaveChangesAsync();
             return Ok(new { saved = newObstacles.Count });
         }

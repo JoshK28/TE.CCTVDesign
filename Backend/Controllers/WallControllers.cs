@@ -35,6 +35,17 @@ namespace Backend.Controllers
                 RealWorldHeight = w.RealWorldHeight
             }));
 
+            var projectId = await context.FloorLayouts
+                .Where(f => f.FloorID == floorId)
+                .Select(f => f.ProjectID)
+                .FirstOrDefaultAsync();
+            if (projectId != 0)
+            {
+                var project = await context.Projects.FindAsync(projectId);
+                if (project != null)
+                    project.LastEditedAt = DateTime.UtcNow;
+            }
+
             await context.SaveChangesAsync();
             return Ok("Walls saved successfully");
         }

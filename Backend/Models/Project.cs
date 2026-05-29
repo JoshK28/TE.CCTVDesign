@@ -24,6 +24,9 @@ namespace Backend.Models
         // a description of the project
         public string Description { get; set; } = string.Empty;
 
+        // UTC timestamp of the last project edit (metadata or design save)
+        public DateTime LastEditedAt { get; set; }
+
         // navigation property - a project can have many floor images
         public List<FloorLayout> FloorLayouts { get; set; } = new();
 

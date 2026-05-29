@@ -29,7 +29,8 @@ namespace Backend.Controllers
                 Title = dto.Title,
                 Address = dto.Address,
                 Description = dto.Description ?? string.Empty,
-                UserID = userId
+                UserID = userId,
+                LastEditedAt = DateTime.UtcNow,
             };
 
             context.Projects.Add(project);
@@ -78,7 +79,17 @@ namespace Backend.Controllers
 
             var projects = await context.Projects
                 .Where(p => p.UserID == userId)
-                .Select(p => new { p.ProjectID, p.Title, p.Address, p.Description, p.UserID })
+                .OrderByDescending(p => p.LastEditedAt)
+                .ThenByDescending(p => p.ProjectID)
+                .Select(p => new
+                {
+                    p.ProjectID,
+                    p.Title,
+                    p.Address,
+                    p.Description,
+                    p.UserID,
+                    p.LastEditedAt,
+                })
                 .ToListAsync();
 
             return Ok(projects);
@@ -118,9 +129,17 @@ namespace Backend.Controllers
 
             (project.Title, project.Address, project.Description) =
                 (dto.Title, dto.Address, dto.Description ?? string.Empty);
+            project.LastEditedAt = DateTime.UtcNow;
 
             await context.SaveChangesAsync();
-            return Ok(new { project.ProjectID, project.Title, project.Address, project.Description });
+            return Ok(new
+            {
+                project.ProjectID,
+                project.Title,
+                project.Address,
+                project.Description,
+                project.LastEditedAt,
+            });
         }
 
         // DELETE api/projects/{id}
