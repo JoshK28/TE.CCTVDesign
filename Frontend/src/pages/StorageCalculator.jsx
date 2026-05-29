@@ -38,12 +38,21 @@ const computeBitrate = (resolution, encoding, fps) => {
   return Math.round(base * encodingMultiplier * (Number(fps) / 25));
 };
 
-const calculateResults = (mode, { channels, diskSpaceTB, diskUnit, recordHours, retentionDays }) => {
+const DEFAULT_CALC = {
+  mode: "saving",
+  result: null,
+  diskSpace: 4,
+  diskUnit: "TB",
+  recordHours: 24,
+  retentionDays: 30,
+};
+
+const calculateResults = (mode, { channels, diskSpace, diskUnit, recordHours, retentionDays }) => {
   const totalBitrateKbps = channels.reduce((acc, ch) => acc + Number(ch.bitrate), 0);
   const bytesPerSecond = (totalBitrateKbps * 1000) / 8;
 
   if (mode === "saving") {
-    const totalStorageBytes = diskSpaceTB * (diskUnit === "TB" ? TB_BYTES : GB_BYTES);
+    const totalStorageBytes = diskSpace * (diskUnit === "TB" ? TB_BYTES : GB_BYTES);
     const totalDays = (totalStorageBytes / bytesPerSecond / 3600 / recordHours).toFixed(1);
     return { days: totalDays };
   }
@@ -104,31 +113,26 @@ function StorageNetworkCalculator({ onLogout }) {
   ];
 
   const [channels, setChannels] = useState([{ id: 1, name: "Channel 1", ...DEFAULT_CHANNEL }]);
-  const [diskSpaceTB, setDiskSpaceTB] = useState(4);
-  const [diskUnit, setDiskUnit] = useState("TB");
-  const [recordHours, setRecordHours] = useState(24);
-  const [retentionDays, setRetentionDays] = useState(30);
-  const [result, setResult] = useState(null);
-  const [mode, setMode] = useState("saving");
-  const [loading, setLoading] = useState(false);
-  const [projectName, setProjectName] = useState("");
+  const [calc, setCalc] = useState(DEFAULT_CALC);
+  const [project, setProject] = useState({ name: "", loading: false });
+
+  const updateCalc = (patch) => setCalc((prev) => ({ ...prev, ...patch }));
 
   useEffect(() => {
     if (!projectId) return;
 
     const fetchProjectDevices = async () => {
-      setLoading(true);
+      setProject((prev) => ({ ...prev, loading: true }));
       try {
         const res = await api.get(`/api/camerplacements/project/${projectId}/devices`);
         if (res.data.storageChannels.length > 0) {
           setChannels(res.data.storageChannels);
         }
         const projectRes = await api.get(`/api/projects/${projectId}`);
-        setProjectName(projectRes.data.title);
+        setProject({ name: projectRes.data.title, loading: false });
       } catch (err) {
         console.error("Failed to load project devices", err);
-      } finally {
-        setLoading(false);
+        setProject((prev) => ({ ...prev, loading: false }));
       }
     };
 
@@ -156,23 +160,23 @@ function StorageNetworkCalculator({ onLogout }) {
     );
   };
 
-  const selectMode = (nextMode) => {
-    setMode(nextMode);
-    setResult(null);
-  };
+  const selectMode = (mode) => updateCalc({ mode, result: null });
 
   const calculate = () =>
-    setResult(calculateResults(mode, { channels, diskSpaceTB, diskUnit, recordHours, retentionDays }));
+    setCalc((prev) => ({
+      ...prev,
+      result: calculateResults(prev.mode, { channels, ...prev }),
+    }));
 
   return (
     <AppLayout className="calc-page" nav={nav} onLogout={onLogout} mainClassName="calc-main">
       <h1>Storage Calculator</h1>
 
-      {projectId && projectName && (
-        <p style={{ color: "#245d91", fontWeight: "bold" }}>Project: {projectName}</p>
+      {projectId && project.name && (
+        <p style={{ color: "#245d91", fontWeight: "bold" }}>Project: {project.name}</p>
       )}
 
-      {loading && <p>Loading project devices...</p>}
+      {project.loading && <p>Loading project devices...</p>}
 
       <section className="device-section">
         <h2>Device Channels</h2>
@@ -243,7 +247,7 @@ function StorageNetworkCalculator({ onLogout }) {
             {MODES.map(({ id, label }) => (
               <button
                 key={id}
-                className={mode === id ? "active-mode" : ""}
+                className={calc.mode === id ? "active-mode" : ""}
                 onClick={() => selectMode(id)}
               >
                 {label}
@@ -252,39 +256,39 @@ function StorageNetworkCalculator({ onLogout }) {
           </div>
 
           <div className="inputs">
-            {mode === "saving" && (
+            {calc.mode === "saving" && (
               <label>
                 Disk Space:
                 <input
                   type="number"
-                  value={diskSpaceTB}
-                  onChange={(e) => setDiskSpaceTB(e.target.value)}
+                  value={calc.diskSpace}
+                  onChange={(e) => updateCalc({ diskSpace: e.target.value })}
                 />
-                <select value={diskUnit} onChange={(e) => setDiskUnit(e.target.value)}>
+                <select value={calc.diskUnit} onChange={(e) => updateCalc({ diskUnit: e.target.value })}>
                   <option>TB</option>
                   <option>GB</option>
                 </select>
               </label>
             )}
 
-            {mode === "disk" && (
+            {calc.mode === "disk" && (
               <label>
                 Desired Retention:
                 <input
                   type="number"
-                  value={retentionDays}
-                  onChange={(e) => setRetentionDays(e.target.value)}
+                  value={calc.retentionDays}
+                  onChange={(e) => updateCalc({ retentionDays: e.target.value })}
                 /> days
               </label>
             )}
 
-            {mode !== "bandwidth" && (
+            {calc.mode !== "bandwidth" && (
               <label>
                 Recording Time per Day:
                 <input
                   type="number"
-                  value={recordHours}
-                  onChange={(e) => setRecordHours(e.target.value)}
+                  value={calc.recordHours}
+                  onChange={(e) => updateCalc({ recordHours: e.target.value })}
                 /> h
               </label>
             )}
@@ -293,9 +297,9 @@ function StorageNetworkCalculator({ onLogout }) {
           <button className="calculate-btn" onClick={calculate}>Calculate</button>
         </div>
 
-        {result && (
+        {calc.result && (
           <div className="results">
-            {getResultItems(mode, result).map(({ key, value, label }) => (
+            {getResultItems(calc.mode, calc.result).map(({ key, value, label }) => (
               <div key={key} className="result-box">
                 <h3>{value}</h3>
                 <p>{label}</p>
