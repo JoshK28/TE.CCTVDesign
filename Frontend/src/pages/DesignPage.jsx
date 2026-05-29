@@ -17,7 +17,7 @@ import {
 } from '../Components/index';
 
 import ExportModal from '../Components/ExportModal';
-import ScaleCalibrationModal from '../Components/ScaleCalibrationModal';
+import ScaleCalibrationTool, { useScaleCalibration } from '../Components/ScaleCalibrationTool';
 
 import api from '../services/api';
 import { getSaveErrorMessage, saveDesign } from '../utils/designSave';
@@ -119,12 +119,6 @@ function Workspace({
     const [measureCursor, setMeasureCursor] = useState(null);
     const [measureEscCount, setMeasureEscCount] = useState(0);
 
-    // scale calibration STATE
-    const [calibrationStart, setCalibrationStart] = useState(null);
-    const [calibrationEnd, setCalibrationEnd] = useState(null);
-    const [calibrationDistancePx, setCalibrationDistancePx] = useState(null);
-    const [showCalibrationModal, setShowCalibrationModal] = useState(false);
-
     //HOVER TOOL IMPLEMENTATION
     const [hoverDevice, setHoverDevice] = useState(null);
 
@@ -140,6 +134,16 @@ function Workspace({
                 : { naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight }
         );
     };
+
+    const scaleCalibration = useScaleCalibration({
+        active: activeTool === 'scale calibration',
+        imageSize,
+        onApply: (newPPM) => {
+            setPPM(newPPM);
+            onUnsavedChanges(true);
+        },
+        onDeactivate: () => setActiveTool(null),
+    });
 
     // UNDO / REDO
     const applyHistorySnapshot = useCallback(({ equipment: eq, wallGraphs: wg }) => {
@@ -291,11 +295,7 @@ function Workspace({
         }
 
         if (tool === 'scale calibration') {
-            setCalibrationStart(null);
-            setCalibrationEnd(null);
-            setCalibrationDistancePx(null);
-            setMeasureCursor(null);
-            setMeasureEscCount(0);
+            scaleCalibration.reset();
         }
     };
 
@@ -330,24 +330,8 @@ function Workspace({
                 return;
             }
 
-            // Calibration tool ESC
             if (activeTool === 'scale calibration') {
-                if (event.key === 'Escape') {
-                    if (calibrationStart || calibrationEnd) {
-                        setCalibrationStart(null);
-                        setCalibrationEnd(null);
-                        setCalibrationDistancePx(null);
-                        setMeasureCursor(null);
-                        setMeasureEscCount(1);
-                        return;
-                    }
-
-                    if (measureEscCount === 1) {
-                        setMeasureEscCount(0);
-                        setActiveTool(null);
-                    }
-                }
-
+                if (event.key === 'Escape' && scaleCalibration.handleEscape()) return;
                 return;
             }
 
@@ -369,9 +353,8 @@ function Workspace({
         measureStart,
         measureEnd,
         measurePreview,
-        calibrationStart,
-        calibrationEnd,
         measureEscCount,
+        scaleCalibration.handleEscape,
     ]);
 
     // UPDATE PLACEMENT (with history)
@@ -400,30 +383,7 @@ function Workspace({
     const handleCanvasInteraction = (event) => {
         event.stopPropagation();
 
-        // scale calibration TOOL
-        if (activeTool === 'scale calibration') {
-            const { x, y } = getImagePoint(event, event.currentTarget, imageSize);
-
-            if (!calibrationStart) {
-                setCalibrationStart({ x, y });
-                return;
-            }
-
-            if (!calibrationEnd) {
-                const end = { x, y };
-                setCalibrationEnd(end);
-
-                const dx = end.x - calibrationStart.x;
-                const dy = end.y - calibrationStart.y;
-                const px = Math.hypot(dx, dy);
-
-                setCalibrationDistancePx(px);
-                setShowCalibrationModal(true);
-                return;
-            }
-
-            return;
-        }
+        if (scaleCalibration.handleClick(event)) return;
 
         // MEASURE TOOL
         if (activeTool === 'measure') {
@@ -474,15 +434,11 @@ function Workspace({
             }
         }
 
-        if (activeTool === 'scale calibration') {
-            const pt = getImagePoint(e, e.currentTarget, imageSize);
-            setMeasureCursor(pt);
-        }
+        scaleCalibration.handlePointerMove(e);
     };
 
-    // RIGHT CLICK DISABLED for measure/calibration
     const handleContextMenu = (e) => {
-        if (activeTool === 'measure' || activeTool === 'scale calibration') {
+        if (activeTool === 'measure' || scaleCalibration.preventContextMenu) {
             e.preventDefault();
         }
     };
@@ -610,25 +566,6 @@ function Workspace({
         ? `0 0 ${imageSize.naturalWidth} ${imageSize.naturalHeight}`
         : undefined;
 
-    // scale calibration APPLY
-    const handleApplyCalibration = (newPPM) => {
-        if (typeof setPPM === 'function') {
-            setPPM(newPPM);
-        }
-
-        if (typeof onUnsavedChanges === 'function') {
-            onUnsavedChanges(true);
-        }
-
-        setShowCalibrationModal(false);
-        setActiveTool(null);
-        setCalibrationStart(null);
-        setCalibrationEnd(null);
-        setCalibrationDistancePx(null);
-        setMeasureCursor(null);
-        setMeasureEscCount(0);
-    };
-
     // RENDER
     return (
         <div className="design-workspace">
@@ -737,86 +674,12 @@ function Workspace({
                         </svg>
                     )}
 
-                    {/* scale calibration HOVER HANDLE */}
-                    {activeTool === 'scale calibration' &&
-                        !calibrationStart &&
-                        measureCursor && (
-                            <svg
-                                className="scale-overlay"
-                                viewBox={overlayViewBox}
-                                preserveAspectRatio="none"
-                            >
-                                <circle
-                                    cx={measureCursor.x}
-                                    cy={measureCursor.y}
-                                    r="8"
-                                    className="scale-handle"
-                                />
-                            </svg>
-                        )}
-
-                    {/* scale calibration PREVIEW */}
-                    {activeTool === 'scale calibration' &&
-                        calibrationStart &&
-                        !calibrationEnd &&
-                        measureCursor && (
-                            <svg
-                                className="scale-overlay"
-                                viewBox={overlayViewBox}
-                                preserveAspectRatio="none"
-                            >
-                                <line
-                                    x1={calibrationStart.x}
-                                    y1={calibrationStart.y}
-                                    x2={measureCursor.x}
-                                    y2={measureCursor.y}
-                                    className="scale-line"
-                                />
-                                <circle
-                                    cx={calibrationStart.x}
-                                    cy={calibrationStart.y}
-                                    r="8"
-                                    className="scale-handle"
-                                />
-                                <circle
-                                    cx={measureCursor.x}
-                                    cy={measureCursor.y}
-                                    r="8"
-                                    className="scale-handle"
-                                />
-                            </svg>
-                        )}
-
-                    {/* scale calibration FINAL LINE */}
-                    {activeTool === 'scale calibration' &&
-                        calibrationStart &&
-                        calibrationEnd && (
-                            <svg
-                                className="scale-overlay"
-                                viewBox={overlayViewBox}
-                                preserveAspectRatio="none"
-                            >
-                                <line
-                                    x1={calibrationStart.x}
-                                    y1={calibrationStart.y}
-                                    x2={calibrationEnd.x}
-                                    y2={calibrationEnd.y}
-                                    className="scale-line"
-                                />
-                                <circle
-                                    cx={calibrationStart.x}
-                                    cy={calibrationStart.y}
-                                    r="8"
-                                    className="scale-handle"
-                                />
-                                <circle
-                                    cx={calibrationEnd.x}
-                                    cy={calibrationEnd.y}
-                                    r="8"
-                                    className="scale-handle"
-                                />
-                            </svg>
-                        )}
+                    {activeTool === 'scale calibration' && (
+                        <ScaleCalibrationTool
+                            calibration={scaleCalibration}
+                            viewBox={overlayViewBox}
+                        />
+                    )}
 
                     {/* MEASURE TOOL — FINAL MEASUREMENT */}
                     {measureStart && measureEnd && (
@@ -1111,22 +974,6 @@ function Workspace({
                 }
                 onChangeModel={handleChangeModel}
                 onDeleteEquipment={handleDeleteEquipment}
-            />
-
-            {/* scale calibration MODAL */}
-            <ScaleCalibrationModal
-                visible={showCalibrationModal}
-                pixelDistance={calibrationDistancePx || 0}
-                onApply={handleApplyCalibration}
-                onCancel={() => {
-                    setShowCalibrationModal(false);
-                    setCalibrationStart(null);
-                    setCalibrationEnd(null);
-                    setCalibrationDistancePx(null);
-                    setMeasureCursor(null);
-                    setMeasureEscCount(0);
-                    setActiveTool(null);
-                }}
             />
 
             {/* image settings DIALOG */}
