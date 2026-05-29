@@ -5,7 +5,6 @@ import "../page_styling/storageCalculator.css";
 import api from "../services/api";
 
 const DEFAULT_CHANNEL = {
-  standard: "PAL",
   encoding: "H.264",
   resolution: "12MP (4000x3000)",
   fps: 25,
@@ -154,7 +153,7 @@ function StorageNetworkCalculator({ onLogout }) {
       onLogout={onLogout}
       mainClassName="calc-main"
     >
-      <h1>Storage and Network Calculator</h1>
+      <h1>Storage Calculator</h1>
 
       {projectId && projectName && (
         <p style={{ color: '#245d91', fontWeight: 'bold' }}>Project: {projectName}</p>
@@ -169,7 +168,6 @@ function StorageNetworkCalculator({ onLogout }) {
             <thead>
               <tr>
                 <th>Channel</th>
-                <th>Video Standard</th>
                 <th>Encoding</th>
                 <th>Resolution</th>
                 <th>Frame Rate (fps)</th>
@@ -181,15 +179,6 @@ function StorageNetworkCalculator({ onLogout }) {
               {channels.map((ch, i) => (
                 <tr key={ch.id}>
                   <td>{ch.name}</td>
-                  <td>
-                    <select
-                      value={ch.standard}
-                      onChange={(e) => updateChannel(i, { standard: e.target.value })}
-                    >
-                      <option>PAL</option>
-                      <option>NTSC</option>
-                    </select>
-                  </td>
                   <td>
                     <select
                       value={ch.encoding}
