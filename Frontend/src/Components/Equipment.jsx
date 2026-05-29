@@ -6,8 +6,7 @@ import alarmIcon from '../assets/Icons/Alarm.png';
 import nvrIcon from '../assets/Icons/NVR.png';
 
 import { getImagePoint } from '../utils/points';
-
-const DEFAULT_ICON_BACKGROUND_COLOR = '#ffffff';
+import { DEFAULT_ICON_BACKGROUND_COLOR } from '../utils/placement';
 
 const renderImg = (src) => (
     <img src={src} alt="" draggable={false} className="equipment-icon" />

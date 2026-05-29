@@ -6,14 +6,15 @@ import { InputText } from 'primereact/inputtext';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { useState, useRef, useEffect } from 'react';
 import ColorSwatchPicker from './ColorSwatchPicker';
+import {
+  CAMERA_DEFAULTS,
+  DEFAULT_ICON_BACKGROUND_COLOR,
+  FOV_PRESET_COLORS,
+} from '../utils/placement';
 import './AttributesBar.css';
 
-const DEFAULT_FOV_COLOR = '#0096ff';
-const DEFAULT_FOV_OPACITY = 0.3;
-const DEFAULT_ICON_BACKGROUND_COLOR = '#ffffff';
 const MAX_ICON_BYTES = 1_000_000;
 const ALLOWED_ICON_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp', 'image/gif'];
-const FOV_PRESET_COLORS = ['#0096ff', '#ff0000', '#00ff00', '#ffa500', '#800080', '#ffff00'];
 
 // IDs for the appearance color swatches. Only one popup can be open at a time.
 const FOV_SWATCH = 'fov';
@@ -60,8 +61,8 @@ function AttributesBar({
 
   if (!selectedItem) return null;
 
-  const currentFovColor = selectedItem.fovColor ?? DEFAULT_FOV_COLOR;
-  const currentOpacity = selectedItem.fovOpacity ?? DEFAULT_FOV_OPACITY;
+  const currentFovColor = selectedItem.fovColor ?? CAMERA_DEFAULTS.fovColor;
+  const currentOpacity = selectedItem.fovOpacity ?? CAMERA_DEFAULTS.fovOpacity;
   const currentIconBackgroundColor =
     selectedItem.iconBackgroundColor ?? DEFAULT_ICON_BACKGROUND_COLOR;
 
@@ -237,7 +238,7 @@ function AttributesBar({
                   <div className="field">
                     <label>Camera Height (m)</label>
                     <InputNumber
-                      value={selectedItem.height || 3}
+                      value={selectedItem.height ?? CAMERA_DEFAULTS.height}
                       onValueChange={(e) => updateSetting('height', e.value)}
                       min={1}
                       max={20}
@@ -247,12 +248,14 @@ function AttributesBar({
                   <div className="field slider-field">
                     <label>Tilt (°)</label>
                     <Slider
-                      value={selectedItem.tilt || 0}
+                      value={selectedItem.tilt ?? CAMERA_DEFAULTS.tilt}
                       onChange={(e) => updateSetting('tilt', e.value)}
                       min={-90}
                       max={90}
                     />
-                    <span className="slider-value">{selectedItem.tilt || 0}°</span>
+                    <span className="slider-value">
+                      {selectedItem.tilt ?? CAMERA_DEFAULTS.tilt}°
+                    </span>
                   </div>
                 </div>
 
@@ -261,7 +264,7 @@ function AttributesBar({
                   <div className="field">
                     <label>Focal Length (mm)</label>
                     <InputNumber
-                      value={selectedItem.focalLength || 2.8}
+                      value={selectedItem.focalLength ?? CAMERA_DEFAULTS.focalLength}
                       onValueChange={(e) => updateSetting('focalLength', e.value)}
                       min={1}
                       max={50}
@@ -274,7 +277,7 @@ function AttributesBar({
                   <div className="field">
                     <label>IR Range (m)</label>
                     <InputNumber
-                      value={selectedItem.irRange || 30}
+                      value={selectedItem.irRange ?? CAMERA_DEFAULTS.irRange}
                       onValueChange={(e) => updateSetting('irRange', e.value)}
                       min={0}
                       max={200}

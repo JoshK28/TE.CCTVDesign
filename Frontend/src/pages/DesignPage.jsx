@@ -22,6 +22,7 @@ import MeasureTool, { useMeasure } from '../Components/MeasureTool';
 
 import api from '../services/api';
 import { getSaveErrorMessage, saveDesign } from '../utils/designSave';
+import { CAMERA_DEFAULTS, createCamera, createDevice, placementFromApi } from '../utils/placement';
 import { calculateFovPolygon } from '../utils/fov';
 import { getImagePoint } from '../utils/points';
 import { getViewBox } from '../utils/overlayUtils';
@@ -33,44 +34,6 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
 import '../page_styling/designPage.css';
-
-const DEFAULT_ICON_BACKGROUND_COLOR = '#ffffff';
-
-const CAMERA_DEFAULTS = {
-    focalLength: 2.8,
-    height: 3,
-    tilt: 0,
-    resolution: '1080p',
-    irRange: 30,
-    notes: '',
-    fovColor: '#0096ff',
-    fovOpacity: 0.3,
-    iconBackgroundColor: DEFAULT_ICON_BACKGROUND_COLOR,
-};
-
-// Build a fresh camera placement object with all FOV/appearance defaults.
-const createCamera = ({ x, y, name = '', attributes = {}, rotation = 0, id = Date.now() }) => ({
-    id,
-    type: 'camera',
-    x,
-    y,
-    rotation,
-    name: name || attributes.cameraModel || attributes.modelName || '',
-    ...CAMERA_DEFAULTS,
-    resolution: attributes.resolution ?? CAMERA_DEFAULTS.resolution,
-    attributes,
-});
-
-// Build a fresh non-camera device placement (NVR, switch, sensor, etc.).
-const createDevice = ({ x, y, type, name = '', attributes = {}, id = Date.now() }) => ({
-    id,
-    type,
-    x,
-    y,
-    name: name || attributes.modelName || '',
-    iconBackgroundColor: DEFAULT_ICON_BACKGROUND_COLOR,
-    attributes,
-});
 
 /*
 The Workspace component is the interactive canvas for a single floor layout.
@@ -175,52 +138,7 @@ function Workspace({
         const fetchPlacements = async () => {
             try {
                 const res = await api.get(`/api/camerplacements/${floorId}`);
-                const loaded = (res.data ?? []).map((p) => {
-                    const type = p.type || 'camera';
-                    const modelName = p.modelName ?? '';
-                    const subtype = p.subtype ?? '';
-
-                    let settings = {};
-                    if (p.settingsJson) {
-                        try {
-                            settings = JSON.parse(p.settingsJson) ?? {};
-                        } catch (err) {
-                            console.warn(
-                                'Failed to parse settingsJson for placement',
-                                p.placementID,
-                                err
-                            );
-                        }
-                    }
-
-                    const attributes = {
-                        cameraId: p.cameraId ?? 0,
-                        brand: p.brand ?? '',
-                        resolution: p.resolution ?? '',
-                        ...(p.cameraModel ? { cameraModel: p.cameraModel } : {}),
-                        ...(modelName ? { modelName } : {}),
-                        ...(type === 'camera' && subtype ? { cameraType: subtype } : {}),
-                        ...(p.costPerUnit != null ? { costPerUnit: p.costPerUnit } : {}),
-                        ...(settings.deviceSpecifications
-                            ? { deviceSpecifications: settings.deviceSpecifications }
-                            : {}),
-                    };
-
-                    const args = {
-                        x: p.x,
-                        y: p.y,
-                        id: p.placementID ?? Date.now(),
-                        rotation: p.rotation ?? 0,
-                        name: p.cameraModel || modelName || '',
-                        attributes,
-                    };
-
-                    const base =
-                        type === 'camera' ? createCamera(args) : createDevice({ ...args, type });
-
-                    const { deviceSpecifications: _ignored, ...overrides } = settings;
-                    return { ...base, ...overrides };
-                });
+                const loaded = (res.data ?? []).map(placementFromApi);
 
                 setEquipment(loaded);
             } catch (err) {
@@ -599,10 +517,10 @@ function Workspace({
                                             {},
                                             obstacles
                                         )}
-                                        fill={item.fovColor ?? '#0096ff'}
-                                        stroke={item.fovColor ?? '#0096ff'}
-                                        fillOpacity={item.fovOpacity ?? 0.3}
-                                        strokeOpacity={item.fovOpacity ?? 0.3}
+                                        fill={item.fovColor ?? CAMERA_DEFAULTS.fovColor}
+                                        stroke={item.fovColor ?? CAMERA_DEFAULTS.fovColor}
+                                        fillOpacity={item.fovOpacity ?? CAMERA_DEFAULTS.fovOpacity}
+                                        strokeOpacity={item.fovOpacity ?? CAMERA_DEFAULTS.fovOpacity}
                                         strokeWidth="2"
                                     />
                                 ))}
