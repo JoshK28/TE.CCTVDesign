@@ -47,7 +47,7 @@ SQL Server Express should start automatically on boot. If it doesn't:
    - Install EF Core tools
    - Restore backend packages
    - Create the database and tables
-   - Seed the 21 HikVision cameras
+    - Seed the 13 HikVision cameras
    - Install all frontend dependencies and build the frontend
 
 ---
@@ -74,7 +74,7 @@ When a new version of the application is provided:
 
 ## Database
 - The database is created automatically when `install.bat` is run — no manual setup required
-- Camera data (21 HikVision cameras) is automatically seeded into the database
+- Camera data (13 HikVision cameras) is automatically seeded into the database
 - The only thing that changes between computers is the server name in the connection string
 
 ---
